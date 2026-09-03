@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard'
 const CourseView = lazy(() => import('./pages/CourseView'))
 const SubmissionsPage = lazy(() => import('./pages/SubmissionsPage').then(m => ({ default: m.SubmissionsPage })))
 const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard').then(m => ({ default: m.InstructorDashboard })))
+const ExploreCoursesPage = lazy(() => import('./pages/ExploreCoursesPage').then(m => ({ default: m.ExploreCoursesPage })))
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -38,6 +39,7 @@ function App() {
           ) : (
             <>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/explore" element={<Suspense fallback={<LoadingSpinner />}><ExploreCoursesPage /></Suspense>} />
               <Route path="/courses/:courseId" element={<Suspense fallback={<LoadingSpinner />}><CourseView /></Suspense>} />
               <Route path="/courses/:courseId/submissions/:resourceId?" element={<Suspense fallback={<LoadingSpinner />}><SubmissionsPage /></Suspense>} />
               <Route path="/instructor" element={<Suspense fallback={<LoadingSpinner />}><InstructorDashboard /></Suspense>} />

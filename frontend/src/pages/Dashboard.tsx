@@ -58,13 +58,25 @@ export default function Dashboard() {
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome card */}
-        <div className="md:col-span-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-8 text-white mb-12">
-          <h2 className="text-3xl font-bold mb-2">¡Bienvenido, {user?.name}!</h2>
-          <p className="text-blue-100">
-            {user?.role === 'student'
-              ? `Estás en ${courses?.length || 0} programa(s). Tu progreso general es ${progress?.averageProgress || 0}%.`
-              : 'Gestiona tus cursos y estudiantes.'}
-          </p>
+        <div className="md:col-span-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-8 text-white mb-12 dark:from-blue-700 dark:to-indigo-700">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold mb-2">¡Bienvenido, {user?.name}!</h2>
+              <p className="text-blue-100">
+                {user?.role === 'student'
+                  ? `Estás en ${courses?.length || 0} programa(s). Tu progreso general es ${progress?.averageProgress || 0}%.`
+                  : 'Gestiona tus cursos y estudiantes.'}
+              </p>
+            </div>
+            {user?.role === 'student' && (
+              <button
+                onClick={() => navigate('/explore')}
+                className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors whitespace-nowrap ml-4 dark:bg-gray-100 dark:hover:bg-gray-200"
+              >
+                Explorar Cursos
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Stats cards */}
