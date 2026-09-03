@@ -1,13 +1,17 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../state/store'
 import { useCourses, useProgress } from '../hooks/useCourses'
 import CourseCard from '../components/CourseCard'
+import { NotificationBell } from '../components/NotificationBell'
+import { CertificatesList } from '../components/CertificatesList'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
   const { data: courses, isLoading: coursesLoading } = useCourses()
   const { data: progress } = useProgress()
+  const [showCertificates, setShowCertificates] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -20,22 +24,30 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white shadow dark:bg-gray-800 dark:border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Campus Posgrado</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Campus Posgrado</h1>
           <div className="flex items-center space-x-4">
-            <span className="text-gray-700">{user?.name}</span>
+            <NotificationBell />
+            <button
+              onClick={() => setShowCertificates(!showCertificates)}
+              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium"
+              title="Ver certificados"
+            >
+              🎓
+            </button>
+            <span className="text-gray-700 dark:text-gray-300">{user?.name}</span>
             {user?.role === 'instructor' && (
               <button
                 onClick={() => navigate('/instructor')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition dark:bg-blue-700 dark:hover:bg-blue-800"
               >
                 Panel de Instructor
               </button>
             )}
             <button
               onClick={handleLogout}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition dark:bg-red-700 dark:hover:bg-red-800"
             >
               Cerrar sesión
             </button>
@@ -118,8 +130,8 @@ export default function Dashboard() {
 
         {/* Completed Courses */}
         {completedCourses.length > 0 && (
-          <section>
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Completados</h3>
+          <section className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Completados</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {completedCourses.map(course => (
                 <CourseCard
@@ -132,6 +144,16 @@ export default function Dashboard() {
                 />
               ))}
             </div>
+          </section>
+        )}
+
+        {/* Certificates Section */}
+        {showCertificates && (
+          <section className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              🎓 Tus Certificados
+            </h3>
+            <CertificatesList />
           </section>
         )}
       </main>
