@@ -99,6 +99,12 @@ const progress = {
   }
 };
 
+// Entregas (submissions)
+const submissions = {};
+
+// Calificaciones (grades)
+const grades = {};
+
 const tokens = new Map();
 
 function generateToken(user) {
@@ -319,6 +325,107 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ===== SUBMISSIONS ENDPOINTS =====
+
+  if (pathname === '/api/submissions' && req.method === 'POST') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { resourceId, courseId, content } = JSON.parse(body);
+        const submissionId = crypto.randomUUID();
+        const submission = {
+          id: submissionId,
+          resourceId,
+          courseId,
+          studentId: user.id,
+          studentName: user.name,
+          content,
+          status: 'submitted',
+          submittedAt: new Date().toISOString(),
+          grade: null,
+          feedback: null
+        };
+        submissions[submissionId] = submission;
+        sendJSON(res, 201, submission);
+      } catch (e) {
+        sendJSON(res, 400, { message: 'Invalid JSON' });
+      }
+    });
+    return;
+  }
+
+  if (pathname === '/api/submissions' && req.method === 'GET') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const query = parsedUrl.query;
+    const status = query.status;
+    const courseId = query.courseId;
+
+    let filtered = Object.values(submissions);
+    if (status) filtered = filtered.filter(s => s.status === status);
+    if (courseId) filtered = filtered.filter(s => s.courseId === courseId);
+    if (user.role === 'student') filtered = filtered.filter(s => s.studentId === user.id);
+
+    sendJSON(res, 200, filtered);
+    return;
+  }
+
+  if (pathname.match(/^\/api\/submissions\/[a-zA-Z0-9-]+\/grade$/) && req.method === 'PUT') {
+    const user = getAuthUser(req);
+    if (!user || user.role !== 'instructor') {
+      sendJSON(res, 403, { message: 'Forbidden' });
+      return;
+    }
+    const submissionId = pathname.split('/')[3];
+    const submission = submissions[submissionId];
+    if (!submission) {
+      sendJSON(res, 404, { message: 'Submission not found' });
+      return;
+    }
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { grade, feedback } = JSON.parse(body);
+        submission.grade = grade;
+        submission.feedback = feedback;
+        submission.status = 'graded';
+        submission.gradedAt = new Date().toISOString();
+        submission.gradedBy = user.id;
+        sendJSON(res, 200, submission);
+      } catch (e) {
+        sendJSON(res, 400, { message: 'Invalid JSON' });
+      }
+    });
+    return;
+  }
+
+  if (pathname.match(/^\/api\/courses\/[a-zA-Z0-9-]+\/submissions$/) && req.method === 'GET') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const courseId = pathname.split('/')[3];
+    const courseSubmissions = Object.values(submissions).filter(s => s.courseId === courseId);
+    if (user.role === 'student') {
+      const filtered = courseSubmissions.filter(s => s.studentId === user.id);
+      sendJSON(res, 200, filtered);
+    } else {
+      sendJSON(res, 200, courseSubmissions);
+    }
+    return;
+  }
+
   // 404
   sendJSON(res, 404, { message: 'Not found' });
 });
@@ -331,4 +438,8 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`   - GET  /api/courses`);
   console.log(`   - GET  /api/courses/:id`);
   console.log(`   - GET  /api/progress`);
+  console.log(`   - POST /api/submissions`);
+  console.log(`   - GET  /api/submissions`);
+  console.log(`   - PUT  /api/submissions/:id/grade`);
+  console.log(`   - GET  /api/courses/:id/submissions`);
 });
