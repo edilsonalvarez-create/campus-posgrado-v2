@@ -1,852 +1,726 @@
+// Campus Posgrado v2 — API (Node http nativo + PostgreSQL)
+// Contrato de rutas y formas de respuesta compatible con el frontend existente.
 const http = require('http');
 const url = require('url');
 const crypto = require('crypto');
+const pool = require('./db/pool');
+const runMigrations = require('./db/migrate');
 
 const PORT = Number(process.env.PORT) || 3001;
+const TOKEN_TTL_MS = 3600 * 1000;
+const REFRESH_TTL_MS = 7 * 24 * 3600 * 1000;
 
-// Rate limiting: Map<ip, {count, resetTime}>
+// ---------- utilidades ----------
 const rateLimits = new Map();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 100; // Max requests per minute
+const RATE_LIMIT_WINDOW = 60 * 1000;
+const RATE_LIMIT_MAX = 300;
 
 function checkRateLimit(ip) {
   const now = Date.now();
   const limit = rateLimits.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW };
-
   if (now > limit.resetTime) {
     rateLimits.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return true;
   }
-
-  if (limit.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-
-  limit.count++;
+  if (limit.count >= RATE_LIMIT_MAX) return false;
+  limit.count += 1;
   rateLimits.set(ip, limit);
   return true;
 }
 
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
-
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) && email.length <= 254;
-}
-
-function isValidPassword(password) {
-  return password && password.length >= 8 && password.length <= 128;
-}
-
-// Usuarios en memoria
-const users = {
-  'test@example.com': {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    email: 'test@example.com',
-    name: 'Test User',
-    passwordHash: hashPassword('Password123'),
-    role: 'student'
-  },
-  'instructor@example.com': {
-    id: 'instructor-1',
-    email: 'instructor@example.com',
-    name: 'Instructor Demo',
-    passwordHash: hashPassword('Password123'),
-    role: 'instructor'
-  }
-};
-
-// Cursos de ejemplo
-const courses = {
-  'c1': {
-    id: 'c1',
-    title: 'Inteligencia Artificial y Tecnologías Disruptivas',
-    description: 'Programa de 52 semanas derivado del pensum del máster del Instituto Europeo de Posgrado, con recursos abiertos, práctica obligatoria y criterio de dominio por asignatura.',
-    instructorId: 'instructor-1',
-    published: true,
-    imageUrl: 'https://via.placeholder.com/400x200?text=IA+%26+Tecnologias',
-    modules: [
-      {
-        id: 'm1',
-        title: 'Módulo 1: Fundamentos de IA',
-        description: 'Conceptos básicos',
-        order: 1,
-        resources: [
-          { id: 'r1', title: 'Introducción a Machine Learning', type: 'lecture', source: 'MIT OpenCourseWare' },
-          { id: 'r2', title: 'Video: Neural Networks Basics', type: 'video', url: 'https://example.com/video1' },
-          { id: 'r3', title: 'Ejercicio 1: Perceptrón Simple', type: 'exercise' }
-        ]
-      },
-      {
-        id: 'm2',
-        title: 'Módulo 2: Deep Learning',
-        description: 'Redes neuronales profundas',
-        order: 2,
-        resources: [
-          { id: 'r4', title: 'Convolutional Neural Networks', type: 'lecture' },
-          { id: 'r5', title: 'Ejercicio 2: Clasificación de Imágenes', type: 'exercise' },
-          { id: 'r6', title: 'Trabajo Final: CNN en TensorFlow', type: 'assignment' }
-        ]
-      }
-    ],
-    createdAt: '2026-01-15',
-    updatedAt: '2026-01-15'
-  },
-  'c2': {
-    id: 'c2',
-    title: 'Transformación Digital Empresarial',
-    description: 'Estrategias y herramientas para digitalizar negocios en la era moderna.',
-    instructorId: 'instructor-1',
-    published: true,
-    imageUrl: 'https://via.placeholder.com/400x200?text=Transformacion+Digital',
-    modules: [
-      {
-        id: 'm3',
-        title: 'Módulo 1: Estrategia Digital',
-        description: 'Planificación digital',
-        order: 1,
-        resources: [
-          { id: 'r7', title: 'Digital Transformation Strategy', type: 'lecture' },
-          { id: 'r8', title: 'Case Study: Netflix', type: 'video' }
-        ]
-      }
-    ],
-    createdAt: '2026-02-01',
-    updatedAt: '2026-02-01'
-  },
-  'c3': {
-    id: 'c3',
-    title: 'Cloud Computing y Microservicios',
-    description: 'Arquitecturas modernas en la nube.',
-    instructorId: 'instructor-2',
-    published: true,
-    imageUrl: 'https://via.placeholder.com/400x200?text=Cloud+Computing',
-    modules: [],
-    createdAt: '2026-02-10',
-    updatedAt: '2026-02-10'
-  }
-};
-
-// Progreso del estudiante
-const progress = {
-  '550e8400-e29b-41d4-a716-446655440000': {
-    'c1': { courseId: 'c1', completed: 3, total: 9, percentage: 33 },
-    'c2': { courseId: 'c2', completed: 1, total: 4, percentage: 25 },
-    'c3': { courseId: 'c3', completed: 0, total: 3, percentage: 0 }
-  }
-};
-
-// Entregas (submissions)
-const submissions = {};
-
-// Calificaciones (grades)
-const grades = {};
-
-// Matriculaciones
-const enrollments = {
-  'c1': {
-    'instructor-1': { userId: 'instructor-1', courseId: 'c1', role: 'instructor' },
-    '550e8400-e29b-41d4-a716-446655440000': { userId: '550e8400-e29b-41d4-a716-446655440000', courseId: 'c1', role: 'student' }
-  },
-  'c2': {
-    'instructor-1': { userId: 'instructor-1', courseId: 'c2', role: 'instructor' },
-    '550e8400-e29b-41d4-a716-446655440000': { userId: '550e8400-e29b-41d4-a716-446655440000', courseId: 'c2', role: 'student' }
-  },
-  'c3': {
-    'instructor-2': { userId: 'instructor-2', courseId: 'c3', role: 'instructor' }
-  }
-};
-
-// Quiz y respuestas
-const quizzes = {
-  'q1': {
-    id: 'q1',
-    resourceId: 'r3',
-    courseId: 'c1',
-    title: 'Cuestionario 1: Fundamentos de IA',
-    questions: [
-      {
-        id: 'q1-1',
-        text: '¿Qué es Machine Learning?',
-        type: 'multiple-choice',
-        options: [
-          { id: 'a', text: 'Un subcampo de la IA que permite a las máquinas aprender' },
-          { id: 'b', text: 'Un lenguaje de programación' },
-          { id: 'c', text: 'Una base de datos' },
-          { id: 'd', text: 'Un framework web' }
-        ],
-        correctAnswer: 'a'
-      },
-      {
-        id: 'q1-2',
-        text: '¿Cuál es el propósito principal de las redes neuronales?',
-        type: 'multiple-choice',
-        options: [
-          { id: 'a', text: 'Simular el funcionamiento del cerebro humano' },
-          { id: 'b', text: 'Almacenar datos' },
-          { id: 'c', text: 'Comprimir imágenes' },
-          { id: 'd', text: 'Traducir idiomas' }
-        ],
-        correctAnswer: 'a'
-      }
-    ]
-  }
-};
-
-// Respuestas de quiz de estudiantes
-const quizResponses = {};
-
-// Certificados
-const certificates = {};
-
-// Notificaciones
-const notifications = {};
-
-const tokens = new Map();
-
-function generateToken(user) {
-  const token = crypto.randomBytes(32).toString('hex');
-  const payload = {
-    sub: user.id,
-    email: user.email,
-    role: user.role,
-    exp: Date.now() + 3600000
-  };
-  tokens.set(token, payload);
-  return token;
-}
+const hashPassword = (p) => crypto.createHash('sha256').update(String(p)).digest('hex');
+const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || '') && e.length <= 254;
+const isValidPassword = (p) => typeof p === 'string' && p.length >= 8 && p.length <= 128;
+const isUuid = (s) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s || '');
 
 function sendJSON(res, status, data) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
   res.end(JSON.stringify(data));
 }
 
-function getAuthUser(req) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-  const token = authHeader.slice(7);
-  const payload = tokens.get(token);
-  if (!payload || payload.exp < Date.now()) return null;
-  return Object.values(users).find(u => u.id === payload.sub);
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (c) => {
+      body += c;
+      if (body.length > 2_000_000) reject(new Error('payload too large'));
+    });
+    req.on('end', () => {
+      if (!body) return resolve({});
+      try {
+        resolve(JSON.parse(body));
+      } catch {
+        reject(new Error('invalid json'));
+      }
+    });
+    req.on('error', reject);
+  });
 }
 
-const server = http.createServer((req, res) => {
-  // Rate limiting
-  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-  if (!checkRateLimit(clientIp)) {
-    res.writeHead(429, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ message: 'Too many requests. Please try again later.' }));
-    return;
+async function newSession(userId, kind, ttl) {
+  const token = crypto.randomBytes(32).toString('hex');
+  await pool.query(
+    `INSERT INTO sessions (token, user_id, kind, expires_at) VALUES ($1, $2, $3, now() + ($4::int * interval '1 millisecond'))`,
+    [token, userId, kind, ttl],
+  );
+  return token;
+}
+
+async function getAuthUser(req) {
+  const h = req.headers.authorization || '';
+  if (!h.startsWith('Bearer ')) return null;
+  const token = h.slice(7);
+  const { rows } = await pool.query(
+    `SELECT u.id, u.email, u.name, u.role
+       FROM sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.token = $1 AND s.expires_at > now() AND s.kind = 'access'`,
+    [token],
+  );
+  return rows[0] || null;
+}
+
+// ---------- serializadores ----------
+const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role });
+
+function courseSummary(row) {
+  const total = Number(row.total || 0);
+  const completed = Number(row.completed || 0);
+  return {
+    id: row.id,
+    slug: row.slug,
+    kind: row.kind,
+    title: row.title,
+    description: row.description,
+    imageUrl: row.image_url || undefined,
+    instructorId: row.instructor_id || undefined,
+    published: row.published,
+    source: row.source || undefined,
+    url: row.url || undefined,
+    note: row.note || undefined,
+    meta: row.meta || {},
+    createdAt: row.created_at,
+    progress: {
+      completed,
+      total,
+      percentage: total ? Math.round((completed / total) * 100) : 0,
+    },
+  };
+}
+
+async function loadCourseDetail(courseRow, userId) {
+  const summary = courseSummary(courseRow);
+  const mods = (
+    await pool.query(
+      `SELECT id, title, numeral, subtitle, meta, order_index FROM modules WHERE course_id = $1 ORDER BY order_index`,
+      [courseRow.id],
+    )
+  ).rows;
+  const resByModule = {};
+  if (mods.length) {
+    const resRows = (
+      await pool.query(
+        `SELECT r.id, r.module_id, r.title, r.type, r.url, r.source, r.note, r.content, r.content_json, r.order_index,
+                (p.resource_id IS NOT NULL) AS completed
+           FROM resources r
+           JOIN modules m ON m.id = r.module_id
+           LEFT JOIN progress p ON p.resource_id = r.id AND p.user_id = $2 AND p.completed
+          WHERE m.course_id = $1
+          ORDER BY r.order_index`,
+        [courseRow.id, userId || null],
+      )
+    ).rows;
+    for (const r of resRows) {
+      (resByModule[r.module_id] = resByModule[r.module_id] || []).push({
+        id: r.id,
+        title: r.title,
+        type: r.type,
+        url: r.url || undefined,
+        source: r.source || undefined,
+        note: r.note || undefined,
+        content: r.content || undefined,
+        contentJson: r.content_json || undefined,
+        completed: r.completed,
+        order: r.order_index,
+      });
+    }
   }
+  summary.modules = mods.map((m) => ({
+    id: m.id,
+    title: m.title,
+    numeral: m.numeral || undefined,
+    subtitle: m.subtitle || undefined,
+    description: m.subtitle || undefined,
+    meta: m.meta || {},
+    order: m.order_index,
+    resources: resByModule[m.id] || [],
+  }));
+  return summary;
+}
+
+async function coursesForUser(userId, whereKind) {
+  const params = [userId || null];
+  let kindClause = '';
+  if (whereKind) {
+    params.push(whereKind);
+    kindClause = ` AND c.kind = ANY($2)`;
+  }
+  const { rows } = await pool.query(
+    `SELECT c.*,
+       (SELECT count(*) FROM resources r JOIN modules m ON m.id = r.module_id WHERE m.course_id = c.id) AS total,
+       (SELECT count(*) FROM progress p
+          JOIN resources r ON r.id = p.resource_id
+          JOIN modules m ON m.id = r.module_id
+         WHERE m.course_id = c.id AND p.user_id = $1 AND p.completed) AS completed
+     FROM courses c
+     WHERE c.published${kindClause}
+     ORDER BY c.order_index, c.title`,
+    params,
+  );
+  return rows.map(courseSummary);
+}
+
+async function findCourseRow(idOrSlug) {
+  const q = isUuid(idOrSlug)
+    ? await pool.query('SELECT * FROM courses WHERE id = $1', [idOrSlug])
+    : await pool.query('SELECT * FROM courses WHERE slug = $1', [idOrSlug]);
+  return q.rows[0] || null;
+}
+
+function submissionRow(r) {
+  return {
+    id: r.id,
+    resourceId: r.resource_id,
+    courseId: r.course_id,
+    studentId: r.user_id,
+    studentName: r.student_name,
+    content: r.content,
+    status: r.status,
+    submittedAt: r.submitted_at,
+    grade: r.score != null ? Number(r.score) : undefined,
+    feedback: r.feedback || undefined,
+    gradedAt: r.graded_at || undefined,
+    gradedBy: r.graded_by || undefined,
+  };
+}
+
+// ---------- rutas ----------
+// Cada ruta: { method, pattern (RegExp con grupos nombrados), handler(ctx) }
+const routes = [];
+const route = (method, path, handler) => {
+  const pattern = new RegExp(
+    '^' + path.replace(/:[a-zA-Z]+/g, (m) => `(?<${m.slice(1)}>[^/]+)`) + '/?$',
+  );
+  routes.push({ method, pattern, handler });
+};
+
+route('GET', '/api/health', async ({ res }) => sendJSON(res, 200, { status: 'ok' }));
+route('GET', '/health', async ({ res }) => sendJSON(res, 200, { status: 'ok' }));
+
+// --- auth ---
+route('POST', '/api/auth/register', async ({ res, body }) => {
+  const { email, name, password } = body;
+  if (!isValidEmail(email) || !name || !isValidPassword(password)) {
+    return sendJSON(res, 400, { message: 'Datos inválidos (email, nombre y contraseña de 8+ caracteres)' });
+  }
+  const exists = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
+  if (exists.rowCount) return sendJSON(res, 409, { message: 'El email ya está registrado' });
+  const { rows } = await pool.query(
+    `INSERT INTO users (email, name, password_hash, role) VALUES ($1, $2, $3, 'student')
+     RETURNING id, email, name, role`,
+    [email, name, hashPassword(password)],
+  );
+  const user = rows[0];
+  const accessToken = await newSession(user.id, 'access', TOKEN_TTL_MS);
+  const refreshToken = await newSession(user.id, 'refresh', REFRESH_TTL_MS);
+  sendJSON(res, 201, { accessToken, refreshToken, user: publicUser(user) });
+});
+
+route('POST', '/api/auth/login', async ({ res, body }) => {
+  const { email, password } = body;
+  const { rows } = await pool.query(
+    'SELECT id, email, name, role, password_hash FROM users WHERE email = $1',
+    [email || ''],
+  );
+  const user = rows[0];
+  if (!user || user.password_hash !== hashPassword(password)) {
+    return sendJSON(res, 401, { message: 'Credenciales inválidas' });
+  }
+  const accessToken = await newSession(user.id, 'access', TOKEN_TTL_MS);
+  const refreshToken = await newSession(user.id, 'refresh', REFRESH_TTL_MS);
+  sendJSON(res, 200, { accessToken, refreshToken, user: publicUser(user) });
+});
+
+route('POST', '/api/auth/refresh', async ({ res, body }) => {
+  const token = body.refreshToken || '';
+  const { rows } = await pool.query(
+    `SELECT u.id, u.email, u.name, u.role
+       FROM sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.token = $1 AND s.kind = 'refresh' AND s.expires_at > now()`,
+    [token],
+  );
+  if (!rows[0]) return sendJSON(res, 401, { message: 'Refresh token inválido' });
+  const accessToken = await newSession(rows[0].id, 'access', TOKEN_TTL_MS);
+  sendJSON(res, 200, { accessToken, user: publicUser(rows[0]) });
+});
+
+route('GET', '/api/auth/me', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  sendJSON(res, 200, publicUser(user));
+});
+
+route('POST', '/api/auth/logout', async ({ res, req }) => {
+  const h = req.headers.authorization || '';
+  if (h.startsWith('Bearer ')) await pool.query('DELETE FROM sessions WHERE token = $1', [h.slice(7)]);
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- courses ---
+route('GET', '/api/courses', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  sendJSON(res, 200, await coursesForUser(user.id));
+});
+
+route('POST', '/api/courses', async ({ res, user, body }) => {
+  if (!user || user.role === 'student') return sendJSON(res, 403, { message: 'Forbidden' });
+  const { title, description } = body;
+  if (!title) return sendJSON(res, 400, { message: 'El título es obligatorio' });
+  const slug =
+    title.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 50) +
+    '-' + crypto.randomBytes(3).toString('hex');
+  const { rows } = await pool.query(
+    `INSERT INTO courses (slug, kind, title, description, instructor_id, published)
+     VALUES ($1, 'course', $2, $3, $4, true) RETURNING *`,
+    [slug, title, description || '', user.id],
+  );
+  sendJSON(res, 201, courseSummary({ ...rows[0], total: 0, completed: 0 }));
+});
+
+route('GET', '/api/courses/:id/analytics', async ({ res, user, params }) => {
+  if (!user || user.role === 'student') return sendJSON(res, 403, { message: 'Forbidden' });
+  const course = await findCourseRow(params.id);
+  if (!course) return sendJSON(res, 404, { message: 'Course not found' });
+  const totalRes = Number(
+    (await pool.query(
+      `SELECT count(*) FROM resources r JOIN modules m ON m.id = r.module_id WHERE m.course_id = $1`,
+      [course.id],
+    )).rows[0].count,
+  );
+  const students = (
+    await pool.query(
+      `SELECT u.id, u.name,
+         (SELECT count(*) FROM progress p JOIN resources r ON r.id = p.resource_id JOIN modules m ON m.id = r.module_id
+            WHERE m.course_id = $1 AND p.user_id = u.id AND p.completed) AS done,
+         (SELECT count(*) FROM submissions s WHERE s.course_id = $1 AND s.user_id = u.id) AS subs
+       FROM enrollments e JOIN users u ON u.id = e.user_id
+       WHERE e.course_id = $1 AND e.role = 'student'`,
+      [course.id],
+    )
+  ).rows;
+  const subs = (
+    await pool.query(
+      `SELECT s.status, g.score FROM submissions s LEFT JOIN grades g ON g.submission_id = s.id WHERE s.course_id = $1`,
+      [course.id],
+    )
+  ).rows;
+  const graded = subs.filter((s) => s.score != null);
+  sendJSON(res, 200, {
+    courseId: course.id,
+    totalStudents: students.length,
+    totalSubmissions: subs.length,
+    gradedSubmissions: graded.length,
+    pendingSubmissions: subs.filter((s) => s.status === 'submitted').length,
+    averageGrade: graded.length ? Math.round((graded.reduce((n, s) => n + Number(s.score), 0) / graded.length) * 10) / 10 : 0,
+    completionRate:
+      students.length && totalRes
+        ? Math.round((students.reduce((n, s) => n + Number(s.done) / totalRes, 0) / students.length) * 100)
+        : 0,
+    students: students.map((s) => ({
+      id: s.id,
+      name: s.name,
+      progress: totalRes ? Math.round((Number(s.done) / totalRes) * 100) : 0,
+      submissions: Number(s.subs),
+    })),
+  });
+});
+
+route('GET', '/api/courses/:id/submissions', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const course = await findCourseRow(params.id);
+  if (!course) return sendJSON(res, 404, { message: 'Course not found' });
+  const { rows } = await pool.query(
+    `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.graded_at, g.graded_by
+       FROM submissions s
+       JOIN users u ON u.id = s.user_id
+       LEFT JOIN grades g ON g.submission_id = s.id
+      WHERE s.course_id = $1
+      ORDER BY s.submitted_at DESC`,
+    [course.id],
+  );
+  sendJSON(res, 200, rows.map(submissionRow));
+});
+
+route('GET', '/api/courses/:id', async ({ res, user, params }) => {
+  const course = await findCourseRow(params.id);
+  if (!course || !course.published) return sendJSON(res, 404, { message: 'Course not found' });
+  const total = Number(
+    (await pool.query(
+      `SELECT count(*) FROM resources r JOIN modules m ON m.id = r.module_id WHERE m.course_id = $1`,
+      [course.id],
+    )).rows[0].count,
+  );
+  const completed = user
+    ? Number(
+        (await pool.query(
+          `SELECT count(*) FROM progress p JOIN resources r ON r.id = p.resource_id JOIN modules m ON m.id = r.module_id
+            WHERE m.course_id = $1 AND p.user_id = $2 AND p.completed`,
+          [course.id, user.id],
+        )).rows[0].count,
+      )
+    : 0;
+  sendJSON(res, 200, await loadCourseDetail({ ...course, total, completed }, user && user.id));
+});
+
+route('PUT', '/api/courses/:id', async ({ res, user, params, body }) => {
+  if (!user || user.role === 'student') return sendJSON(res, 403, { message: 'Forbidden' });
+  const course = await findCourseRow(params.id);
+  if (!course) return sendJSON(res, 404, { message: 'Course not found' });
+  const { rows } = await pool.query(
+    `UPDATE courses SET title = COALESCE($2, title), description = COALESCE($3, description),
+       published = COALESCE($4, published), updated_at = now() WHERE id = $1 RETURNING *`,
+    [course.id, body.title ?? null, body.description ?? null, body.published ?? null],
+  );
+  sendJSON(res, 200, courseSummary({ ...rows[0], total: 0, completed: 0 }));
+});
+
+// --- master / native (catálogo especializado) ---
+route('GET', '/api/master-courses', async ({ res, user }) => {
+  const row = await findCourseRow('master-iep');
+  if (!row) return sendJSON(res, 200, []);
+  const detail = await loadCourseDetail({ ...row, total: 0, completed: 0 }, user && user.id);
+  sendJSON(res, 200, detail);
+});
+
+route('GET', '/api/native-courses/:id', async ({ res, user, params }) => {
+  const row = await findCourseRow(params.id);
+  if (!row || row.kind !== 'native') return sendJSON(res, 404, { message: 'Not found' });
+  sendJSON(res, 200, await loadCourseDetail({ ...row, total: 0, completed: 0 }, user && user.id));
+});
+
+route('GET', '/api/native-courses', async ({ res, user }) => {
+  sendJSON(res, 200, await coursesForUser(user && user.id, ['native']));
+});
+
+// --- progress ---
+route('GET', '/api/progress', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const rows = (
+    await pool.query(
+      `SELECT c.id AS course_id,
+         (SELECT count(*) FROM resources r JOIN modules m ON m.id = r.module_id WHERE m.course_id = c.id) AS total,
+         (SELECT count(*) FROM progress p JOIN resources r ON r.id = p.resource_id JOIN modules m ON m.id = r.module_id
+            WHERE m.course_id = c.id AND p.user_id = $1 AND p.completed) AS completed
+       FROM courses c
+       JOIN enrollments e ON e.course_id = c.id AND e.user_id = $1`,
+      [user.id],
+    )
+  ).rows;
+  const courses = {};
+  let sum = 0;
+  for (const r of rows) {
+    const total = Number(r.total);
+    const completed = Number(r.completed);
+    const percentage = total ? Math.round((completed / total) * 100) : 0;
+    courses[r.course_id] = { courseId: r.course_id, completed, total, percentage };
+    sum += percentage;
+  }
+  sendJSON(res, 200, {
+    userId: user.id,
+    totalCourses: rows.length,
+    averageProgress: rows.length ? Math.round(sum / rows.length) : 0,
+    courses,
+  });
+});
+
+route('POST', '/api/progress', async ({ res, user, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const { resourceId, completed = true } = body;
+  if (!isUuid(resourceId)) return sendJSON(res, 400, { message: 'resourceId inválido' });
+  if (completed) {
+    await pool.query(
+      `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
+       ON CONFLICT (user_id, resource_id) DO UPDATE SET completed = true, completed_at = now()`,
+      [user.id, resourceId],
+    );
+  } else {
+    await pool.query('DELETE FROM progress WHERE user_id = $1 AND resource_id = $2', [user.id, resourceId]);
+  }
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- enrollments ---
+route('GET', '/api/enrollments', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const { rows } = await pool.query(
+    `SELECT e.course_id, e.role, c.title FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE e.user_id = $1`,
+    [user.id],
+  );
+  sendJSON(res, 200, rows.map((r) => ({ courseId: r.course_id, role: r.role, courseTitle: r.title })));
+});
+
+route('POST', '/api/enrollments', async ({ res, user, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const course = await findCourseRow(body.courseId || '');
+  if (!course) return sendJSON(res, 404, { message: 'Course not found' });
+  await pool.query(
+    `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'student')
+     ON CONFLICT (user_id, course_id) DO NOTHING`,
+    [user.id, course.id],
+  );
+  sendJSON(res, 201, { ok: true, courseId: course.id });
+});
+
+// --- submissions / grades ---
+route('POST', '/api/submissions', async ({ res, user, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const { resourceId, courseId, content } = body;
+  if (!content || !content.trim()) return sendJSON(res, 400, { message: 'El contenido es obligatorio' });
+  const course = courseId ? await findCourseRow(courseId) : null;
+  const { rows } = await pool.query(
+    `INSERT INTO submissions (user_id, resource_id, course_id, content, status)
+     VALUES ($1, $2, $3, $4, 'submitted') RETURNING *`,
+    [user.id, isUuid(resourceId) ? resourceId : null, course ? course.id : null, content],
+  );
+  sendJSON(res, 201, submissionRow({ ...rows[0], student_name: user.name }));
+});
+
+route('GET', '/api/submissions', async ({ res, user, query }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const clauses = [];
+  const params = [];
+  if (user.role === 'student') {
+    params.push(user.id);
+    clauses.push(`s.user_id = $${params.length}`);
+  }
+  if (query.status) {
+    params.push(query.status);
+    clauses.push(`s.status = $${params.length}`);
+  }
+  if (query.courseId && isUuid(query.courseId)) {
+    params.push(query.courseId);
+    clauses.push(`s.course_id = $${params.length}`);
+  }
+  const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
+  const { rows } = await pool.query(
+    `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.graded_at, g.graded_by
+       FROM submissions s JOIN users u ON u.id = s.user_id
+       LEFT JOIN grades g ON g.submission_id = s.id
+       ${where}
+       ORDER BY s.submitted_at DESC`,
+    params,
+  );
+  sendJSON(res, 200, rows.map(submissionRow));
+});
+
+route('PUT', '/api/submissions/:id/grade', async ({ res, user, params, body }) => {
+  if (!user || user.role === 'student') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  const grade = Number(body.grade);
+  if (Number.isNaN(grade) || grade < 0 || grade > 100) {
+    return sendJSON(res, 400, { message: 'La calificación debe estar entre 0 y 100' });
+  }
+  const sub = await pool.query('SELECT * FROM submissions WHERE id = $1', [params.id]);
+  if (!sub.rowCount) return sendJSON(res, 404, { message: 'Entrega no encontrada' });
+  await pool.query(
+    `INSERT INTO grades (submission_id, graded_by, score, feedback) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (submission_id) DO UPDATE SET score = EXCLUDED.score, feedback = EXCLUDED.feedback, graded_by = EXCLUDED.graded_by, graded_at = now()`,
+    [params.id, user.id, grade, body.feedback || ''],
+  );
+  await pool.query(`UPDATE submissions SET status = 'graded', updated_at = now() WHERE id = $1`, [params.id]);
+  await pool.query(
+    `INSERT INTO notifications (user_id, type, title, message)
+     VALUES ($1, 'grade', 'Entrega calificada', $2)`,
+    [sub.rows[0].user_id, `Tu entrega recibió ${grade}/100`],
+  );
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- quizzes ---
+route('GET', '/api/quizzes/:id', async ({ res, params }) => {
+  if (!isUuid(params.id)) return sendJSON(res, 404, { message: 'Quiz no encontrado' });
+  const { rows } = await pool.query(
+    `SELECT r.id, r.title, r.content_json, m.course_id
+       FROM resources r JOIN modules m ON m.id = r.module_id
+      WHERE r.id = $1 AND r.type IN ('exam', 'lesson')`,
+    [params.id],
+  );
+  if (!rows[0]) return sendJSON(res, 404, { message: 'Quiz no encontrado' });
+  const cj = rows[0].content_json || {};
+  const raw = Array.isArray(cj.questions) ? cj.questions : Array.isArray(cj.quiz) ? cj.quiz : [];
+  const questions = raw.map((q, i) => ({
+    id: String(i),
+    text: q.q,
+    type: 'multiple-choice',
+    options: (q.opts || []).map((o, j) => ({ id: String(j), text: o })),
+    correctAnswer: String(q.a),
+  }));
+  sendJSON(res, 200, {
+    id: rows[0].id,
+    resourceId: rows[0].id,
+    courseId: rows[0].course_id,
+    title: rows[0].title,
+    questions,
+  });
+});
+
+route('POST', '/api/quiz-responses', async ({ res, user, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const { quizId, answers = [] } = body;
+  if (!isUuid(quizId)) return sendJSON(res, 400, { message: 'quizId inválido' });
+  const { rows } = await pool.query(
+    `SELECT r.content_json, m.course_id FROM resources r JOIN modules m ON m.id = r.module_id WHERE r.id = $1`,
+    [quizId],
+  );
+  if (!rows[0]) return sendJSON(res, 404, { message: 'Quiz no encontrado' });
+  const cj = rows[0].content_json || {};
+  const raw = Array.isArray(cj.questions) ? cj.questions : Array.isArray(cj.quiz) ? cj.quiz : [];
+  let correct = 0;
+  raw.forEach((q, i) => {
+    const given = (answers.find((a) => String(a.questionId) === String(i)) || {}).answer;
+    if (given != null && String(given) === String(q.a)) correct += 1;
+  });
+  const score = raw.length ? Math.round((correct / raw.length) * 100) : 0;
+  const passed = score >= 70;
+  await pool.query(
+    `INSERT INTO quiz_responses (user_id, resource_id, answers, score, passed) VALUES ($1, $2, $3, $4, $5)`,
+    [user.id, quizId, JSON.stringify(answers), score, passed],
+  );
+  await pool.query(
+    `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
+     ON CONFLICT (user_id, resource_id) DO NOTHING`,
+    [user.id, quizId],
+  );
+  if (passed) {
+    const course = (
+      await pool.query('SELECT id, title FROM courses WHERE id = $1', [rows[0].course_id])
+    ).rows[0];
+    if (course) {
+      await pool.query(
+        `INSERT INTO certificates (user_id, course_id, course_name) VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, course_id) DO NOTHING`,
+        [user.id, course.id, course.title],
+      );
+      await pool.query(
+        `INSERT INTO notifications (user_id, type, title, message)
+         VALUES ($1, 'certificate', 'Nuevo certificado', $2)`,
+        [user.id, `Aprobaste una evaluación de ${course.title}`],
+      );
+    }
+  }
+  sendJSON(res, 200, { score, passed, correct, total: raw.length });
+});
+
+// --- certificates ---
+route('GET', '/api/certificates', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const { rows } = await pool.query(
+    `SELECT id, user_id, course_id, course_name, issued_at FROM certificates WHERE user_id = $1 ORDER BY issued_at DESC`,
+    [user.id],
+  );
+  sendJSON(
+    res,
+    200,
+    rows.map((r) => ({
+      id: r.id,
+      userId: r.user_id,
+      courseId: r.course_id,
+      courseName: r.course_name,
+      issuedAt: r.issued_at,
+      expiresAt: null,
+    })),
+  );
+});
+
+// --- notifications ---
+route('GET', '/api/notifications', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const { rows } = await pool.query(
+    `SELECT id, type, title, message, read, created_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
+    [user.id],
+  );
+  sendJSON(
+    res,
+    200,
+    rows.map((r) => ({
+      id: r.id,
+      type: r.type,
+      title: r.title,
+      message: r.message,
+      read: r.read,
+      createdAt: r.created_at,
+    })),
+  );
+});
+
+route('PUT', '/api/notifications/:id/read', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  await pool.query('UPDATE notifications SET read = true WHERE id = $1 AND user_id = $2', [params.id, user.id]);
+  sendJSON(res, 200, { ok: true });
+});
+
+// ---------- servidor ----------
+const server = http.createServer(async (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+  if (!checkRateLimit(ip)) return sendJSON(res, 429, { message: 'Demasiadas peticiones. Intenta más tarde.' });
 
   if (req.method === 'OPTIONS') {
-    res.writeHead(200, {
+    res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
     });
-    res.end();
-    return;
+    return res.end();
   }
 
-  const parsedUrl = url.parse(req.url, true);
-  const pathname = parsedUrl.pathname;
+  const parsed = url.parse(req.url, true);
+  const pathname = parsed.pathname.replace(/\/+$/, '') || '/';
 
-  if ((pathname === '/health' || pathname === '/api/health') && req.method === 'GET') {
-    sendJSON(res, 200, { status: 'ok' });
-    return;
+  const match = routes.find((r) => r.method === req.method && r.pattern.test(pathname));
+  if (!match) return sendJSON(res, 404, { message: 'Not found' });
+
+  try {
+    const params = match.pattern.exec(pathname).groups || {};
+    const needsBody = ['POST', 'PUT', 'PATCH'].includes(req.method);
+    const body = needsBody ? await readBody(req) : {};
+    const user = await getAuthUser(req);
+    await match.handler({ req, res, params, query: parsed.query, body, user });
+  } catch (err) {
+    console.error(`[${req.method} ${pathname}]`, err.message);
+    if (!res.headersSent) sendJSON(res, 500, { message: 'Error interno del servidor' });
   }
-
-  // ===== AUTH ENDPOINTS =====
-
-  if (pathname === '/api/auth/register' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { email, name, password } = JSON.parse(body);
-
-        // Validations
-        if (!isValidEmail(email)) {
-          sendJSON(res, 400, { message: 'Email inválido' });
-          return;
-        }
-        if (!isValidPassword(password)) {
-          sendJSON(res, 400, { message: 'La contraseña debe tener entre 8 y 128 caracteres' });
-          return;
-        }
-        if (!name || name.length < 2 || name.length > 100) {
-          sendJSON(res, 400, { message: 'El nombre debe tener entre 2 y 100 caracteres' });
-          return;
-        }
-        if (users[email]) {
-          sendJSON(res, 409, { message: 'El correo ya está registrado' });
-          return;
-        }
-
-        const newUser = {
-          id: crypto.randomUUID(),
-          email,
-          name,
-          passwordHash: hashPassword(password),
-          role: 'student'
-        };
-        users[email] = newUser;
-        progress[newUser.id] = {};
-        sendJSON(res, 201, {
-          id: newUser.id,
-          email: newUser.email,
-          name: newUser.name,
-          role: newUser.role
-        });
-      } catch (e) {
-        sendJSON(res, 400, { message: 'Invalid JSON' });
-      }
-    });
-    return;
-  }
-
-  if (pathname === '/api/auth/login' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { email, password } = JSON.parse(body);
-
-        // Validations
-        if (!isValidEmail(email) || !password) {
-          sendJSON(res, 401, { message: 'Credenciales inválidas' });
-          return;
-        }
-
-        const user = users[email];
-        if (!user || user.passwordHash !== hashPassword(password)) {
-          sendJSON(res, 401, { message: 'Credenciales inválidas' });
-          return;
-        }
-        const accessToken = generateToken(user);
-        const refreshToken = crypto.randomBytes(32).toString('hex');
-        sendJSON(res, 200, {
-          accessToken,
-          refreshToken,
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role
-          }
-        });
-      } catch (e) {
-        sendJSON(res, 400, { message: 'Invalid JSON' });
-      }
-    });
-    return;
-  }
-
-  if (pathname === '/api/auth/me' && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    sendJSON(res, 200, {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role
-    });
-    return;
-  }
-
-  // ===== COURSES ENDPOINTS =====
-
-  if (pathname === '/api/courses' && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-
-    // Retornar cursos con progreso del usuario
-    const coursesWithProgress = Object.values(courses).filter(c => c.published).map(course => ({
-      ...course,
-      progress: progress[user.id]?.[course.id] || { completed: 0, total: course.modules.reduce((sum, m) => sum + m.resources.length, 0), percentage: 0 }
-    }));
-
-    sendJSON(res, 200, coursesWithProgress);
-    return;
-  }
-
-  if (pathname.match(/^\/api\/courses\/[a-zA-Z0-9-]+$/) && req.method === 'GET') {
-    const courseId = pathname.split('/')[3];
-    const course = courses[courseId];
-    if (!course) {
-      sendJSON(res, 404, { message: 'Course not found' });
-      return;
-    }
-    const user = getAuthUser(req);
-    const courseData = {
-      ...course,
-      progress: progress[user?.id]?.[courseId] || { completed: 0, total: course.modules.reduce((sum, m) => sum + m.resources.length, 0), percentage: 0 }
-    };
-    sendJSON(res, 200, courseData);
-    return;
-  }
-
-  if (pathname === '/api/courses' && req.method === 'POST') {
-    const user = getAuthUser(req);
-    if (!user || user.role !== 'instructor') {
-      sendJSON(res, 403, { message: 'Forbidden' });
-      return;
-    }
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { title, description } = JSON.parse(body);
-        const newCourse = {
-          id: crypto.randomUUID().slice(0, 8),
-          title,
-          description,
-          instructorId: user.id,
-          published: false,
-          modules: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        courses[newCourse.id] = newCourse;
-        enrollments[newCourse.id] = {};
-        enrollments[newCourse.id][user.id] = { userId: user.id, courseId: newCourse.id, role: 'instructor' };
-        sendJSON(res, 201, newCourse);
-      } catch (e) {
-        sendJSON(res, 400, { message: 'Invalid JSON' });
-      }
-    });
-    return;
-  }
-
-  if (pathname.match(/^\/api\/courses\/[a-zA-Z0-9-]+$/) && req.method === 'PUT') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const courseId = pathname.split('/')[3];
-    const course = courses[courseId];
-    if (!course || course.instructorId !== user.id) {
-      sendJSON(res, 403, { message: 'Forbidden' });
-      return;
-    }
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const updates = JSON.parse(body);
-        Object.assign(course, updates, { updatedAt: new Date().toISOString() });
-        sendJSON(res, 200, course);
-      } catch (e) {
-        sendJSON(res, 400, { message: 'Invalid JSON' });
-      }
-    });
-    return;
-  }
-
-  if (pathname.match(/^\/api\/courses\/[a-zA-Z0-9-]+\/analytics$/) && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const courseId = pathname.split('/')[3];
-    const course = courses[courseId];
-    if (!course || (user.role === 'instructor' && course.instructorId !== user.id)) {
-      sendJSON(res, 403, { message: 'Forbidden' });
-      return;
-    }
-
-    const courseEnrollments = enrollments[courseId] || {};
-    const students = Object.values(courseEnrollments).filter(e => e.role === 'student');
-    const courseSubmissions = Object.values(submissions).filter(s => s.courseId === courseId);
-    const gradedSubmissions = courseSubmissions.filter(s => s.status === 'graded');
-
-    const avgGrade = gradedSubmissions.length > 0
-      ? (gradedSubmissions.reduce((sum, s) => sum + (s.grade || 0), 0) / gradedSubmissions.length).toFixed(2)
-      : 0;
-
-    const completionRate = students.length > 0
-      ? Math.round((students.filter(s => progress[s.userId]?.[courseId]?.percentage === 100).length / students.length) * 100)
-      : 0;
-
-    sendJSON(res, 200, {
-      courseId,
-      totalStudents: students.length,
-      totalSubmissions: courseSubmissions.length,
-      gradedSubmissions: gradedSubmissions.length,
-      pendingSubmissions: courseSubmissions.filter(s => s.status === 'submitted').length,
-      averageGrade: parseFloat(avgGrade),
-      completionRate,
-      students: students.map(s => ({
-        id: s.userId,
-        name: Object.values(users).find(u => u.id === s.userId)?.name,
-        progress: progress[s.userId]?.[courseId]?.percentage || 0,
-        submissions: courseSubmissions.filter(sub => sub.studentId === s.userId).length
-      }))
-    });
-    return;
-  }
-
-  // ===== PROGRESS ENDPOINTS =====
-
-  if (pathname === '/api/progress' && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-
-    const userProgress = progress[user.id] || {};
-    const totalCourses = Object.keys(userProgress).length;
-    const avgProgress = totalCourses > 0
-      ? Math.round(Object.values(userProgress).reduce((sum, p) => sum + p.percentage, 0) / totalCourses)
-      : 0;
-
-    sendJSON(res, 200, {
-      userId: user.id,
-      totalCourses,
-      averageProgress: avgProgress,
-      courses: userProgress
-    });
-    return;
-  }
-
-  // ===== SUBMISSIONS ENDPOINTS =====
-
-  if (pathname === '/api/submissions' && req.method === 'POST') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { resourceId, courseId, content } = JSON.parse(body);
-        const submissionId = crypto.randomUUID();
-        const submission = {
-          id: submissionId,
-          resourceId,
-          courseId,
-          studentId: user.id,
-          studentName: user.name,
-          content,
-          status: 'submitted',
-          submittedAt: new Date().toISOString(),
-          grade: null,
-          feedback: null
-        };
-        submissions[submissionId] = submission;
-        sendJSON(res, 201, submission);
-      } catch (e) {
-        sendJSON(res, 400, { message: 'Invalid JSON' });
-      }
-    });
-    return;
-  }
-
-  if (pathname === '/api/submissions' && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const query = parsedUrl.query;
-    const status = query.status;
-    const courseId = query.courseId;
-
-    let filtered = Object.values(submissions);
-    if (status) filtered = filtered.filter(s => s.status === status);
-    if (courseId) filtered = filtered.filter(s => s.courseId === courseId);
-    if (user.role === 'student') filtered = filtered.filter(s => s.studentId === user.id);
-
-    sendJSON(res, 200, filtered);
-    return;
-  }
-
-  if (pathname.match(/^\/api\/submissions\/[a-zA-Z0-9-]+\/grade$/) && req.method === 'PUT') {
-    const user = getAuthUser(req);
-    if (!user || user.role !== 'instructor') {
-      sendJSON(res, 403, { message: 'Forbidden' });
-      return;
-    }
-    const submissionId = pathname.split('/')[3];
-    const submission = submissions[submissionId];
-    if (!submission) {
-      sendJSON(res, 404, { message: 'Submission not found' });
-      return;
-    }
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { grade, feedback } = JSON.parse(body);
-        submission.grade = grade;
-        submission.feedback = feedback;
-        submission.status = 'graded';
-        submission.gradedAt = new Date().toISOString();
-        submission.gradedBy = user.id;
-        sendJSON(res, 200, submission);
-      } catch (e) {
-        sendJSON(res, 400, { message: 'Invalid JSON' });
-      }
-    });
-    return;
-  }
-
-  if (pathname.match(/^\/api\/courses\/[a-zA-Z0-9-]+\/submissions$/) && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const courseId = pathname.split('/')[3];
-    const courseSubmissions = Object.values(submissions).filter(s => s.courseId === courseId);
-    if (user.role === 'student') {
-      const filtered = courseSubmissions.filter(s => s.studentId === user.id);
-      sendJSON(res, 200, filtered);
-    } else {
-      sendJSON(res, 200, courseSubmissions);
-    }
-    return;
-  }
-
-  // ===== ENROLLMENTS ENDPOINTS =====
-
-  if (pathname === '/api/enrollments' && req.method === 'POST') {
-    const user = getAuthUser(req);
-    if (!user || user.role !== 'instructor') {
-      sendJSON(res, 403, { message: 'Forbidden' });
-      return;
-    }
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { courseId, studentEmail } = JSON.parse(body);
-        const course = courses[courseId];
-        if (!course || course.instructorId !== user.id) {
-          sendJSON(res, 403, { message: 'Forbidden' });
-          return;
-        }
-        const student = users[studentEmail];
-        if (!student) {
-          sendJSON(res, 404, { message: 'Student not found' });
-          return;
-        }
-        if (!enrollments[courseId]) enrollments[courseId] = {};
-        enrollments[courseId][student.id] = {
-          userId: student.id,
-          courseId,
-          role: 'student'
-        };
-        if (!progress[student.id]) progress[student.id] = {};
-        progress[student.id][courseId] = { courseId, completed: 0, total: 0, percentage: 0 };
-        sendJSON(res, 201, enrollments[courseId][student.id]);
-      } catch (e) {
-        sendJSON(res, 400, { message: 'Invalid JSON' });
-      }
-    });
-    return;
-  }
-
-  if (pathname === '/api/enrollments' && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const allEnrollments = [];
-    for (const courseId in enrollments) {
-      for (const userId in enrollments[courseId]) {
-        allEnrollments.push(enrollments[courseId][userId]);
-      }
-    }
-    if (user.role === 'student') {
-      const filtered = allEnrollments.filter(e => e.userId === user.id);
-      sendJSON(res, 200, filtered);
-    } else {
-      sendJSON(res, 200, allEnrollments);
-    }
-    return;
-  }
-
-  // ===== QUIZ ENDPOINTS =====
-
-  if (pathname.match(/^\/api\/quizzes\/[a-zA-Z0-9-]+$/) && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const quizId = pathname.split('/')[3];
-    const quiz = quizzes[quizId];
-    if (!quiz) {
-      sendJSON(res, 404, { message: 'Quiz not found' });
-      return;
-    }
-    sendJSON(res, 200, quiz);
-    return;
-  }
-
-  if (pathname === '/api/quiz-responses' && req.method === 'POST') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const { quizId, answers } = JSON.parse(body);
-        const quiz = quizzes[quizId];
-        if (!quiz) {
-          sendJSON(res, 404, { message: 'Quiz not found' });
-          return;
-        }
-
-        let correctCount = 0;
-        for (const answer of answers) {
-          const question = quiz.questions.find(q => q.id === answer.questionId);
-          if (question && question.correctAnswer === answer.answer) {
-            correctCount++;
-          }
-        }
-
-        const score = Math.round((correctCount / quiz.questions.length) * 100);
-        const responseId = crypto.randomUUID();
-        const response = {
-          id: responseId,
-          userId: user.id,
-          quizId,
-          answers,
-          score,
-          completedAt: new Date().toISOString()
-        };
-
-        quizResponses[responseId] = response;
-
-        // Award certificate if score >= 70
-        if (score >= 70 && !certificates[user.id]?.[quiz.courseId]) {
-          if (!certificates[user.id]) certificates[user.id] = {};
-          certificates[user.id][quiz.courseId] = {
-            id: crypto.randomUUID(),
-            userId: user.id,
-            courseId: quiz.courseId,
-            courseName: courses[quiz.courseId].title,
-            issuedAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-          };
-
-          // Add notification
-          if (!notifications[user.id]) notifications[user.id] = [];
-          notifications[user.id].push({
-            id: crypto.randomUUID(),
-            type: 'certificate',
-            title: 'Certificado obtenido',
-            message: `Felicitaciones! Completaste el curso "${courses[quiz.courseId].title}" con ${score}%`,
-            read: false,
-            createdAt: new Date().toISOString()
-          });
-        }
-
-        sendJSON(res, 201, response);
-      } catch (e) {
-        sendJSON(res, 400, { message: 'Invalid JSON' });
-      }
-    });
-    return;
-  }
-
-  // ===== CERTIFICATES ENDPOINTS =====
-
-  if (pathname === '/api/certificates' && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const userCerts = certificates[user.id] || {};
-    sendJSON(res, 200, Object.values(userCerts));
-    return;
-  }
-
-  // ===== NOTIFICATIONS ENDPOINTS =====
-
-  if (pathname === '/api/notifications' && req.method === 'GET') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const userNotifications = notifications[user.id] || [];
-    sendJSON(res, 200, userNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-    return;
-  }
-
-  if (pathname.match(/^\/api\/notifications\/[a-zA-Z0-9-]+\/read$/) && req.method === 'PUT') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJSON(res, 401, { message: 'Unauthorized' });
-      return;
-    }
-    const notificationId = pathname.split('/')[3];
-    const userNotifications = notifications[user.id] || [];
-    const notification = userNotifications.find(n => n.id === notificationId);
-    if (notification) {
-      notification.read = true;
-    }
-    sendJSON(res, 200, { message: 'Notification marked as read' });
-    return;
-  }
-
-  // 404
-  sendJSON(res, 404, { message: 'Not found' });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Campus Posgrado API Mock running on port ${PORT}/api`);
-  console.log(`   Auth:`);
-  console.log(`   - POST /api/auth/register`);
-  console.log(`   - POST /api/auth/login`);
-  console.log(`   - GET  /api/auth/me`);
-  console.log(`   Courses:`);
-  console.log(`   - GET  /api/courses`);
-  console.log(`   - GET  /api/courses/:id`);
-  console.log(`   - POST /api/courses (instructor)`);
-  console.log(`   - PUT  /api/courses/:id (instructor)`);
-  console.log(`   - GET  /api/courses/:id/analytics`);
-  console.log(`   Progress & Submissions:`);
-  console.log(`   - GET  /api/progress`);
-  console.log(`   - POST /api/submissions`);
-  console.log(`   - GET  /api/submissions`);
-  console.log(`   - PUT  /api/submissions/:id/grade (instructor)`);
-  console.log(`   - GET  /api/courses/:id/submissions`);
-  console.log(`   Enrollments:`);
-  console.log(`   - POST /api/enrollments (instructor)`);
-  console.log(`   - GET  /api/enrollments`);
-  console.log(`   Quiz & Certificates:`);
-  console.log(`   - GET  /api/quizzes/:id`);
-  console.log(`   - POST /api/quiz-responses`);
-  console.log(`   - GET  /api/certificates`);
-  console.log(`   Notifications:`);
-  console.log(`   - GET  /api/notifications`);
-  console.log(`   - PUT  /api/notifications/:id/read`);
-});
+async function start() {
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error('[start] fallo en migraciones:', err.message);
+    process.exit(1);
+  }
+  // limpieza periódica de sesiones expiradas
+  setInterval(() => {
+    pool.query('DELETE FROM sessions WHERE expires_at < now()').catch(() => {});
+  }, 3600 * 1000).unref();
+
+  server.listen(PORT, () => {
+    console.log(`✅ Campus Posgrado API en http://localhost:${PORT}/api  (PostgreSQL)`);
+  });
+}
+
+start();

@@ -1,0 +1,264 @@
+{
+  "native-ai-101": {
+    "id": "native-ai-101",
+    "title": "Fundamentos de Inteligencia Artificial",
+    "equivalentTo": "MIT 6.034 Artificial Intelligence",
+    "credits": 12,
+    "duration": "12 semanas",
+    "level": "Principiante a Intermedio",
+    "learningOutcomes": [
+      "Comprender los principios fundamentales de la IA",
+      "Implementar algoritmos de búsqueda y resolución de problemas",
+      "Desarrollar sistemas de representación del conocimiento",
+      "Aplicar razonamiento lógico y probabilístico"
+    ],
+    "modules": [
+      {
+        "id": "mod-ai-1",
+        "week": 1,
+        "title": "Introducción a la Inteligencia Artificial",
+        "subtopics": [
+          {
+            "name": "Historia y Definiciones de IA",
+            "duration": "180 min",
+            "concepts": [
+              "Test de Turing",
+              "Hipótesis del juego de imitación",
+              "Definiciones de IA fuerte vs débil",
+              "Ramas de la IA: Machine Learning, Robotics, NLP, Computer Vision"
+            ],
+            "content": "\n              # Historia de la Inteligencia Artificial\n\n              ## El Test de Turing (1950)\n              Alan Turing propuso un test simple pero profundo: ¿Puede una máquina demostrar inteligencia\n              de forma indistinguible de un humano? Este test revolucionó cómo pensamos sobre IA.\n\n              ## Veranos de IA (1956-1974)\n              - Conferencia de Dartmouth: nace la IA como disciplina\n              - Optimismo inicial: \"Esperamos que en 20 años las máquinas superen a los humanos\"\n              - Primeros sistemas expertos\n\n              ## Inviernos de IA (1974-1980, 1987-1993)\n              - Limitaciones computacionales\n              - Expectativas no cumplidas\n              - Crisis de financiamiento\n\n              ## Renacimiento de la IA (1993-presente)\n              - Aumento de poder computacional\n              - Big Data\n              - Deep Learning Revolution (2012)\n              - Era de la IA moderna\n            ",
+            "exercises": [
+              {
+                "type": "conceptual",
+                "question": "¿Cómo definirías inteligencia? ¿Es el Test de Turing una buena métrica?",
+                "rubric": "Claridad de definición, profundidad del análisis"
+              },
+              {
+                "type": "research",
+                "question": "Investiga 3 aplicaciones modernas de IA y clasifícalas por rama",
+                "rubric": "Precisión, variedad, análisis crítico"
+              }
+            ],
+            "assessments": [
+              {
+                "type": "quiz",
+                "questions": [
+                  {
+                    "q": "¿Cuál fue el impacto del Test de Turing en la IA?",
+                    "options": [
+                      "Definir un estándar objetivo",
+                      "Crear máquinas inteligentes",
+                      "Financiar investigación"
+                    ],
+                    "correct": 0
+                  },
+                  {
+                    "q": "¿En qué año se propuso la Conferencia de Dartmouth?",
+                    "options": [
+                      "1950",
+                      "1956",
+                      "1960"
+                    ],
+                    "correct": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Ramas de la Inteligencia Artificial",
+            "duration": "180 min",
+            "concepts": [
+              "Machine Learning y sus subdivisiones",
+              "Procesamiento de Lenguaje Natural (NLP)",
+              "Visión por Computadora",
+              "Robótica",
+              "Sistemas Expertos",
+              "Razonamiento Automático"
+            ],
+            "content": "\n              # Ramas de la Inteligencia Artificial\n\n              ## 1. Machine Learning (Aprendizaje Automático)\n              La rama de la IA que permite a las máquinas aprender de datos sin ser programadas explícitamente.\n\n              ### Subdivisiones:\n              - **Aprendizaje Supervisado**: Regresión, Clasificación\n              - **Aprendizaje No Supervisado**: Clustering, Dimensionality Reduction\n              - **Aprendizaje por Refuerzo**: Control, Robots, Juegos\n              - **Deep Learning**: Redes Neuronales Profundas\n\n              ### Aplicaciones:\n              - Recomendaciones (Netflix, Spotify)\n              - Detección de fraude\n              - Diagnósticos médicos\n              - Conducción autónoma\n\n              ## 2. Procesamiento de Lenguaje Natural (NLP)\n              Permite a las máquinas comprender, interpretar y generar lenguaje humano.\n\n              ### Tareas principales:\n              - Análisis de sentimientos\n              - Traducción automática\n              - Respuesta a preguntas\n              - Generación de texto\n\n              ### Modelos modernos:\n              - Transformers (BERT, GPT)\n              - Word Embeddings (Word2Vec, GloVe)\n              - Modelos de lenguaje grandes\n\n              ## 3. Visión por Computadora\n              Capacidad de las máquinas para interpretar imágenes y videos.\n\n              ### Tareas:\n              - Clasificación de imágenes\n              - Detección de objetos\n              - Segmentación semántica\n              - Reconocimiento facial\n\n              ## 4. Robótica\n              Sistemas físicos autónomos que perciben y actúan en el mundo.\n\n              ### Desafíos:\n              - Percepción\n              - Planificación de movimiento\n              - Control motor\n              - Aprendizaje de tareas\n            ",
+            "practicalProject": {
+              "title": "Proyecto: Mapear aplicaciones de IA por rama",
+              "description": "Crea una matriz 3x3 de aplicaciones reales clasificadas por rama y nivel de complejidad",
+              "requirements": [
+                "Identificar al menos 15 aplicaciones diferentes",
+                "Clasificar por rama principal de IA",
+                "Evaluar complejidad técnica (baja/media/alta)",
+                "Incluir referencias y descripciones"
+              ],
+              "deliverable": "Documento con matriz y análisis"
+            }
+          }
+        ]
+      },
+      {
+        "id": "mod-ai-2",
+        "week": "2-3",
+        "title": "Resolución de Problemas y Búsqueda",
+        "subtopics": [
+          {
+            "name": "Formulación de Problemas y Espacios de Estados",
+            "concepts": [
+              "Estado inicial y meta",
+              "Acciones y transiciones",
+              "Función de sucesor",
+              "Costo de camino"
+            ],
+            "content": "\n              # Resolución de Problemas mediante Búsqueda\n\n              ## Definición Formal de un Problema\n              Un problema en IA se define formalmente como:\n              - **Estado inicial**: Configuración de partida\n              - **Estados meta**: Configuraciones deseadas\n              - **Acciones**: Transiciones posibles\n              - **Función de sucesor**: S(s) → [a₁, a₂, ..., aₙ]\n              - **Costo de camino**: g(a) para cada acción\n\n              ## Ejemplo: Puzzle 8 (8-Puzzle)\n              ~~~\n              Estado inicial:        Meta:\n              1 2 3                  1 2 3\n              4 5 6        →         4 5 6\n              7 8 _                  7 8 _\n              ~~~\n\n              Acciones: Mover blanco arriba/abajo/izquierda/derecha\n              Costo: 1 por movimiento\n\n              ## Formalmente:\n              - I = [[1,2,3], [4,5,6], [7,8,0]] (0 = espacio vacío)\n              - G = [[1,2,3], [4,5,6], [7,8,0]]\n              - A(s) = {Up, Down, Left, Right} dependiendo del espacio\n            "
+          },
+          {
+            "name": "Algoritmos de Búsqueda No Informada",
+            "concepts": [
+              "Búsqueda en anchura (BFS)",
+              "Búsqueda en profundidad (DFS)",
+              "Búsqueda de costo uniforme (UCS)",
+              "Análisis de complejidad: tiempo, espacio, completitud, optimalidad"
+            ],
+            "practicalProject": {
+              "title": "Implementar BFS, DFS, y UCS para 8-Puzzle",
+              "language": "Python",
+              "framework": "NumPy",
+              "requirements": [
+                "Representar estado como matriz",
+                "Implementar función de sucesor",
+                "Implementar 3 algoritmos",
+                "Analizar complejidad empíricamente",
+                "Visualizar árbol de búsqueda"
+              ]
+            }
+          },
+          {
+            "name": "Algoritmos Informados (Heurísticas)",
+            "concepts": [
+              "Búsqueda best-first",
+              "A* Search",
+              "Heurísticas admisibles y consistentes",
+              "Manhattan distance, Euclidean distance",
+              "Pattern databases"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "mod-ai-3",
+        "week": "4-5",
+        "title": "Representación del Conocimiento y Razonamiento",
+        "subtopics": [
+          {
+            "name": "Lógica Proposicional",
+            "concepts": [
+              "Proposiciones y conectivos",
+              "Tablas de verdad",
+              "Formas normales",
+              "Resolución y prueba"
+            ]
+          },
+          {
+            "name": "Lógica de Primer Orden",
+            "concepts": [
+              "Predicados y cuantificadores",
+              "Unificación",
+              "Forward chaining",
+              "Backward chaining"
+            ]
+          }
+        ]
+      }
+    ],
+    "assessments": [
+      {
+        "id": "quiz-ai-101",
+        "type": "quiz",
+        "weight": 15,
+        "frequency": "bi-weekly",
+        "questions": 50
+      },
+      {
+        "id": "project-ai-101",
+        "type": "hands-on",
+        "weight": 35,
+        "projects": [
+          "Implementar BFS/DFS/A*",
+          "Resolver 8-Puzzle",
+          "Crear Knowledge Base en Prolog"
+        ]
+      },
+      {
+        "id": "exam-ai-101",
+        "type": "comprehensive",
+        "weight": 50,
+        "duration": 180
+      }
+    ]
+  },
+  "native-ml-101": {
+    "id": "native-ml-101",
+    "title": "Machine Learning desde Cero",
+    "equivalentTo": "Google ML Crash Course",
+    "credits": 12,
+    "duration": "8 semanas",
+    "level": "Principiante",
+    "learningOutcomes": [
+      "Entender el ciclo completo de ML",
+      "Implementar y entrenar modelos",
+      "Evaluar y optimizar modelos",
+      "Evitar trampas comunes en ML"
+    ],
+    "modules": [
+      {
+        "id": "mod-ml-1",
+        "week": 1,
+        "title": "Conceptos Fundamentales de ML",
+        "content": "\n          # Machine Learning Fundamentals\n\n          ## ¿Qué es Machine Learning?\n          Machine Learning es un método para que las máquinas **aprendan de datos**\n          sin ser programadas explícitamente para cada tarea.\n\n          ### Ejemplo: Clasificación de Emails\n          - Programación tradicional: Escribir reglas \"If subject contains 'Viagra' → Spam\"\n          - Machine Learning: Entrenar modelo con 10,000 emails etiquetados → El modelo aprende patrones\n\n          ## Ciclo de vida de un proyecto ML\n\n          1. **Definir el problema**\n             - ¿Qué queremos predecir?\n             - ¿Tenemos datos disponibles?\n             - ¿Cuál es la métrica de éxito?\n\n          2. **Recopilar datos**\n             - Cantidad: ¿Cuántos ejemplos necesitamos?\n             - Calidad: ¿Son representativos?\n             - Privacidad: ¿Cumplimos regulaciones?\n\n          3. **Análisis exploratorio (EDA)**\n             - Visualizar distribuciones\n             - Identificar outliers\n             - Detectar correlaciones\n\n          4. **Feature Engineering**\n             - Seleccionar features relevantes\n             - Crear nuevas features\n             - Normalizar/Escalar datos\n\n          5. **Entrenar modelo**\n             - Elegir algoritmo\n             - Dividir datos (train/val/test)\n             - Ajustar hyperparámetros\n\n          6. **Evaluar**\n             - Métricas: Accuracy, Precision, Recall, F1, AUC-ROC\n             - Análisis de errores\n             - Validación cruzada\n\n          7. **Desplegar y monitorear**\n             - Poner en producción\n             - Monitorear drift\n             - Re-entrenar periódicamente\n\n          ## Los 3 Tipos de Aprendizaje\n\n          ### Aprendizaje Supervisado\n          Tenemos pares entrada-salida (X, y)\n          - Regresión: y ∈ ℝ (continuo)\n          - Clasificación: y ∈ {c₁, c₂, ..., cₙ} (categorías)\n\n          ### Aprendizaje No Supervisado\n          Solo tenemos entrada X\n          - Clustering: Agrupar ejemplos similares\n          - Dimensionality Reduction: Reducir features\n\n          ### Aprendizaje por Refuerzo\n          Agente aprende mediante rewards/penalties\n          - Estados y acciones\n          - Función de recompensa\n        "
+      },
+      {
+        "id": "mod-ml-2",
+        "week": 2,
+        "title": "Regresión Lineal",
+        "subtopics": [
+          {
+            "name": "Regresión Lineal Simple",
+            "math": "\n              y = mx + b\n\n              Objetivo: Minimizar error cuadrático medio (MSE)\n              MSE = (1/n) Σ(ŷᵢ - yᵢ)²\n\n              Solución: Descenso de gradiente\n              θ := θ - α∇J(θ)\n            ",
+            "practicalProject": {
+              "title": "Implementar regresión lineal con descenso de gradiente",
+              "language": "Python (NumPy)",
+              "dataset": "House prices (tamaño vs precio)",
+              "steps": [
+                "Cargar y visualizar datos",
+                "Implementar función MSE",
+                "Implementar descenso de gradiente",
+                "Entrenar modelo",
+                "Visualizar resultados",
+                "Analizar residuos"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "native-dl-101": {
+    "id": "native-dl-101",
+    "title": "Fundamentos de Deep Learning",
+    "equivalentTo": "Andrew Ng Deep Learning Specialization",
+    "credits": 18,
+    "duration": "16 semanas",
+    "level": "Intermedio a Avanzado",
+    "learningOutcomes": [
+      "Construir y entrenar redes neuronales",
+      "Optimizar redes profundas",
+      "Trabajar con CNN para visión",
+      "Trabajar con RNN para secuencias",
+      "Implementar mejores prácticas de DL"
+    ],
+    "modules": [
+      {
+        "id": "mod-dl-1",
+        "week": "1-2",
+        "title": "Fundamentos de Redes Neuronales",
+        "content": "\n          # Neural Networks and Deep Learning\n\n          ## Inspiración Biológica\n          Las redes neuronales artificiales se inspiran en cómo el cerebro procesa información.\n\n          ### Neurona Biológica vs Artificial\n\n          Neurona Biológica:\n          - Soma (cuerpo celular)\n          - Dendritas (entradas)\n          - Axón (salida)\n          - Sinapsis (conexiones)\n\n          Neurona Artificial:\n          - Función de activación\n          - Pesos sinápticos\n          - Sesgo (bias)\n          - Salida\n\n          ## Perceptrón Simple\n\n          Fórmula:\n          ŷ = σ(w·x + b)\n\n          Donde:\n          - w = pesos\n          - b = sesgo\n          - σ = función de activación\n\n          ## Funciones de Activación\n\n          ### Linear (Ninguna)\n          σ(z) = z\n          Problema: Composición de funciones lineales es lineal → No puede aprender patrones complejos\n\n          ### Sigmoid\n          σ(z) = 1/(1+e^(-z))\n          - Rango: [0,1]\n          - Interpretable como probabilidad\n          - Problema: Vanishing gradients en redes profundas\n\n          ### Tanh\n          σ(z) = (e^z - e^(-z))/(e^z + e^(-z))\n          - Rango: [-1, 1]\n          - Media cero\n          - Mejor que sigmoid pero aún tiene vanishing gradients\n\n          ### ReLU (Rectified Linear Unit)\n          σ(z) = max(0, z)\n          - Simple y eficiente\n          - Evita vanishing gradients\n          - Estado del arte en redes profundas\n        "
+      }
+    ]
+  }
+}

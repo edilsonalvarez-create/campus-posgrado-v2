@@ -184,12 +184,12 @@ const nativeCurriculum = {
               - **Costo de camino**: g(a) para cada acción
 
               ## Ejemplo: Puzzle 8 (8-Puzzle)
-              ```
+              ~~~
               Estado inicial:        Meta:
               1 2 3                  1 2 3
               4 5 6        →         4 5 6
               7 8 _                  7 8 _
-              ```
+              ~~~
 
               Acciones: Mover blanco arriba/abajo/izquierda/derecha
               Costo: 1 por movimiento

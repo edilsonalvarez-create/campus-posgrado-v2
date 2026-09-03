@@ -1,0 +1,322 @@
+{
+  "Artificial Intelligence: A Modern Approach (4ª ed.)": {
+    "es": "si",
+    "esNota": "Traducción al español de ediciones anteriores (Pearson). La 4ª edición está solo en inglés.",
+    "libre": "",
+    "tesis": "La inteligencia artificial es el diseño de agentes racionales: sistemas que perciben un entorno y actúan para maximizar una medida de desempeño. Todo lo demás —búsqueda, lógica, probabilidad, aprendizaje— son herramientas al servicio de esa definición.",
+    "claves": [
+      "Un agente se define por su entorno (observable o no, determinista o estocástico, estático o dinámico); elegir mal la caracterización condena el diseño desde el principio.",
+      "La búsqueda heurística, la satisfacción de restricciones y la planificación resuelven problemas que hoy se intenta resolver con modelos, a menudo peor y más caro.",
+      "La incertidumbre se trata con probabilidad, no con reglas: redes bayesianas y decisión bajo utilidad esperada preceden en décadas al aprendizaje profundo.",
+      "El aprendizaje es un capítulo de la obra, no su totalidad. Situarlo así te vacuna contra confundir IA con machine learning.",
+      "La sección sobre seguridad, alineación y ética de la 4ª edición es breve pero seria, y da vocabulario para hablar de riesgo sin catastrofismo."
+    ],
+    "aplicar": "Úsalo como diccionario razonado: cuando alguien proponga una técnica, busca su capítulo y verás qué supone, qué garantiza y dónde falla.",
+    "limites": "No enseña a programar ni contiene código de producción; su tratamiento de modelos generativos es necesariamente breve frente al ritmo del campo.",
+    "leer": "Caps. 1–2 (agentes y entornos) y 19 (aprendizaje) en la primera pasada. Unas 12 h. El resto, por consulta."
+  },
+  "La cuarta revolución industrial": {
+    "es": "si",
+    "esNota": "Edición en español ampliamente distribuida.",
+    "libre": "",
+    "tesis": "La fusión de lo físico, lo digital y lo biológico constituye una revolución distinta de la informática de los noventa, no su continuación, y su rasgo definitorio es la velocidad exponencial y la amplitud sistémica del cambio.",
+    "claves": [
+      "Distingue tres bloques de tecnologías —físicas, digitales y biológicas— y sostiene que el valor aparece en su intersección, no dentro de cada silo.",
+      "El efecto sobre el empleo no es sustitución masiva sino polarización: crecen los extremos de alta y baja cualificación y se vacía el centro administrativo.",
+      "Las plataformas capturan valor desproporcionado porque el coste marginal de servir a un cliente adicional tiende a cero.",
+      "El desfase entre la velocidad tecnológica y la capacidad regulatoria es estructural, no un problema transitorio.",
+      "Introduce el vocabulario —Industria 4.0, sistemas ciberfísicos, gemelo digital— con el que hablan los comités de dirección."
+    ],
+    "aplicar": "Sirve para enmarcar una propuesta ante dirección y para el capítulo de justificación de tu proyecto final.",
+    "limites": "Optimista por defecto y ligero en evidencia empírica; es un documento de posicionamiento del Foro Económico Mundial, no una investigación.",
+    "leer": "≈6 h. Léelo entero pero rápido, subrayando solo el vocabulario y los marcos."
+  },
+  "Mastering Bitcoin": {
+    "es": "?",
+    "esNota": "Existen traducciones comunitarias en el repositorio; el original es inglés.",
+    "libre": "https://github.com/bitcoinbook/bitcoinbook",
+    "tesis": "Una cadena de bloques resuelve un problema muy concreto y muy caro: consenso sobre un registro entre partes que no confían entre sí y sin autoridad central. Todo su coste y su lentitud son el precio de esa propiedad.",
+    "claves": [
+      "Las transacciones son transferencias de derechos verificables criptográficamente; la cadena solo ordena y sella lo que ya está firmado.",
+      "El consenso por prueba de trabajo compra irreversibilidad probabilística a cambio de energía y latencia: no hay atajos.",
+      "La descentralización no es un valor abstracto, es lo que se paga; si en tu caso hay una autoridad legítima, la cadena sobra.",
+      "Los contratos inteligentes ejecutan lo escrito, no lo intencionado: los fallos son inmutables por diseño.",
+      "La trazabilidad distribuida solo aporta cuando los participantes tienen intereses contrapuestos y ninguno puede administrar el registro."
+    ],
+    "aplicar": "Es el criterio para responder con argumentos cuando alguien proponga blockchain para trazabilidad interna, donde casi siempre gana una base de datos con registros firmados y auditados.",
+    "limites": "Centrado en Bitcoin; para contratos inteligentes generales necesitarás la documentación de Ethereum.",
+    "leer": "Caps. 1–2 y 8. Unas 5 h. Salta la parte de minería salvo curiosidad."
+  },
+  "Designing Data-Intensive Applications": {
+    "es": "no",
+    "esNota": "Solo en inglés.",
+    "libre": "",
+    "tesis": "Todo sistema de datos negocia tres propiedades —fiabilidad, escalabilidad y mantenibilidad— y las decisiones de arquitectura son formas distintas de repartir ese compromiso. No existe la opción sin coste.",
+    "claves": [
+      "Los modelos de datos (relacional, documental, grafo) no compiten: cada uno hace fácil una forma de acceso y difícil otra.",
+      "La replicación introduce inevitablemente retraso, y el retraso introduce anomalías: leer tus propias escrituras y la lectura monotónica son garantías que hay que pedir explícitamente.",
+      "El particionado resuelve volumen pero crea puntos calientes y reequilibrados; el diseño de la clave de partición es la decisión más consecuente.",
+      "Las transacciones no son un lujo heredado: los niveles de aislamiento débiles producen errores que solo aparecen bajo carga real.",
+      "Procesamiento por lotes y por flujos son el mismo problema visto desde ventanas distintas; entender esa dualidad ordena todo el ecosistema de herramientas."
+    ],
+    "aplicar": "Antes de elegir una herramienta, identifica en qué eje del compromiso te sitúa. Es el libro que convierte una decisión de moda en una decisión argumentada.",
+    "limites": "No cubre herramientas concretas al día y no entra en machine learning; es deliberadamente conceptual.",
+    "leer": "Caps. 1–6 y 10. Unas 25 h. Denso: dos capítulos por semana es un ritmo honesto."
+  },
+  "Fundamentals of Data Engineering": {
+    "es": "no",
+    "esNota": "Solo en inglés.",
+    "libre": "",
+    "tesis": "La ingeniería de datos es una disciplina con ciclo de vida propio —generación, almacenamiento, ingesta, transformación y servicio— y sus decisiones sobreviven a las herramientas que las implementan.",
+    "claves": [
+      "Las corrientes subyacentes (seguridad, gestión de datos, DataOps, arquitectura, orquestación) atraviesan todas las etapas y son donde se pierden los proyectos.",
+      "Ingesta por lotes contra ingesta continua: la pregunta correcta no es cuál es mejor sino con qué frecuencia el negocio decide algo con ese dato.",
+      "El coste total incluye el coste de mantener, no solo el de construir; los autores insisten en preferir componentes aburridos y reemplazables.",
+      "La calidad de datos es un contrato entre productor y consumidor, no una tarea de limpieza al final del pipeline.",
+      "Distingue entre datos para análisis y datos para producto, que exigen garantías de latencia y disponibilidad distintas."
+    ],
+    "aplicar": "Úsalo para escribir la sección de arquitectura de datos de tu proyecto final: da la estructura y el vocabulario que un evaluador espera.",
+    "limites": "Panorámico por diseño; ningún tema se agota, y se apoya en Kleppmann para la profundidad.",
+    "leer": "Caps. 1–3 y el de transformación. Unas 12 h."
+  },
+  "An Introduction to Statistical Learning (Python)": {
+    "es": "no",
+    "esNota": "Solo en inglés; PDF oficial gratuito.",
+    "libre": "https://www.statlearning.com/",
+    "tesis": "El aprendizaje estadístico consiste en estimar una función desconocida a partir de datos, y el error de esa estimación se descompone siempre en sesgo, varianza y ruido irreducible. Todo el oficio está en gestionar ese reparto.",
+    "claves": [
+      "Un modelo más flexible reduce sesgo y aumenta varianza: la complejidad óptima depende del tamaño de la muestra, no del gusto del analista.",
+      "La validación cruzada estima el error fuera de muestra; el error de entrenamiento no informa de nada y engaña sistemáticamente.",
+      "La regularización (ridge, lasso) es la herramienta práctica para operar en el punto medio, y el lasso además selecciona variables.",
+      "Los árboles son interpretables pero inestables; el bagging y los bosques aleatorios compran estabilidad a costa de esa interpretabilidad.",
+      "Cada capítulo trae laboratorio en Python: leerlo sin ejecutarlo desperdicia la mitad del libro."
+    ],
+    "aplicar": "Es la base para justificar por escrito la elección de métrica y de partición en tu entregable del módulo VI.",
+    "limites": "Apenas toca aprendizaje profundo y nada de sistemas en producción.",
+    "leer": "Caps. 3, 5, 7 y 8. Unas 20 h con laboratorios."
+  },
+  "Forecasting: Principles and Practice (3ª ed.)": {
+    "es": "no",
+    "esNota": "Solo en inglés; libro completo gratuito en línea.",
+    "libre": "https://otexts.com/fpp3/",
+    "tesis": "Pronosticar es un problema estadístico con una restricción que lo cambia todo: el tiempo tiene orden. Cualquier evaluación que ignore ese orden produce cifras optimistas y falsas.",
+    "claves": [
+      "Toda serie se descompone en tendencia, estacionalidad y resto; entender la descomposición precede a cualquier modelo.",
+      "Los métodos simples —media, ingenuo, ingenuo estacional— son la línea base obligatoria: un modelo que no los supera no sirve.",
+      "El suavizado exponencial y ARIMA cubren la mayoría de casos industriales reales; los modelos complejos rara vez compensan.",
+      "La validación debe ser por origen móvil, entrenando siempre con el pasado y evaluando el futuro inmediato.",
+      "Los intervalos de predicción importan más que el punto: una previsión sin incertidumbre declarada no es accionable."
+    ],
+    "aplicar": "Directamente aplicable a previsión de demanda, de incidencias o de consumo de recursos; también al mantenimiento predictivo del módulo IX.",
+    "limites": "Los ejemplos están en R; los conceptos se transfieren, el código no.",
+    "leer": "Caps. 1–5 y 8–9. Unas 15 h."
+  },
+  "Kanban": {
+    "es": "si",
+    "esNota": "Edición en español disponible.",
+    "libre": "",
+    "tesis": "El cambio impuesto fracasa; el cambio evolutivo se sostiene. Visualiza el trabajo, limita el trabajo en curso y gestiona el flujo, sin reorganizar equipos ni renombrar cargos.",
+    "claves": [
+      "La ley de Little relaciona trabajo en curso, rendimiento y tiempo de ciclo: si quieres entregar antes, reduce lo que tienes empezado, no lo que tardas.",
+      "La sobrecarga, no la falta de esfuerzo, es lo que destruye la productividad de los equipos de conocimiento.",
+      "Las clases de servicio (urgente, fecha fija, estándar, intangible) permiten priorizar sin discutir cada tarjeta.",
+      "Las cadencias —reposición, entrega, revisión— sustituyen a la ceremonia fija de Scrum y encajan mejor en operaciones.",
+      "Las métricas útiles son tiempo de ciclo y rendimiento medidos, no puntos de historia estimados."
+    ],
+    "aplicar": "Es el método adecuado para equipos de soporte, operaciones y seguridad, donde el trabajo llega sin pedir permiso y no se puede congelar un sprint.",
+    "limites": "Poco prescriptivo: si el equipo necesita estructura explícita, Scrum arranca más rápido.",
+    "leer": "Caps. 1–7 y el de clases de servicio. Unas 8 h."
+  },
+  "Accelerate": {
+    "es": "no",
+    "esNota": "Solo en inglés.",
+    "libre": "",
+    "tesis": "Cuatro métricas —frecuencia de despliegue, tiempo de entrega, tasa de fallos en cambios y tiempo de restauración— predicen el rendimiento organizacional, y velocidad y estabilidad no se compensan entre sí: los equipos buenos ganan en las cuatro.",
+    "claves": [
+      "El hallazgo central desmiente la intuición gerencial de que ir más despacio da más calidad.",
+      "Las prácticas que causan el resultado son técnicas: integración continua, despliegue automatizado, arquitectura poco acoplada y pruebas automatizadas.",
+      "La cultura, medida con el modelo de Westrum, predice rendimiento; y la cultura se cambia con prácticas, no con carteles.",
+      "Los procesos pesados de aprobación de cambios empeoran a la vez la velocidad y la estabilidad: el comité de cambios no protege.",
+      "La metodología de la investigación está expuesta con detalle, lo que permite defender las conclusiones ante un escéptico."
+    ],
+    "aplicar": "Da las métricas con las que puedes argumentar internamente que automatizar el despliegue es una decisión de riesgo, no un capricho técnico.",
+    "limites": "La segunda mitad del libro es metodología estadística; muchos pueden saltársela.",
+    "leer": "Parte I completa. Unas 7 h."
+  },
+  "The Lean Startup": {
+    "es": "si",
+    "esNota": "Edición en español ampliamente distribuida.",
+    "libre": "",
+    "tesis": "Bajo incertidumbre extrema, la unidad de progreso no es la funcionalidad entregada sino el aprendizaje contrastado. El trabajo no validado es inventario, y el inventario es desperdicio.",
+    "claves": [
+      "El bucle construir–medir–aprender debe recorrerse entero y rápido; optimizar solo la fase de construir es el error más común.",
+      "El producto mínimo viable es el experimento más pequeño que refuta una hipótesis, no una versión recortada del producto final.",
+      "La contabilidad de la innovación mide indicadores accionables por cohorte, no totales acumulados que siempre suben.",
+      "Perseverar o pivotar es una decisión que debe tener fecha y criterio previos, no depender del ánimo del equipo.",
+      "Las métricas de vanidad —usuarios totales, descargas— existen para no tener que enfrentarse a la realidad."
+    ],
+    "aplicar": "Aplícalo al módulo VIII y a la definición del alcance de tu proyecto final: define antes qué resultado te haría abandonar la hipótesis.",
+    "limites": "Repetitivo y anecdótico en su segunda mitad; el valor está concentrado.",
+    "leer": "Los capítulos del bucle y del MVP. Unas 4 h."
+  },
+  "Weapons of Math Destruction": {
+    "es": "si",
+    "esNota": "Edición en español disponible.",
+    "libre": "",
+    "tesis": "Un modelo se convierte en arma de destrucción matemática cuando es opaco para quienes evalúa, opera a gran escala y produce daño real, y además genera los datos que confirman su propio acierto.",
+    "claves": [
+      "El criterio de diagnóstico —opacidad, escala, daño— es operativo y se puede aplicar como lista de verificación en una auditoría.",
+      "Los bucles de retroalimentación perniciosos son el mecanismo central: el modelo predice, la predicción altera el mundo, el mundo confirma al modelo.",
+      "Los sustitutos importan: cuando no puedes medir lo que te interesa, mides otra cosa correlacionada, y esa otra cosa suele codificar clase social o raza.",
+      "La eficiencia y la equidad son objetivos distintos y a veces incompatibles; elegir entre ellos es una decisión política, no técnica.",
+      "Los casos —crédito, seguros, empleo, policía predictiva, universidades— son concretos y verificables."
+    ],
+    "aplicar": "Es la fuente natural para el apartado de riesgos y consideraciones éticas de tu proyecto final y para el registro de riesgos del módulo V.",
+    "limites": "Diagnostica mucho mejor de lo que propone soluciones; el capítulo final es el más débil.",
+    "leer": "Íntegro. Unas 7 h, lectura ágil."
+  },
+  "Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow (3ª ed.)": {
+    "es": "si",
+    "esNota": "Existe edición en español de la 2ª edición; la 3ª, por ahora, en inglés.",
+    "libre": "https://github.com/ageron/handson-ml3",
+    "tesis": "El aprendizaje automático se aprende ejecutando: cada concepto llega acompañado del código que lo implementa y de las trampas que lo estropean en la práctica.",
+    "claves": [
+      "El capítulo 2, un proyecto completo de principio a fin, vale por un curso entero: adquisición, exploración, preparación, selección, ajuste y despliegue.",
+      "Los pipelines de scikit-learn no son azúcar sintáctico: son el mecanismo que evita la fuga de datos entre preparación y validación.",
+      "El ajuste de hiperparámetros por búsqueda aleatoria supera a la búsqueda exhaustiva en casi todos los casos reales.",
+      "La segunda parte (Keras) explica redes profundas sin exigir la matemática completa, con foco en decisiones prácticas de arquitectura y regularización.",
+      "Los apéndices sobre álgebra y cálculo permiten cerrar huecos sin abandonar el libro."
+    ],
+    "aplicar": "Es el libro de cabecera del módulo VI; los notebooks del repositorio son la base directa de tus tres problemas prácticos.",
+    "limites": "Largo. Intentar leerlo entero de corrido es la forma más segura de abandonarlo.",
+    "leer": "Parte I completa (caps. 1–9). Unas 40 h con ejercicios."
+  },
+  "Interpretable Machine Learning": {
+    "es": "no",
+    "esNota": "Solo en inglés; libro completo gratuito en línea.",
+    "libre": "https://christophm.github.io/interpretable-ml-book/",
+    "tesis": "La interpretabilidad no es una propiedad del modelo sino de la explicación que se da a una persona concreta con una pregunta concreta. Cada método responde una pregunta distinta y miente si se le hace otra.",
+    "claves": [
+      "Distingue modelos intrínsecamente interpretables (lineales, árboles, reglas) de métodos aplicados a posteriori sobre cajas negras.",
+      "La importancia por permutación y los gráficos de dependencia parcial se rompen cuando las variables están correlacionadas, que es casi siempre.",
+      "Los valores de Shapley tienen fundamento teórico sólido pero coste computacional alto y una interpretación que se malinterpreta con frecuencia.",
+      "Las explicaciones contrafactuales —qué habría tenido que cambiar para que la decisión fuera otra— son las más útiles ante un afectado.",
+      "Una explicación puede ser fiel al modelo y aun así engañosa sobre el fenómeno; el libro insiste en esa distinción."
+    ],
+    "aplicar": "Convierte «el modelo dice que sí» en un argumento defendible ante auditoría, que es exactamente lo que exigirá ISO 42001.",
+    "limites": "Ejemplos en R y presentación de catálogo; se consulta mejor de lo que se lee seguido.",
+    "leer": "Capítulos de importancia por permutación, dependencia parcial, SHAP y contrafactuales. Unas 8 h."
+  },
+  "Sprint": {
+    "es": "si",
+    "esNota": "Edición en español disponible.",
+    "libre": "",
+    "tesis": "Cinco días estructurados llevan de una pregunta de negocio a un prototipo probado con usuarios reales, sin pasar por meses de construcción especulativa.",
+    "claves": [
+      "Lunes mapear el problema y elegir un objetivo; martes esbozar soluciones en silencio; miércoles decidir; jueves prototipar; viernes entrevistar a cinco personas.",
+      "Trabajar solos y en paralelo produce mejores ideas que la lluvia de ideas en grupo, que premia a quien habla más.",
+      "El decisor debe estar en la sala: sin autoridad presente, el viernes no cambia nada.",
+      "El prototipo es una fachada convincente, no software; construirlo de verdad invalida el propósito del ejercicio.",
+      "Cinco entrevistas bastan para detectar los problemas graves de usabilidad; la sexta rara vez añade algo."
+    ],
+    "aplicar": "Es el protocolo literal del entregable del módulo VIII, y funciona igual para un proyecto de datos que para una aplicación.",
+    "limites": "Asume disponibilidad total del equipo durante una semana, cosa rara fuera de una consultora.",
+    "leer": "Íntegro, es operativo. Unas 5 h."
+  },
+  "Continuous Discovery Habits": {
+    "es": "no",
+    "esNota": "Solo en inglés.",
+    "libre": "",
+    "tesis": "El descubrimiento no es una fase previa al desarrollo sino un hábito semanal: entrevistas continuas, mapa de oportunidades y experimentos pequeños encadenados que conectan resultado de negocio con necesidad real.",
+    "claves": [
+      "El árbol de oportunidades y soluciones conecta explícitamente el resultado buscado con las necesidades detectadas y con los experimentos: hace visible el razonamiento.",
+      "Pregunta por comportamientos pasados concretos, nunca por preferencias futuras: lo primero es dato, lo segundo es ficción.",
+      "El trío de producto —producto, diseño e ingeniería— debe descubrir junto; delegar el descubrimiento produce requisitos muertos.",
+      "Comparar varias soluciones a la vez evita el sesgo de enamorarse de la primera idea.",
+      "Los supuestos se listan y se prueban por separado: valor, usabilidad, viabilidad y factibilidad."
+    ],
+    "aplicar": "La técnica de entrevista es lo que hará que tus cinco entrevistas del módulo VIII produzcan información en vez de cortesía.",
+    "limites": "Escrito para equipos de producto de software; en una organización jerárquica hay que adaptar el trío.",
+    "leer": "Caps. sobre entrevistas y árbol de oportunidades. Unas 6 h."
+  },
+  "Inspired (2ª ed.)": {
+    "es": "?",
+    "esNota": "Verifica disponibilidad de edición en español.",
+    "libre": "",
+    "tesis": "Las empresas que hacen buen producto tienen equipos de producto empoderados, no equipos de entrega que reciben requisitos ya decididos por otros.",
+    "claves": [
+      "Cuatro riesgos deben cubrirse antes de construir: valor, usabilidad, viabilidad técnica y viabilidad de negocio.",
+      "El descubrimiento y la entrega ocurren en paralelo y de forma continua, no en secuencia.",
+      "Las hojas de ruta por funcionalidades y fecha son la principal causa de desperdicio; deben sustituirse por objetivos de resultado.",
+      "El ingeniero debe participar en el descubrimiento: es quien conoce lo que la tecnología acaba de hacer posible.",
+      "El gestor de producto es responsable del resultado, no coordinador de tickets."
+    ],
+    "aplicar": "Útil si tu proyecto final tiene que convencer a una organización de financiar continuidad y no solo un piloto.",
+    "limites": "Repetitivo y con sesgo hacia empresas de producto digital; poco aplicable literalmente a una industria tradicional.",
+    "leer": "Partes I y II. Unas 6 h."
+  },
+  "Build a Large Language Model (From Scratch)": {
+    "es": "no",
+    "esNota": "Solo en inglés; código completo libre en GitHub.",
+    "libre": "https://github.com/rasbt/LLMs-from-scratch",
+    "tesis": "Un modelo de lenguaje deja de ser una caja negra cuando lo construyes: tokenización, atención, bloques transformer, preentrenamiento y ajuste fino, todo en PyTorch y sin bibliotecas mágicas.",
+    "claves": [
+      "La tokenización determina qué puede y qué no puede representar el modelo; muchos fallos atribuidos al modelo son fallos del tokenizador.",
+      "La atención compara cada posición con todas las demás: de ahí el coste cuadrático y el límite práctico de la ventana de contexto.",
+      "El preentrenamiento solo enseña a continuar texto; el comportamiento útil llega con el ajuste por instrucciones.",
+      "El ajuste fino cambia pesos; el prompting cambia contexto. Confundirlos lleva a resolver con entrenamiento lo que se resuelve con recuperación.",
+      "Al implementarlo entiendes qué significan realmente temperatura, muestreo y ventana de contexto."
+    ],
+    "aplicar": "Es el fundamento del módulo IX: sin esto, el diagnóstico de por qué falla un RAG se queda en conjeturas.",
+    "limites": "Exige Python sólido y algo de álgebra lineal; no es introductorio.",
+    "leer": "Caps. 2–5 con el código. Unas 25 h."
+  },
+  "Designing Machine Learning Systems": {
+    "es": "no",
+    "esNota": "Solo en inglés.",
+    "libre": "",
+    "tesis": "El modelo es la parte pequeña de un sistema mayor. Lo que decide el éxito es la ingeniería de datos, el despliegue, el monitoreo de deriva y el bucle de reentrenamiento.",
+    "claves": [
+      "Los requisitos de un sistema de aprendizaje —fiabilidad, escalabilidad, mantenibilidad, adaptabilidad— se definen antes de elegir modelo.",
+      "El muestreo y el etiquetado son la fuente principal de error, muy por encima de la elección de algoritmo.",
+      "La deriva se presenta en tres formas —de covariables, de etiqueta y de concepto— y cada una exige una detección distinta.",
+      "La evaluación fuera de línea no predice el comportamiento en línea: hacen falta pruebas en sombra, canarios y pruebas A/B.",
+      "El coste de inferencia y la latencia son requisitos de diseño, no detalles a resolver al final."
+    ],
+    "aplicar": "Es el libro que el pensum del IEP no incluye y que necesitas para el módulo X y para el apartado de coste de tu proyecto final.",
+    "limites": "Panorámico en profundidad de cada tema; no sustituye documentación de herramientas concretas.",
+    "leer": "Íntegro. Unas 18 h."
+  },
+  "Machine Learning Engineering": {
+    "es": "no",
+    "esNota": "Solo en inglés; lectura libre en la web del autor.",
+    "libre": "http://www.mlebook.com/",
+    "tesis": "Todo lo que rodea al modelo, escrito en forma de listas de decisiones y compromisos, sin relleno: recolección, etiquetado, características, evaluación, despliegue, monitoreo y mantenimiento.",
+    "claves": [
+      "Define cuándo un problema NO debe resolverse con aprendizaje automático, que es la decisión que más dinero ahorra.",
+      "Separa evaluación fuera de línea de evaluación en línea y explica por qué la primera suele sobreestimar.",
+      "Trata el desequilibrio de clases, la fuga de datos y el sesgo de selección como problemas de ingeniería, con soluciones concretas.",
+      "El modelo debe versionarse junto con datos y código; sin las tres cosas no hay reproducibilidad.",
+      "El mantenimiento —reentrenamiento, degradación, retirada— se planifica antes de desplegar."
+    ],
+    "aplicar": "Complemento operativo de Huyen; su lista de comprobación previa al despliegue se puede adoptar tal cual.",
+    "limites": "Estilo telegráfico: si buscas explicación pedagógica, no es este libro.",
+    "leer": "Íntegro. Unas 10 h, dos fines de semana."
+  },
+  "Machine Learning and Security": {
+    "es": "no",
+    "esNota": "Solo en inglés.",
+    "libre": "",
+    "tesis": "Aplicar aprendizaje automático a seguridad no es un caso de uso más: la distribución de clases es extremadamente desigual, el adversario es inteligente y adaptativo, y el coste del falso positivo recae sobre un equipo humano finito.",
+    "claves": [
+      "La detección de anomalías falla en producción por la tasa base: con eventos malignos rarísimos, incluso una precisión altísima genera una avalancha de falsos positivos.",
+      "El umbral no se elige por métrica sino por la capacidad de respuesta del equipo que atenderá las alertas.",
+      "La clasificación de malware exige características resistentes a ofuscación; las superficiales se evaden en semanas.",
+      "El adversario ataca también al modelo: envenenamiento del entrenamiento, evasión en inferencia y extracción del modelo.",
+      "Las canalizaciones de detección deben ser auditables: una alerta que nadie puede explicar no se actúa."
+    ],
+    "aplicar": "Es el fundamento directo del módulo XI y de la opción 1 del proyecto final: detección de anomalías integrada al SGSI.",
+    "limites": "Anterior a la era de los modelos de lenguaje; para ataques sobre LLM usa MITRE ATLAS y OWASP.",
+    "leer": "Caps. de detección de anomalías y de ataques al modelo. Unas 12 h."
+  }
+}

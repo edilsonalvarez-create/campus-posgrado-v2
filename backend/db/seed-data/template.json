@@ -1,0 +1,839 @@
+{
+  "id": "ia-industria-40",
+  "code": "IA-40",
+  "title": "Inteligencia Artificial y Tecnologías Disruptivas para la Innovación en la Industria 4.0",
+  "subtitle": "Programa de 52 semanas derivado del pensum del máster del Instituto Europeo de Posgrado, con recursos abiertos, práctica obligatoria y criterio de dominio por asignatura.",
+  "area": "Tecnologías digitales",
+  "level": "Posgrado",
+  "hoursWeek": 10,
+  "weeks": 52,
+  "modules": [
+    {
+      "numeral": "I",
+      "title": "Inteligencia Artificial y decisiones automatizadas",
+      "weeks": "Sem. 1–4",
+      "hours": 40,
+      "objective": "Panorama completo de la disciplina, desde sistemas expertos hasta modelos generativos. Al terminar debes poder situar cualquier titular sobre IA en su lugar del mapa.",
+      "practice": "Cataloga 15 casos de uso de IA en tu sector y clasifícalos con la taxonomía del pensum: tecnología que asiste un proceso, que lo automatiza, que crea producto nuevo o que transforma el modelo de negocio.",
+      "deliverable": "Documento de 4 páginas «Dónde puede aplicar IA nuestra operación», con matriz de impacto contra esfuerzo y tres candidatos priorizados.",
+      "mastery": "Explicas a un directivo no técnico, en menos de cinco minutos y sin jerga, la diferencia entre un sistema de reglas, un modelo supervisado y un modelo generativo, y cuál corresponde a un problema que él te plantee.",
+      "resources": [
+        {
+          "t": "curso",
+          "n": "AI for Everyone",
+          "s": "Andrew Ng · DeepLearning.AI",
+          "u": "https://www.coursera.org/learn/ai-for-everyone",
+          "m": "≈6 h · audio EN, subtítulos ES"
+        },
+        {
+          "t": "curso",
+          "n": "Elements of AI",
+          "s": "Universidad de Helsinki",
+          "u": "https://www.elementsofai.com/es",
+          "m": "≈30 h · íntegro en español · gratuito"
+        },
+        {
+          "t": "video",
+          "n": "Intro to Large Language Models",
+          "s": "Andrej Karpathy",
+          "u": "https://www.youtube.com/watch?v=zjkBMFhNj_g",
+          "m": "1 h · la mejor charla introductoria que existe"
+        },
+        {
+          "t": "video",
+          "n": "Neural networks — serie visual",
+          "s": "3Blue1Brown",
+          "u": "https://www.3blue1brown.com/topics/neural-networks",
+          "m": "≈2 h · intuición geométrica, sin álgebra pesada"
+        },
+        {
+          "t": "libro",
+          "n": "Artificial Intelligence: A Modern Approach (4ª ed.)",
+          "s": "Russell & Norvig",
+          "u": "https://aima.cs.berkeley.edu/",
+          "m": "Caps. 1–2 y 19 · obra de referencia",
+          "r": "El tratado canónico de la disciplina: define la IA como el diseño de agentes racionales y organiza sesenta años de investigación bajo esa idea única. Recorre búsqueda, lógica, probabilidad, aprendizaje y percepción, mostrando que las técnicas de moda son casos particulares de problemas viejos. No se lee de corrido: se consulta. Léelo cuando quieras saber de dónde viene una técnica y qué la limita, no para aprender a programarla."
+        },
+        {
+          "t": "curso",
+          "n": "Introduction to Generative AI",
+          "s": "Google Cloud Skills Boost",
+          "u": "https://www.cloudskillsboost.google/",
+          "m": "≈45 min · gratuito · busca el curso por nombre"
+        },
+        {
+          "t": "lectura",
+          "n": "AI Index Report",
+          "s": "Stanford HAI",
+          "u": "https://aiindex.stanford.edu/report/",
+          "m": "Anual · la fuente con datos para casos de uso por sector"
+        }
+      ]
+    },
+    {
+      "numeral": "II",
+      "title": "Innovación tecnológica: Big Data, IoT, Cloud y Blockchain",
+      "weeks": "Sem. 5–7",
+      "hours": 30,
+      "objective": "Las tecnologías disruptivas como ecosistema interconectado, no como lista de compras. El foco es el criterio: cuándo una tecnología aporta y cuándo es ruido.",
+      "practice": "Monta en local, con Docker, un flujo IoT simulado completo: sensor → MQTT (Mosquitto) → base de datos de serie temporal → tablero. Sin nube, para entender las piezas antes de pagar por ellas.",
+      "deliverable": "Ficha de evaluación tecnológica de una página por tecnología (Big Data, IoT, Blockchain, Gemelos Digitales) con criterios fijos: madurez, coste de entrada, riesgo operativo, encaje y veredicto.",
+      "mastery": "Puedes argumentar por qué NO usar blockchain en un caso donde alguien lo está proponiendo, sin caer en la ironía ni en la moda contraria.",
+      "resources": [
+        {
+          "t": "libro",
+          "n": "La cuarta revolución industrial",
+          "s": "Klaus Schwab",
+          "u": "",
+          "m": "≈200 pág. · el marco conceptual de Industria 4.0",
+          "r": "Schwab sostiene que la fusión de lo físico, lo digital y lo biológico constituye una revolución distinta de la informática de los noventa, no su continuación, y que su rasgo definitorio es la velocidad exponencial del cambio. Es útil por el vocabulario y por el mapa de tecnologías; es débil en evidencia y optimista por defecto. Léelo con escepticismo: sirve para hablar con la dirección, no para decidir."
+        },
+        {
+          "t": "curso",
+          "n": "Introduction to IoT and Embedded Systems",
+          "s": "UC Irvine · Coursera",
+          "u": "https://www.coursera.org/learn/iot",
+          "m": "≈15 h"
+        },
+        {
+          "t": "video",
+          "n": "Explicadores técnicos: IoT, gemelos digitales, blockchain",
+          "s": "IBM Technology",
+          "u": "https://www.youtube.com/@IBMTechnology",
+          "m": "Canal · piezas de 5–10 min, muy claras"
+        },
+        {
+          "t": "docs",
+          "n": "AWS IoT Core — guía de arquitectura",
+          "s": "Amazon Web Services",
+          "u": "https://docs.aws.amazon.com/iot/",
+          "m": "Referencia · gratuito"
+        },
+        {
+          "t": "docs",
+          "n": "Azure Digital Twins — conceptos",
+          "s": "Microsoft Learn",
+          "u": "https://learn.microsoft.com/azure/digital-twins/",
+          "m": "Gemelos digitales · gratuito"
+        },
+        {
+          "t": "libro",
+          "n": "Mastering Bitcoin",
+          "s": "Andreas Antonopoulos",
+          "u": "https://github.com/bitcoinbook/bitcoinbook",
+          "m": "Caps. 1–2 y 8 · edición libre en GitHub",
+          "r": "La explicación técnica más limpia de qué resuelve realmente una cadena de bloques: consenso sin autoridad central entre partes que no confían entre sí. Los capítulos de transacciones y de la red enseñan por qué la trazabilidad distribuida es cara y lenta por diseño. El valor para ti no es aprender Bitcoin, es adquirir el criterio para detectar cuándo un problema de trazabilidad se resuelve mejor con una base de datos firmada."
+        },
+        {
+          "t": "docs",
+          "n": "Ethereum — documentación para desarrolladores",
+          "s": "ethereum.org",
+          "u": "https://ethereum.org/es/developers/docs/",
+          "m": "Contratos inteligentes · en español"
+        }
+      ]
+    },
+    {
+      "numeral": "III",
+      "title": "Big Data: arquitecturas, procesamiento y escalabilidad",
+      "weeks": "Sem. 8–12",
+      "hours": 50,
+      "objective": "Cómo se mueven, almacenan y procesan volúmenes grandes de datos, y las primeras técnicas estadísticas: regresión, series temporales y árboles. La base del bloque siguiente.",
+      "practice": "Toma un dataset público de entre 5 y 50 millones de filas y resuelve la misma agregación con pandas, Polars y DuckDB. Mide tiempo y memoria. Repítelo con Spark en local y observa cuánto pierdes en sobrecarga.",
+      "deliverable": "Notebook reproducible más informe corto de arquitectura: qué herramienta elegirías para este volumen y por qué, con los números encima de la mesa.",
+      "mastery": "Sabes decir en qué punto exacto un problema deja de necesitar Spark, y lo justificas con tu propia medición, no con una regla aprendida.",
+      "resources": [
+        {
+          "t": "libro",
+          "n": "Designing Data-Intensive Applications",
+          "s": "Martin Kleppmann",
+          "u": "https://dataintensive.net/",
+          "m": "Caps. 1–6 y 10 · ≈550 pág.",
+          "r": "El mejor libro de arquitectura de datos escrito hasta hoy. Kleppmann desmonta las tres propiedades que todo sistema negocia —fiabilidad, escalabilidad y mantenibilidad— y luego explica replicación, particionado, transacciones y consistencia con un rigor que no sacrifica la legibilidad. El capítulo sobre procesamiento por lotes y por flujos te dará el modelo mental que ninguna herramienta concreta enseña. Si solo lees un libro técnico este año, que sea este."
+        },
+        {
+          "t": "libro",
+          "n": "Fundamentals of Data Engineering",
+          "s": "Reis & Housley",
+          "u": "https://www.oreilly.com/library/view/fundamentals-of-data-engineering/9781098108298/",
+          "m": "≈450 pág.",
+          "r": "Define el ciclo de vida del dato —generación, almacenamiento, ingesta, transformación, servicio— y lo trata como disciplina de ingeniería en vez de como catálogo de herramientas. Es deliberadamente agnóstico: describe decisiones y compromisos que seguirán vigentes cuando las herramientas de moda hayan cambiado. Complemento perfecto de Kleppmann: donde este explica cómo funcionan los sistemas, aquel explica cómo se organiza el trabajo alrededor de ellos."
+        },
+        {
+          "t": "libro",
+          "n": "An Introduction to Statistical Learning (Python)",
+          "s": "James, Witten, Hastie, Tibshirani",
+          "u": "https://www.statlearning.com/",
+          "m": "Caps. 3, 7 y 8 · PDF gratuito",
+          "r": "La puerta de entrada rigurosa al aprendizaje estadístico: explica regresión, validación cruzada, métodos no lineales, árboles y máquinas de vectores de soporte con la matemática justa y ejercicios en Python. La distinción que instala —sesgo contra varianza— es la que te salvará de sobreajustar durante el resto de tu carrera. Descarga legal y gratuita desde la web oficial."
+        },
+        {
+          "t": "libro",
+          "n": "Forecasting: Principles and Practice (3ª ed.)",
+          "s": "Hyndman & Athanasopoulos",
+          "u": "https://otexts.com/fpp3/",
+          "m": "Series temporales · en línea, gratuito",
+          "r": "El manual de referencia de pronóstico de series temporales, completo y gratuito en la web. Cubre descomposición, suavizado exponencial, ARIMA y modelos de regresión dinámica, siempre con el mismo mensaje: evalúa contra un conjunto de prueba desplazado en el tiempo, porque la validación cruzada aleatoria miente cuando hay orden temporal. Cubre el punto de regresiones autorregresivas del temario mejor que cualquier curso de pago."
+        },
+        {
+          "t": "video",
+          "n": "Regresión, árboles y bosques explicados",
+          "s": "StatQuest · Josh Starmer",
+          "u": "https://www.youtube.com/@statquest",
+          "m": "Canal · piezas de 10–20 min"
+        },
+        {
+          "t": "tool",
+          "n": "Polars",
+          "s": "pola.rs",
+          "u": "https://pola.rs/",
+          "m": "DataFrames en Rust · el reemplazo rápido de pandas"
+        },
+        {
+          "t": "tool",
+          "n": "DuckDB",
+          "s": "duckdb.org",
+          "u": "https://duckdb.org/",
+          "m": "SQL analítico en proceso · para datos que caben en una máquina"
+        },
+        {
+          "t": "libro",
+          "n": "Learning Spark (2ª ed.)",
+          "s": "Databricks",
+          "u": "https://www.databricks.com/resources/ebook/learning-spark",
+          "m": "Ebook gratuito previo registro"
+        }
+      ]
+    },
+    {
+      "numeral": "IV",
+      "title": "Metodologías ágiles para proyectos tecnológicos",
+      "weeks": "Sem. 13–15",
+      "hours": 30,
+      "objective": "Scrum, Kanban y Lean aplicados a proyectos de datos, que tienen una particularidad: no sabes si funcionará hasta que lo intentas. Planificar bajo incertidumbre es la competencia real.",
+      "practice": "Gestiona las siguientes cuatro semanas de este mismo plan como sprints de una semana, en un tablero Kanban con límite de trabajo en curso de dos tareas. Registra fecha de inicio y fin de cada tarjeta.",
+      "deliverable": "Diagrama de flujo acumulado de tu propio estudio, con tu lead time medio y tu throughput.",
+      "mastery": "Estimas cuánto tardarás en terminar el resto del plan usando tu throughput medido, en lugar de tu optimismo.",
+      "resources": [
+        {
+          "t": "docs",
+          "n": "The Scrum Guide 2020",
+          "s": "Schwaber & Sutherland",
+          "u": "https://scrumguides.org/",
+          "m": "13 páginas · en español · léelo dos veces"
+        },
+        {
+          "t": "video",
+          "n": "Agile Product Ownership in a Nutshell",
+          "s": "Henrik Kniberg",
+          "u": "https://www.youtube.com/watch?v=502ILHjX9EE",
+          "m": "15 min · el mejor resumen de ágil que existe"
+        },
+        {
+          "t": "libro",
+          "n": "Kanban",
+          "s": "David J. Anderson",
+          "u": "",
+          "m": "≈280 pág.",
+          "r": "Anderson propone un cambio evolutivo en lugar de una reorganización: visualiza el trabajo, limita el trabajo en curso, gestiona el flujo. La tesis central —que la sobrecarga, no la falta de esfuerzo, es lo que destruye la productividad— se demuestra con la ley de Little y con casos reales de equipos de mantenimiento. Para trabajo de soporte, operaciones y seguridad, donde el trabajo llega sin pedir permiso, es más útil que Scrum."
+        },
+        {
+          "t": "libro",
+          "n": "Accelerate",
+          "s": "Forsgren, Humble & Kim",
+          "u": "",
+          "m": "≈250 pág. · métricas DORA",
+          "r": "Investigación cuantitativa sobre miles de organizaciones que identifica cuatro métricas —frecuencia de despliegue, tiempo de entrega, tasa de fallos en cambios y tiempo de restauración— que predicen el rendimiento del negocio. Su hallazgo incómodo: velocidad y estabilidad no se compensan entre sí, los equipos buenos ganan en las dos a la vez. Es la evidencia empírica detrás de la agilidad, y sirve para discutir con quien la considere una moda."
+        },
+        {
+          "t": "libro",
+          "n": "The Lean Startup",
+          "s": "Eric Ries",
+          "u": "",
+          "m": "Solo el bucle construir–medir–aprender y el capítulo de MVP",
+          "r": "Aplica el pensamiento lean a la creación de productos bajo incertidumbre extrema: el trabajo no validado es inventario, y la unidad de progreso es el aprendizaje contrastado, no la funcionalidad entregada. El concepto de producto mínimo viable está hoy degradado a «versión recortada», cuando Ries lo definió como el experimento más pequeño que refuta una hipótesis. Lee esos dos capítulos y salta el resto."
+        },
+        {
+          "t": "cert",
+          "n": "Professional Scrum Master I (PSM I)",
+          "s": "Scrum.org",
+          "u": "https://www.scrum.org/professional-scrum-master-i-certification",
+          "m": "≈US$200 · examen sin curso obligatorio"
+        }
+      ]
+    },
+    {
+      "numeral": "V",
+      "title": "Ética, riesgo y regulación de la Inteligencia Artificial",
+      "weeks": "Sem. 16–19",
+      "hours": 40,
+      "objective": "El módulo con mayor retorno inmediato si trabajas en seguridad de la información: cómo se gobierna la IA, qué exige la norma y cómo se conecta con un SGSI que ya está en marcha.",
+      "practice": "Clasifica los tres casos de uso priorizados en el módulo I según los niveles de riesgo del Reglamento Europeo de IA y determina las obligaciones de cada uno. Después audita un modelo público con Fairlearn y documenta la disparidad encontrada.",
+      "deliverable": "Borrador de política de uso de IA y registro de riesgos de IA, redactado como anexo integrable a un SGSI ISO 27001, con tabla de correspondencia entre controles de ISO 42001 y del Anexo A.",
+      "mastery": "Mapeas cualquier control de ISO 42001 contra su equivalente o su vacío en el Anexo A de ISO 27001 y explicas qué hay que añadir al SGSI para cubrir la brecha.",
+      "resources": [
+        {
+          "t": "norma",
+          "n": "Reglamento Europeo de IA (AI Act)",
+          "s": "Unión Europea",
+          "u": "https://artificialintelligenceact.eu/",
+          "m": "Explorador de artículos por nivel de riesgo · gratuito"
+        },
+        {
+          "t": "norma",
+          "n": "AI Risk Management Framework (AI RMF 1.0)",
+          "s": "NIST",
+          "u": "https://www.nist.gov/itl/ai-risk-management-framework",
+          "m": "Incluye el perfil para IA generativa · gratuito"
+        },
+        {
+          "t": "norma",
+          "n": "ISO/IEC 42001:2023 — Sistema de gestión de IA",
+          "s": "ISO",
+          "u": "https://www.iso.org/standard/81230.html",
+          "m": "De pago · el puente directo con tu ISO 27001"
+        },
+        {
+          "t": "norma",
+          "n": "ISO/IEC 23894 — Gestión del riesgo en IA",
+          "s": "ISO",
+          "u": "https://www.iso.org/standard/77304.html",
+          "m": "De pago · complemento de la 42001"
+        },
+        {
+          "t": "norma",
+          "n": "Protección de datos personales en Colombia (Ley 1581 de 2012)",
+          "s": "Superintendencia de Industria y Comercio",
+          "u": "https://www.sic.gov.co/tema/proteccion-de-datos-personales",
+          "m": "Gratuito · crítico si tratas datos de salud"
+        },
+        {
+          "t": "norma",
+          "n": "Política nacional de IA — documento CONPES vigente",
+          "s": "Departamento Nacional de Planeación",
+          "u": "https://www.dnp.gov.co/",
+          "m": "Verifica cuál es la versión en vigor al llegar a este módulo"
+        },
+        {
+          "t": "libro",
+          "n": "Weapons of Math Destruction",
+          "s": "Cathy O'Neil",
+          "u": "",
+          "m": "≈270 pág.",
+          "r": "O'Neil, matemática de Wall Street reconvertida, describe los modelos que llama armas de destrucción matemática: opacos, masivos y con capacidad de dañar. Su criterio de diagnóstico es operativo y lo usarás en auditorías: un modelo es peligroso cuando sus afectados no pueden ver cómo los evalúa, cuando el error tiene consecuencias graves y cuando el propio modelo genera los datos que confirman su acierto. Casos reales en crédito, empleo, seguros y educación."
+        },
+        {
+          "t": "tool",
+          "n": "Fairlearn",
+          "s": "Microsoft Research",
+          "u": "https://fairlearn.org/",
+          "m": "Medición y mitigación de sesgo · Python · gratuito"
+        },
+        {
+          "t": "tool",
+          "n": "AI Fairness 360",
+          "s": "IBM · Trusted AI",
+          "u": "https://github.com/Trusted-AI/AIF360",
+          "m": "70+ métricas de equidad · gratuito"
+        },
+        {
+          "t": "video",
+          "n": "Charlas sobre gobernanza y política de IA",
+          "s": "Stanford HAI",
+          "u": "https://www.youtube.com/@StanfordHAI",
+          "m": "Canal · sesiones de 30–60 min"
+        }
+      ]
+    },
+    {
+      "numeral": "VI",
+      "title": "Machine Learning",
+      "weeks": "Sem. 20–25",
+      "hours": 60,
+      "objective": "El módulo técnico central: aprendizaje supervisado, no supervisado y por refuerzo, y sobre todo interpretabilidad. Es el más largo del plan y merece serlo.",
+      "practice": "Tres problemas completos, de datos crudos a conclusión: una clasificación, una regresión y un no supervisado. Además, una competencia de Kaggle llevada hasta el 50 % superior de la tabla.",
+      "deliverable": "Un modelo con su model card: métricas, población de entrenamiento, limitaciones conocidas y explicación SHAP de las cinco variables más influyentes.",
+      "mastery": "Justificas la métrica de evaluación antes de entrenar, detectas fuga de datos en un pipeline ajeno y explicas por qué una precisión del 99 % puede ser un desastre.",
+      "resources": [
+        {
+          "t": "curso",
+          "n": "Machine Learning Specialization",
+          "s": "Andrew Ng · DeepLearning.AI & Stanford",
+          "u": "https://www.deeplearning.ai/courses/machine-learning-specialization/",
+          "m": "3 cursos · ≈90 h · la introducción rigurosa de referencia"
+        },
+        {
+          "t": "libro",
+          "n": "Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow (3ª ed.)",
+          "s": "Aurélien Géron",
+          "u": "https://github.com/ageron/handson-ml3",
+          "m": "≈850 pág. · notebooks libres en GitHub",
+          "r": "El libro-eje de cualquier formación práctica en aprendizaje automático. La primera mitad recorre el flujo completo con scikit-learn —preparación, selección de modelo, validación, ajuste de hiperparámetros— y la segunda entra en redes profundas con Keras. Su virtud es que cada concepto llega con código ejecutable y con las trampas señaladas. Haz los ejercicios: leerlo sin teclear produce la ilusión de haber aprendido."
+        },
+        {
+          "t": "libro",
+          "n": "Interpretable Machine Learning",
+          "s": "Christoph Molnar",
+          "u": "https://christophm.github.io/interpretable-ml-book/",
+          "m": "En línea, gratuito · cubre el punto 6 del temario",
+          "r": "Catálogo sistemático de métodos para explicar modelos opacos: importancia por permutación, gráficos de dependencia parcial, LIME, valores de Shapley y ejemplos contrafactuales. Cada método viene con sus supuestos y con la advertencia de cuándo miente —las correlaciones entre variables rompen buena parte de ellos—. Es el recurso que convierte «el modelo dice que sí» en un argumento defendible ante una auditoría."
+        },
+        {
+          "t": "video",
+          "n": "MIT 6.S191 — Introduction to Deep Learning",
+          "s": "MIT",
+          "u": "http://introtodeeplearning.com/",
+          "m": "Curso completo en vídeo · gratuito · se renueva cada año"
+        },
+        {
+          "t": "curso",
+          "n": "Kaggle Learn: Intro to ML, Intermediate ML, Feature Engineering",
+          "s": "Kaggle",
+          "u": "https://www.kaggle.com/learn",
+          "m": "≈12 h en total · gratuito · muy práctico"
+        },
+        {
+          "t": "curso",
+          "n": "Practical Deep Learning for Coders",
+          "s": "fast.ai · Jeremy Howard",
+          "u": "https://course.fast.ai/",
+          "m": "≈70 h · gratuito · enfoque de arriba hacia abajo"
+        },
+        {
+          "t": "tool",
+          "n": "SHAP",
+          "s": "shap.readthedocs.io",
+          "u": "https://shap.readthedocs.io/",
+          "m": "Explicación de predicciones individuales · gratuito"
+        },
+        {
+          "t": "docs",
+          "n": "scikit-learn — guía de usuario",
+          "s": "scikit-learn.org",
+          "u": "https://scikit-learn.org/stable/user_guide.html",
+          "m": "La documentación es en sí misma un curso de estadística aplicada"
+        }
+      ]
+    },
+    {
+      "numeral": "VII",
+      "title": "Prompts multimodales y contextos complejos",
+      "weeks": "Sem. 26–28",
+      "hours": 30,
+      "objective": "Diseñar entradas para modelos que procesan texto, imagen y audio, y —lo que casi nadie enseña— evaluarlas con números en vez de con intuición.",
+      "practice": "Construye una batería de evaluación de 20 casos con respuesta esperada y mide tres versiones del mismo prompt contra ella. Repite con entrada multimodal (captura de pantalla más instrucción) y compara tasas de acierto.",
+      "deliverable": "Biblioteca de prompts versionada en git, con suite de evaluación ejecutable y registro de qué cambio subió qué métrica.",
+      "mastery": "Mejoras un prompt reportando el delta de una métrica, y sabes decir cuándo el problema no está en el prompt sino en el modelo o en el contexto que le das.",
+      "resources": [
+        {
+          "t": "docs",
+          "n": "Ingeniería de prompts — documentación de Claude",
+          "s": "Anthropic",
+          "u": "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview",
+          "m": "La guía más completa y con ejemplos verificables"
+        },
+        {
+          "t": "docs",
+          "n": "Prompt Engineering Guide",
+          "s": "DAIR.AI",
+          "u": "https://www.promptingguide.ai/es",
+          "m": "Disponible en español · agnóstica de proveedor"
+        },
+        {
+          "t": "lectura",
+          "n": "Building effective agents",
+          "s": "Anthropic Engineering",
+          "u": "https://www.anthropic.com/engineering/building-effective-agents",
+          "m": "≈25 min · cuándo un flujo simple gana a un agente"
+        },
+        {
+          "t": "docs",
+          "n": "OpenAI Cookbook",
+          "s": "OpenAI",
+          "u": "https://cookbook.openai.com/",
+          "m": "Recetas ejecutables · gratuito"
+        },
+        {
+          "t": "docs",
+          "n": "Gemini API — estrategias de prompting multimodal",
+          "s": "Google AI",
+          "u": "https://ai.google.dev/gemini-api/docs",
+          "m": "Entrada de imagen, audio y vídeo"
+        },
+        {
+          "t": "video",
+          "n": "Let's build GPT: from scratch, in code",
+          "s": "Andrej Karpathy",
+          "u": "https://www.youtube.com/watch?v=kCc8FmEb1nY",
+          "m": "2 h · entiendes qué recibe realmente un prompt"
+        },
+        {
+          "t": "curso",
+          "n": "Cursos cortos: evaluación de LLMs y sistemas de prompts",
+          "s": "DeepLearning.AI",
+          "u": "https://www.deeplearning.ai/short-courses/",
+          "m": "1–2 h cada uno · gratuitos"
+        }
+      ]
+    },
+    {
+      "numeral": "VIII",
+      "title": "Desarrollo de productos tecnológicos: Design Thinking",
+      "weeks": "Sem. 29–30",
+      "hours": 20,
+      "objective": "Empatía, definición del problema, ideación, prototipado y validación. El contrapeso necesario a todo lo anterior: la mayoría de proyectos de IA fracasan por resolver el problema equivocado.",
+      "practice": "Un design sprint comprimido de cinco días sobre un problema real de tu operación, con entrevistas a cinco usuarios reales, no imaginados.",
+      "deliverable": "Prototipo de baja fidelidad más el acta de las cinco entrevistas, incluyendo explícitamente qué hipótesis quedó refutada.",
+      "mastery": "Distingues lo que un usuario dice que quiere de lo que hace cuando lo observas, y puedes citar un caso propio en que ambas cosas se contradijeron.",
+      "resources": [
+        {
+          "t": "docs",
+          "n": "Design Thinking Bootleg",
+          "s": "d.school · Stanford",
+          "u": "https://dschool.stanford.edu/resources/design-thinking-bootleg",
+          "m": "El método en fichas de trabajo · gratuito"
+        },
+        {
+          "t": "curso",
+          "n": "Enterprise Design Thinking — Practitioner",
+          "s": "IBM",
+          "u": "https://www.ibm.com/design/thinking/",
+          "m": "≈3 h · certificación gratuita"
+        },
+        {
+          "t": "libro",
+          "n": "Sprint",
+          "s": "Jake Knapp · Google Ventures",
+          "u": "",
+          "m": "≈290 pág.",
+          "r": "Un protocolo de cinco días para pasar de una pregunta de negocio a un prototipo probado con usuarios reales: mapear el problema el lunes, esbozar soluciones el martes, decidir el miércoles, prototipar el jueves, entrevistar el viernes. Su aportación real es procedimental —cómo se decide en grupo sin que decida el que más habla— y funciona igual de bien para un proyecto de datos que para una aplicación."
+        },
+        {
+          "t": "libro",
+          "n": "Continuous Discovery Habits",
+          "s": "Teresa Torres",
+          "u": "",
+          "m": "≈250 pág.",
+          "r": "Torres ataca el descubrimiento por proyectos y propone un hábito semanal: entrevistas continuas, mapas de oportunidades y experimentos pequeños encadenados. Enseña algo que casi nadie hace bien: preguntar por comportamientos pasados concretos en lugar de por preferencias futuras, porque lo primero es dato y lo segundo es ficción. El árbol de oportunidades y soluciones es la herramienta que te llevarás."
+        },
+        {
+          "t": "libro",
+          "n": "Inspired (2ª ed.)",
+          "s": "Marty Cagan",
+          "u": "",
+          "m": "Opcional · visión de gestión de producto",
+          "r": "Cagan describe cómo trabajan los equipos de producto de las empresas que lo hacen bien y por qué la mayoría de organizaciones tienen en realidad equipos de entrega disfrazados. Distingue cuatro riesgos que todo descubrimiento debe cubrir —valor, usabilidad, viabilidad técnica y viabilidad de negocio— y sostiene que el ingeniero debe estar presente en el descubrimiento, no recibir requisitos ya cerrados."
+        },
+        {
+          "t": "video",
+          "n": "Design sprint y descubrimiento de producto",
+          "s": "IDEO U",
+          "u": "https://www.ideou.com/",
+          "m": "Recursos abiertos y cursos de pago"
+        }
+      ]
+    },
+    {
+      "numeral": "IX",
+      "title": "IA generativa aplicada a la Industria 4.0",
+      "weeks": "Sem. 31–35",
+      "hours": 50,
+      "objective": "De los fundamentos del transformer a dos aplicaciones concretas: recuperación aumentada sobre documentación propia y mantenimiento predictivo sobre datos de sensores.",
+      "practice": "Dos construcciones. Un sistema RAG sobre documentación propia, con métricas de recuperación separadas de las de generación. Y un modelo de vida útil restante sobre el conjunto C-MAPSS de la NASA.",
+      "deliverable": "Servicio RAG funcional con panel de métricas: precisión de recuperación, tasa de alucinación medida sobre casos conocidos y coste por consulta.",
+      "mastery": "Ante una respuesta incorrecta del sistema, diagnosticas en qué etapa falló —recuperación, contexto o generación— antes de tocar el prompt.",
+      "resources": [
+        {
+          "t": "curso",
+          "n": "LLM Course",
+          "s": "Hugging Face",
+          "u": "https://huggingface.co/learn",
+          "m": "Transformers, ajuste fino y despliegue · gratuito · con código"
+        },
+        {
+          "t": "libro",
+          "n": "Build a Large Language Model (From Scratch)",
+          "s": "Sebastian Raschka",
+          "u": "https://github.com/rasbt/LLMs-from-scratch",
+          "m": "≈370 pág. · código completo en GitHub",
+          "r": "Construye un modelo de lenguaje línea a línea: tokenización, atención, bloques transformer, preentrenamiento y ajuste fino con instrucciones, todo en PyTorch y sin bibliotecas mágicas. Es el antídoto contra tratar los modelos como cajas negras: al terminar sabes exactamente qué es una ventana de contexto, por qué la atención cuesta cuadráticamente y qué cambia realmente un ajuste fino. Exige saber Python y algo de álgebra."
+        },
+        {
+          "t": "video",
+          "n": "Deep dive: cómo se entrena un modelo de lenguaje",
+          "s": "Andrej Karpathy",
+          "u": "https://www.youtube.com/@AndrejKarpathy",
+          "m": "Canal · sesiones largas, densas y gratuitas"
+        },
+        {
+          "t": "docs",
+          "n": "LlamaIndex — documentación",
+          "s": "LlamaIndex",
+          "u": "https://docs.llamaindex.ai/",
+          "m": "Indexación y recuperación para RAG"
+        },
+        {
+          "t": "docs",
+          "n": "LangChain — documentación",
+          "s": "LangChain",
+          "u": "https://python.langchain.com/docs/introduction/",
+          "m": "Orquestación de cadenas y agentes"
+        },
+        {
+          "t": "lectura",
+          "n": "Introducing Contextual Retrieval",
+          "s": "Anthropic",
+          "u": "https://www.anthropic.com/news/contextual-retrieval",
+          "m": "≈15 min · cómo reducir fallos de recuperación en RAG"
+        },
+        {
+          "t": "dataset",
+          "n": "NASA C-MAPSS — degradación de turbofán",
+          "s": "NASA Prognostics Data Repository",
+          "u": "https://www.kaggle.com/datasets/behrad3d/nasa-cmaps",
+          "m": "El conjunto estándar de vida útil restante · gratuito"
+        },
+        {
+          "t": "dataset",
+          "n": "AI4I 2020 Predictive Maintenance",
+          "s": "UCI Machine Learning Repository",
+          "u": "https://archive.ics.uci.edu/",
+          "m": "Búscalo por nombre · 10 000 registros sintéticos realistas"
+        }
+      ]
+    },
+    {
+      "numeral": "X",
+      "title": "AI Platforms: nube, despliegue y operación",
+      "weeks": "Sem. 36–39",
+      "hours": 40,
+      "objective": "La infraestructura para llevar un modelo a escala en AWS, Azure o Google Cloud. Aquí se añade lo que el pensum original omite: la operación del modelo una vez desplegado.",
+      "practice": "Despliega el modelo del módulo VI como API en contenedor, con registro de versiones en MLflow, monitoreo de deriva de datos y despliegue automático desde el repositorio.",
+      "deliverable": "Un modelo realmente en funcionamiento —aunque sea de uso interno— con panel de latencia, uso y coste mensual real.",
+      "mastery": "Conoces la factura mensual de lo que desplegaste y sabes qué palanca bajarías primero si te pidieran reducirla a la mitad.",
+      "resources": [
+        {
+          "t": "cert",
+          "n": "AWS Certified AI Practitioner (AIF-C01)",
+          "s": "Amazon Web Services",
+          "u": "https://aws.amazon.com/certification/certified-ai-practitioner/",
+          "m": "≈US$100 · la ruta más corta si eliges AWS"
+        },
+        {
+          "t": "cert",
+          "n": "Azure AI Engineer Associate (AI-102)",
+          "s": "Microsoft",
+          "u": "https://learn.microsoft.com/credentials/certifications/azure-ai-engineer/",
+          "m": "≈US$165 · alternativa si tu empresa es Microsoft"
+        },
+        {
+          "t": "cert",
+          "n": "Professional Machine Learning Engineer",
+          "s": "Google Cloud",
+          "u": "https://cloud.google.com/learn/certification/machine-learning-engineer",
+          "m": "≈US$200 · la más exigente de las tres"
+        },
+        {
+          "t": "libro",
+          "n": "Designing Machine Learning Systems",
+          "s": "Chip Huyen",
+          "u": "https://www.oreilly.com/library/view/designing-machine-learning/9781098107956/",
+          "m": "≈390 pág. · léelo entero",
+          "r": "El libro que este pensum debería incluir y no incluye. Huyen trata el modelo como la parte pequeña de un sistema mayor: ingeniería de datos, entrenamiento, despliegue, monitoreo de deriva y bucles de reentrenamiento. Los capítulos sobre fallos en producción y sobre deriva de distribución explican por qué los modelos que funcionaban dejan de hacerlo, que es la pregunta que nadie responde en los cursos introductorios."
+        },
+        {
+          "t": "curso",
+          "n": "Made With ML",
+          "s": "Goku Mohandas",
+          "u": "https://madewithml.com/",
+          "m": "MLOps de cero a producción · gratuito"
+        },
+        {
+          "t": "tool",
+          "n": "MLflow",
+          "s": "Linux Foundation",
+          "u": "https://mlflow.org/",
+          "m": "Registro de experimentos, modelos y versiones · gratuito"
+        },
+        {
+          "t": "video",
+          "n": "Rutas de aprendizaje en vídeo de la nube elegida",
+          "s": "AWS Skill Builder · Microsoft Learn · Google Cloud Skills Boost",
+          "u": "https://skillbuilder.aws/",
+          "m": "Elige UNA nube; tres a la vez es dispersión, no especialización"
+        }
+      ]
+    },
+    {
+      "numeral": "XI",
+      "title": "Inteligencia Artificial en entornos seguros",
+      "weeks": "Sem. 40–44",
+      "hours": 50,
+      "objective": "Las dos direcciones del cruce: IA para defender —detección de amenazas— e IA como superficie de ataque. Si vienes de seguridad de la información, tu ventaja competitiva está aquí.",
+      "practice": "Dos ejercicios simétricos. Defensa: un detector de anomalías sobre registros reales de infraestructura, con umbral calibrado contra la tasa de falsos positivos que el equipo pueda absorber. Ataque: rompe tu propio RAG del módulo IX mediante inyección de prompt y extracción de contexto.",
+      "deliverable": "Informe de red team de un sistema de IA con formato de pentesting —hallazgos, criticidad, evidencia, mitigación— y los controles resultantes mapeados a ISO 27001 y 42001.",
+      "mastery": "Rompes tu propio sistema antes de que lo haga otro, y documentas el hallazgo con la misma disciplina con la que documentas un incidente de seguridad.",
+      "resources": [
+        {
+          "t": "docs",
+          "n": "MITRE ATLAS",
+          "s": "MITRE",
+          "u": "https://atlas.mitre.org/",
+          "m": "Tácticas adversarias contra sistemas de IA, en formato ATT&CK · gratuito"
+        },
+        {
+          "t": "docs",
+          "n": "OWASP Top 10 for LLM Applications",
+          "s": "OWASP",
+          "u": "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+          "m": "La referencia de facto · gratuito"
+        },
+        {
+          "t": "norma",
+          "n": "NIST AI 100-2 — Adversarial Machine Learning",
+          "s": "NIST",
+          "u": "https://csrc.nist.gov/pubs/ai/100/2/e2025/final",
+          "m": "Taxonomía de ataques y mitigaciones · gratuito"
+        },
+        {
+          "t": "libro",
+          "n": "Machine Learning and Security",
+          "s": "Chio & Freeman · O'Reilly",
+          "u": "https://www.oreilly.com/library/view/machine-learning-and/9781491979891/",
+          "m": "≈390 pág.",
+          "r": "El único libro que trata en serio la aplicación de aprendizaje automático a problemas de seguridad reales: detección de anomalías, clasificación de malware, detección de fraude y filtrado de spam. Su mayor virtud es la honestidad sobre la asimetría de clases y el coste del falso positivo, que es lo que hunde a la mayoría de detectores en producción. Incluye un capítulo sobre cómo un adversario ataca al propio modelo."
+        },
+        {
+          "t": "tool",
+          "n": "Adversarial Robustness Toolbox (ART)",
+          "s": "IBM · Trusted AI",
+          "u": "https://github.com/Trusted-AI/adversarial-robustness-toolbox",
+          "m": "Ataques de evasión, envenenamiento y extracción · gratuito"
+        },
+        {
+          "t": "tool",
+          "n": "garak — escáner de vulnerabilidades para LLMs",
+          "s": "NVIDIA",
+          "u": "https://github.com/NVIDIA/garak",
+          "m": "Red teaming automatizado de modelos · gratuito"
+        },
+        {
+          "t": "tool",
+          "n": "Counterfit",
+          "s": "Microsoft",
+          "u": "https://github.com/Azure/counterfit",
+          "m": "Automatización de pruebas de seguridad sobre modelos · gratuito"
+        },
+        {
+          "t": "dataset",
+          "n": "CIC-IDS2017",
+          "s": "Canadian Institute for Cybersecurity",
+          "u": "https://www.unb.ca/cic/datasets/ids-2017.html",
+          "m": "Tráfico de red etiquetado para detección de intrusiones"
+        },
+        {
+          "t": "dataset",
+          "n": "UNSW-NB15",
+          "s": "UNSW Canberra",
+          "u": "https://research.unsw.edu.au/projects/unsw-nb15-dataset",
+          "m": "Alternativa moderna a KDD99 · gratuito"
+        },
+        {
+          "t": "video",
+          "n": "Sesiones sobre seguridad de aplicaciones con LLM",
+          "s": "OWASP",
+          "u": "https://www.youtube.com/@OWASPGLOBAL",
+          "m": "Canal · charlas de conferencia"
+        }
+      ]
+    },
+    {
+      "numeral": "+",
+      "title": "Módulo puente: lo que el pensum del IEP no cubre",
+      "weeks": "Opcional · 4 sem",
+      "hours": 40,
+      "objective": "Tres vacíos reales del programa original. Si tu objetivo es ejercer y no solo titularte, este módulo vale más que cualquiera de los tres primeros.",
+      "practice": "Construye un pipeline de datos versionado con dbt y orquestado con Dagster que alimente el modelo del módulo VI, y añade una suite de evaluación automática al sistema del módulo IX.",
+      "deliverable": "Presupuesto a doce meses de un sistema de IA propio, desglosado por cómputo, almacenamiento, llamadas a modelo y personas.",
+      "mastery": "Puedes presupuestar un sistema de IA a doce meses vista con un margen de error inferior al 30 %.",
+      "resources": [
+        {
+          "t": "libro",
+          "n": "Machine Learning Engineering",
+          "s": "Andriy Burkov",
+          "u": "http://www.mlebook.com/",
+          "m": "≈310 pág. · lectura libre en la web del autor",
+          "r": "Manual corto y denso sobre todo lo que rodea al modelo: recolección y etiquetado de datos, ingeniería de características, evaluación fuera de línea y en línea, despliegue, monitoreo y mantenimiento. Burkov escribe en listas de decisiones y compromisos, sin relleno. Es el complemento operativo perfecto a Huyen y se lee en dos fines de semana."
+        },
+        {
+          "t": "docs",
+          "n": "dbt — transformación de datos",
+          "s": "dbt Labs",
+          "u": "https://docs.getdbt.com/",
+          "m": "Modelado analítico versionado y probado"
+        },
+        {
+          "t": "docs",
+          "n": "Dagster — orquestación",
+          "s": "Dagster Labs",
+          "u": "https://docs.dagster.io/",
+          "m": "Alternativa moderna a Airflow, orientada a activos de datos"
+        },
+        {
+          "t": "lectura",
+          "n": "Evaluación sistemática de LLMs (evals)",
+          "s": "Documentación de proveedores",
+          "u": "https://docs.claude.com/en/docs/test-and-evaluate/eval-tool",
+          "m": "Conjuntos de referencia propios y jueces automáticos"
+        },
+        {
+          "t": "lectura",
+          "n": "FinOps de IA: coste por token y caché de contexto",
+          "s": "Documentación de precios de los proveedores",
+          "u": "https://www.anthropic.com/pricing",
+          "m": "Cuándo un modelo pequeño ajustado gana a uno grande"
+        }
+      ]
+    },
+    {
+      "numeral": "TFM",
+      "title": "Proyecto final de maestría",
+      "weeks": "Sem. 45–52",
+      "hours": 80,
+      "objective": "Ocho semanas dedicadas a un solo problema, resuelto de punta a punta y medido. El criterio de elección no es cuál suena mejor, sino cuál puedes defender ante alguien que tenga que decidir si lo financia.",
+      "practice": "Opción 1 (recomendada): detección de anomalías para el SGSI, integrada con controles ISO 27001 y evaluada bajo ISO 42001. Opción 2: agente multimodal de pruebas automatizadas con suite de evaluación contra línea base. Opción 3: asistente RAG de trazabilidad documental con controles de datos personales y análisis de coste.",
+      "deliverable": "Memoria de 40 a 60 páginas con repositorio público y defensa grabada de diez minutos. Orden: problema → estado del arte → método → implementación → evaluación cuantitativa → riesgos y ética → coste → conclusiones.",
+      "mastery": "Los dos apartados que casi todo el mundo omite —evaluación con números y coste real— son los que separan un trabajo de posgrado de una demostración. Si los tuyos están completos, terminaste.",
+      "resources": [
+        {
+          "t": "lectura",
+          "n": "Cómo escribir una memoria de fin de máster",
+          "s": "Guías institucionales",
+          "u": "",
+          "m": "Consulta la plantilla de la institución si vas a titularte"
+        },
+        {
+          "t": "tool",
+          "n": "Zotero — gestión bibliográfica",
+          "s": "Corporation for Digital Scholarship",
+          "u": "https://www.zotero.org/",
+          "m": "Citación en normas APA · gratuito"
+        },
+        {
+          "t": "docs",
+          "n": "Normas APA 7 — guía oficial",
+          "s": "American Psychological Association",
+          "u": "https://apastyle.apa.org/",
+          "m": "Formato de citación exigido por la mayoría de programas"
+        },
+        {
+          "t": "lectura",
+          "n": "Model Cards for Model Reporting",
+          "s": "Mitchell et al. · Google",
+          "u": "https://arxiv.org/abs/1810.03993",
+          "m": "El formato estándar para documentar un modelo"
+        }
+      ]
+    }
+  ]
+}
