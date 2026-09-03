@@ -713,6 +713,21 @@ async function start() {
     console.error('[start] fallo en migraciones:', err.message);
     process.exit(1);
   }
+
+  // Seed automático la primera vez (catálogo vacío). Idempotente por diseño:
+  // el seed sólo corre si no hay cursos; re-sembrar manualmente = `npm run seed`.
+  if (process.env.AUTO_SEED !== 'false') {
+    try {
+      const { rows } = await pool.query('SELECT count(*)::int AS n FROM courses');
+      if (rows[0].n === 0) {
+        console.log('[start] catálogo vacío → ejecutando seed inicial...');
+        await require('./db/seed')();
+      }
+    } catch (err) {
+      console.error('[start] seed inicial falló (se continúa):', err.message);
+    }
+  }
+
   // limpieza periódica de sesiones expiradas
   setInterval(() => {
     pool.query('DELETE FROM sessions WHERE expires_at < now()').catch(() => {});
