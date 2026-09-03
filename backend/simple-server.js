@@ -7,6 +7,7 @@ const pool = require('./db/pool');
 const runMigrations = require('./db/migrate');
 
 const PORT = Number(process.env.PORT) || 3001;
+let dbReady = false;
 const TOKEN_TTL_MS = 3600 * 1000;
 const REFRESH_TTL_MS = 7 * 24 * 3600 * 1000;
 
@@ -694,6 +695,11 @@ const server = http.createServer(async (req, res) => {
   const match = routes.find((r) => r.method === req.method && r.pattern.test(pathname));
   if (!match) return sendJSON(res, 404, { message: 'Not found' });
 
+  const isHealth = pathname === '/api/health' || pathname === '/health';
+  if (!dbReady && !isHealth) {
+    return sendJSON(res, 503, { message: 'Servicio inicializándose, reintenta en unos segundos.' });
+  }
+
   try {
     const params = match.pattern.exec(pathname).groups || {};
     const needsBody = ['POST', 'PUT', 'PATCH'].includes(req.method);
@@ -706,36 +712,38 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-async function start() {
-  try {
-    await runMigrations();
-  } catch (err) {
-    console.error('[start] fallo en migraciones:', err.message);
-    process.exit(1);
-  }
-
-  // Seed automático la primera vez (catálogo vacío). Idempotente por diseño:
-  // el seed sólo corre si no hay cursos; re-sembrar manualmente = `npm run seed`.
+async function prepareDatabase() {
+  await runMigrations();
   if (process.env.AUTO_SEED !== 'false') {
-    try {
-      const { rows } = await pool.query('SELECT count(*)::int AS n FROM courses');
-      if (rows[0].n === 0) {
-        console.log('[start] catálogo vacío → ejecutando seed inicial...');
-        await require('./db/seed')();
-      }
-    } catch (err) {
-      console.error('[start] seed inicial falló (se continúa):', err.message);
+    const { rows } = await pool.query('SELECT count(*)::int AS n FROM courses');
+    if (rows[0].n === 0) {
+      console.log('[start] catálogo vacío → ejecutando seed inicial...');
+      await require('./db/seed')();
     }
   }
+  dbReady = true;
+  console.log('[start] base de datos lista.');
+}
 
-  // limpieza periódica de sesiones expiradas
+async function start() {
+  // Escuchar primero: /api/health no depende de la BD, así el healthcheck de
+  // Railway pasa mientras corren migraciones y seed inicial.
+  server.listen(PORT, () => {
+    console.log(`✅ Campus Posgrado API en http://localhost:${PORT}/api  (PostgreSQL)`);
+  });
+
   setInterval(() => {
     pool.query('DELETE FROM sessions WHERE expires_at < now()').catch(() => {});
   }, 3600 * 1000).unref();
 
-  server.listen(PORT, () => {
-    console.log(`✅ Campus Posgrado API en http://localhost:${PORT}/api  (PostgreSQL)`);
-  });
+  try {
+    await prepareDatabase();
+  } catch (err) {
+    console.error('[start] fallo preparando la BD:', err.message);
+    // No matamos el proceso: /api/health sigue respondiendo y Railway no
+    // entra en crash-loop. Los endpoints con BD devolverán 503 hasta que se
+    // resuelva (p. ej. falta DATABASE_URL).
+  }
 }
 
 start();
