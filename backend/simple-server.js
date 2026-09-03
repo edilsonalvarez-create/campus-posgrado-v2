@@ -4,8 +4,40 @@ const crypto = require('crypto');
 
 const PORT = Number(process.env.PORT) || 3001;
 
+// Rate limiting: Map<ip, {count, resetTime}>
+const rateLimits = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 100; // Max requests per minute
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const limit = rateLimits.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW };
+
+  if (now > limit.resetTime) {
+    rateLimits.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (limit.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  limit.count++;
+  rateLimits.set(ip, limit);
+  return true;
+}
+
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function isValidEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 254;
+}
+
+function isValidPassword(password) {
+  return password && password.length >= 8 && password.length <= 128;
 }
 
 // Usuarios en memoria
@@ -161,6 +193,14 @@ function getAuthUser(req) {
 }
 
 const server = http.createServer((req, res) => {
+  // Rate limiting
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+  if (!checkRateLimit(clientIp)) {
+    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Too many requests. Please try again later.' }));
+    return;
+  }
+
   if (req.method === 'OPTIONS') {
     res.writeHead(200, {
       'Access-Control-Allow-Origin': '*',
@@ -187,10 +227,25 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const { email, name, password } = JSON.parse(body);
+
+        // Validations
+        if (!isValidEmail(email)) {
+          sendJSON(res, 400, { message: 'Email inválido' });
+          return;
+        }
+        if (!isValidPassword(password)) {
+          sendJSON(res, 400, { message: 'La contraseña debe tener entre 8 y 128 caracteres' });
+          return;
+        }
+        if (!name || name.length < 2 || name.length > 100) {
+          sendJSON(res, 400, { message: 'El nombre debe tener entre 2 y 100 caracteres' });
+          return;
+        }
         if (users[email]) {
           sendJSON(res, 409, { message: 'El correo ya está registrado' });
           return;
         }
+
         const newUser = {
           id: crypto.randomUUID(),
           email,
@@ -219,6 +274,13 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const { email, password } = JSON.parse(body);
+
+        // Validations
+        if (!isValidEmail(email) || !password) {
+          sendJSON(res, 401, { message: 'Credenciales inválidas' });
+          return;
+        }
+
         const user = users[email];
         if (!user || user.passwordHash !== hashPassword(password)) {
           sendJSON(res, 401, { message: 'Credenciales inválidas' });
