@@ -30,9 +30,16 @@ export function useCourse(courseId: string) {
   })
 }
 
+export interface ProgressSummary {
+  userId: string
+  totalCourses: number
+  averageProgress: number
+  courses: Record<string, { courseId: string; completed: number; total: number; percentage: number }>
+}
+
 export function useProgress() {
-  return useQuery('progress', async () => {
-    const response = await api.get('/progress')
+  return useQuery<ProgressSummary>('progress', async () => {
+    const response = await api.get<ProgressSummary>('/progress')
     return response.data
   })
 }
