@@ -25,6 +25,14 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Campus Posgrado</h1>
           <div className="flex items-center space-x-4">
             <span className="text-gray-700">{user?.name}</span>
+            {user?.role === 'instructor' && (
+              <button
+                onClick={() => navigate('/instructor')}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                Panel de Instructor
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"

@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage'
 import Dashboard from './pages/Dashboard'
 import CourseView from './pages/CourseView'
 import { SubmissionsPage } from './pages/SubmissionsPage'
+import { InstructorDashboard } from './pages/InstructorDashboard'
 
 const queryClient = new QueryClient()
 
@@ -27,6 +28,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/courses/:courseId" element={<CourseView />} />
               <Route path="/courses/:courseId/submissions/:resourceId?" element={<SubmissionsPage />} />
+              <Route path="/instructor" element={<InstructorDashboard />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           )}

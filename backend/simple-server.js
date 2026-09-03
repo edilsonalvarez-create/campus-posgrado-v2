@@ -16,6 +16,13 @@ const users = {
     name: 'Test User',
     passwordHash: hashPassword('Password123'),
     role: 'student'
+  },
+  'instructor@example.com': {
+    id: 'instructor-1',
+    email: 'instructor@example.com',
+    name: 'Instructor Demo',
+    passwordHash: hashPassword('Password123'),
+    role: 'instructor'
   }
 };
 
