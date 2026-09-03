@@ -2,7 +2,11 @@ const http = require('http');
 const url = require('url');
 const crypto = require('crypto');
 
-const PORT = 3001;
+const PORT = Number(process.env.PORT) || 3001;
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 // Usuarios en memoria
 const users = {
@@ -10,7 +14,7 @@ const users = {
     id: '550e8400-e29b-41d4-a716-446655440000',
     email: 'test@example.com',
     name: 'Test User',
-    passwordHash: 'hashed_password_123',
+    passwordHash: hashPassword('Password123'),
     role: 'student'
   }
 };
@@ -97,10 +101,6 @@ const progress = {
 
 const tokens = new Map();
 
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
-
 function generateToken(user) {
   const token = crypto.randomBytes(32).toString('hex');
   const payload = {
@@ -145,7 +145,11 @@ const server = http.createServer((req, res) => {
 
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
-  const query = parsedUrl.query;
+
+  if ((pathname === '/health' || pathname === '/api/health') && req.method === 'GET') {
+    sendJSON(res, 200, { status: 'ok' });
+    return;
+  }
 
   // ===== AUTH ENDPOINTS =====
 
@@ -319,8 +323,8 @@ const server = http.createServer((req, res) => {
   sendJSON(res, 404, { message: 'Not found' });
 });
 
-server.listen(PORT, () => {
-  console.log(`✅ Campus Posgrado API Mock running on http://localhost:${PORT}/api`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Campus Posgrado API Mock running on port ${PORT}/api`);
   console.log(`   - POST /api/auth/register`);
   console.log(`   - POST /api/auth/login`);
   console.log(`   - GET  /api/auth/me`);
