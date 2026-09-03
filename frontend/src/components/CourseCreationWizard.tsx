@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from 'react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 
 interface CourseCreationWizardProps {

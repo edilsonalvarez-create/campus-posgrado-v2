@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 
 export interface Submission {
@@ -17,23 +17,23 @@ export interface Submission {
 }
 
 export const useSubmissions = (filters?: { status?: string; courseId?: string }) => {
-  return useQuery({
+  return useQuery<Submission[]>({
     queryKey: ['submissions', filters],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters?.status) params.append('status', filters.status);
       if (filters?.courseId) params.append('courseId', filters.courseId);
-      const response = await api.get(`/submissions?${params.toString()}`);
+      const response = await api.get<Submission[]>(`/submissions?${params.toString()}`);
       return response.data;
     }
   });
 };
 
 export const useCourseSubmissions = (courseId: string) => {
-  return useQuery({
+  return useQuery<Submission[]>({
     queryKey: ['submissions', 'course', courseId],
     queryFn: async () => {
-      const response = await api.get(`/courses/${courseId}/submissions`);
+      const response = await api.get<Submission[]>(`/courses/${courseId}/submissions`);
       return response.data;
     }
   });

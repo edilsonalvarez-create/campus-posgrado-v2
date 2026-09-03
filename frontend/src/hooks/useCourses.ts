@@ -1,4 +1,4 @@
-import { useQuery } from 'react-query'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../services/api'
 
 export interface Course {
@@ -7,6 +7,8 @@ export interface Course {
   description: string
   imageUrl?: string
   published: boolean
+  instructorId?: string
+  modules?: any[]
   progress: {
     completed: number
     total: number
@@ -15,18 +17,23 @@ export interface Course {
 }
 
 export function useCourses() {
-  return useQuery<Course[]>('courses', async () => {
-    const response = await api.get<Course[]>('/courses')
-    return response.data
+  return useQuery<Course[]>({
+    queryKey: ['courses'],
+    queryFn: async () => {
+      const response = await api.get<Course[]>('/courses')
+      return response.data
+    },
   })
 }
 
 export function useCourse(courseId: string) {
-  return useQuery(['course', courseId], async () => {
-    const response = await api.get(`/courses/${courseId}`)
-    return response.data
-  }, {
-    enabled: !!courseId
+  return useQuery<any>({
+    queryKey: ['course', courseId],
+    queryFn: async () => {
+      const response = await api.get(`/courses/${courseId}`)
+      return response.data
+    },
+    enabled: !!courseId,
   })
 }
 
@@ -38,8 +45,11 @@ export interface ProgressSummary {
 }
 
 export function useProgress() {
-  return useQuery<ProgressSummary>('progress', async () => {
-    const response = await api.get<ProgressSummary>('/progress')
-    return response.data
+  return useQuery<ProgressSummary>({
+    queryKey: ['progress'],
+    queryFn: async () => {
+      const response = await api.get<ProgressSummary>('/progress')
+      return response.data
+    },
   })
 }

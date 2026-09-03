@@ -1,6 +1,4 @@
 import React, { useState } from 'react'
-import { useQuery } from 'react-query'
-import axios from 'axios'
 
 interface Asignatura {
   id: string
@@ -16,11 +14,6 @@ interface MasterIEPPageProps {}
 
 export const MasterIEPPage: React.FC<MasterIEPPageProps> = () => {
   const [selectedAsignatura, setSelectedAsignatura] = useState<string | null>(null)
-
-  const { data: masterCourses = [], isLoading } = useQuery('master-iep', async () => {
-    const res = await axios.get('/api/master-courses')
-    return res.data
-  })
 
   const asignaturas: Asignatura[] = [
     {
@@ -48,10 +41,6 @@ export const MasterIEPPage: React.FC<MasterIEPPageProps> = () => {
       level: 'Avanzado'
     }
   ]
-
-  if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Cargando...</div>
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">

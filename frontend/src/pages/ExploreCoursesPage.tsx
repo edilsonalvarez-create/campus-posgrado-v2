@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourses } from '../hooks/useCourses';
 import CourseCard from '../components/CourseCard';
-import { SearchBar } from '../components/SearchBar';
 
 export function ExploreCoursesPage() {
   const navigate = useNavigate();
   const { data: allCourses = [], isLoading } = useCourses();
-  const [filteredCourses, setFilteredCourses] = useState(allCourses);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'progress'>('recent');
   const [filterProgress, setFilterProgress] = useState<'all' | 'active' | 'completed'>('all');
