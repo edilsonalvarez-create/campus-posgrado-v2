@@ -79,6 +79,41 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Master & Native Courses Section */}
+        {user?.role === 'student' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            {/* Master IEP */}
+            <button
+              onClick={() => navigate('/master-iep')}
+              className="bg-gradient-to-br from-primary to-red-700 rounded-lg shadow-lg p-8 text-white hover:shadow-xl transition text-left"
+            >
+              <div className="text-4xl mb-3">🎓</div>
+              <h3 className="text-2xl font-bold mb-2">Master de IEP</h3>
+              <p className="text-red-100 mb-4">
+                Programa completo: Inteligencia Artificial y Tecnologías Disruptivas
+              </p>
+              <div className="flex items-center gap-2 text-red-200">
+                <span>Ver programa →</span>
+              </div>
+            </button>
+
+            {/* Native Courses */}
+            <button
+              onClick={() => navigate('/native-courses')}
+              className="bg-gradient-to-br from-primary to-red-700 rounded-lg shadow-lg p-8 text-white hover:shadow-xl transition text-left"
+            >
+              <div className="text-4xl mb-3">🚀</div>
+              <h3 className="text-2xl font-bold mb-2">Cursos Nativos</h3>
+              <p className="text-red-100 mb-4">
+                AI-101, ML-101, DL-101: Excelencia académica garantizada
+              </p>
+              <div className="flex items-center gap-2 text-red-200">
+                <span>Explorar cursos →</span>
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* Stats cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white rounded-lg shadow p-6">
