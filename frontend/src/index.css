@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles */
+:root {
+  --color-ink-0: #ffffff;
+  --color-ink-1: #f5f5f5;
+  --color-ink-2: #eeeeee;
+  --color-ink-3: #e0e0e0;
+  --color-ink-4: #7d8593;
+  --color-ink-5: #5a6270;
+  --color-ink-6: #3d4452;
+  --color-ink-7: #1f2937;
+  --color-ink-8: #0f1117;
+
+  --color-primary: #0ea5e9;
+  --color-primary-dark: #0284c7;
+
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-ink-0);
+  color: var(--color-ink-8);
+  line-height: 1.5;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-ink-0: #0f1117;
+    --color-ink-1: #1f2937;
+    --color-ink-2: #3d4452;
+    --color-ink-3: #5a6270;
+    --color-ink-4: #8b92a8;
+    --color-ink-5: #c5cad1;
+    --color-ink-6: #d9dce1;
+    --color-ink-7: #eeeeee;
+    --color-ink-8: #ffffff;
+  }
+
+  body {
+    background-color: var(--color-ink-0);
+    color: var(--color-ink-8);
+  }
+}
