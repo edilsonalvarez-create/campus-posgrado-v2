@@ -61,21 +61,32 @@ export const MasterIEPPage: React.FC<MasterIEPPageProps> = () => {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             🎓 Master de IEP
           </h1>
-          <p className="text-xl text-gray-600 mb-6">
+          <p className="text-xl text-gray-600 mb-2">
             Inteligencia Artificial y Tecnologías Disruptivas para la Innovación en la Industria 4.0
           </p>
+          <div className="bg-primary/10 border-l-4 border-primary p-4 mb-6 rounded">
+            <p className="text-gray-700 font-semibold">
+              ✅ Este Master integra 3 Cursos Nativos de Excelencia Académica
+            </p>
+            <p className="text-gray-600 text-sm mt-2">
+              AI-101 (MIT 6.034) + ML-101 (Google) + DL-101 (Andrew Ng) - Todos incluidos en el plan de estudio
+            </p>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white p-6 rounded-lg shadow">
-              <div className="text-3xl font-bold text-primary">18</div>
+              <div className="text-3xl font-bold text-primary">42</div>
               <p className="text-gray-600">Créditos totales</p>
+              <p className="text-xs text-gray-500 mt-1">(Incluye cursos nativos)</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
-              <div className="text-3xl font-bold text-primary">24</div>
+              <div className="text-3xl font-bold text-primary">36</div>
               <p className="text-gray-600">Semanas de estudio</p>
+              <p className="text-xs text-gray-500 mt-1">(Integrado)</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
-              <div className="text-3xl font-bold text-primary">3</div>
-              <p className="text-gray-600">Asignaturas</p>
+              <div className="text-3xl font-bold text-primary">3+3</div>
+              <p className="text-gray-600">Componentes</p>
+              <p className="text-xs text-gray-500 mt-1">Asignaturas + Cursos Nativos</p>
             </div>
           </div>
         </div>
@@ -133,6 +144,32 @@ export const MasterIEPPage: React.FC<MasterIEPPageProps> = () => {
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">
                   Asignatura 1: Fundamentos de IA y Tecnologías Disruptivas
                 </h2>
+
+                {/* Curso Nativo Integrado */}
+                <div className="bg-gradient-to-r from-primary to-red-700 text-white rounded-lg p-6 mb-8">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold mb-2">🚀 Curso Nativo Integrado: AI-101</h3>
+                      <p className="text-red-100 mb-4">
+                        Fundamentos de Inteligencia Artificial (Equivalente MIT 6.034)
+                      </p>
+                      <p className="text-red-100 mb-4">
+                        Este curso nativo es PARTE DEL PLAN DE ESTUDIO del Master y garantiza asimilación profunda de conceptos fundamentales de IA.
+                      </p>
+                      <div className="flex gap-4 text-sm">
+                        <span>📚 12 créditos</span>
+                        <span>📅 12 semanas</span>
+                        <span>✅ Rigor MIT</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => window.location.href = '/native-courses/native-ai-101'}
+                      className="bg-white text-primary px-6 py-2 rounded font-semibold hover:bg-red-50 transition whitespace-nowrap ml-4"
+                    >
+                      Ver curso →
+                    </button>
+                  </div>
+                </div>
 
                 <div className="mb-8">
                   <h3 className="text-xl font-bold text-gray-900 mb-4">Módulos</h3>
@@ -192,8 +229,35 @@ export const MasterIEPPage: React.FC<MasterIEPPageProps> = () => {
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">
                   Asignatura 2: Machine Learning Avanzado
                 </h2>
+
+                {/* Curso Nativo Integrado */}
+                <div className="bg-gradient-to-r from-primary to-red-700 text-white rounded-lg p-6 mb-8">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold mb-2">🚀 Curso Nativo Integrado: ML-101</h3>
+                      <p className="text-red-100 mb-4">
+                        Machine Learning desde Cero (Equivalente Google ML Crash Course)
+                      </p>
+                      <p className="text-red-100 mb-4">
+                        Este curso nativo es PARTE DEL PLAN DE ESTUDIO del Master. Domina ML moderno con rigor académico garantizado.
+                      </p>
+                      <div className="flex gap-4 text-sm">
+                        <span>📚 12 créditos</span>
+                        <span>📅 8 semanas</span>
+                        <span>✅ Rigor Google</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => window.location.href = '/native-courses/native-ml-101'}
+                      className="bg-white text-primary px-6 py-2 rounded font-semibold hover:bg-red-50 transition whitespace-nowrap ml-4"
+                    >
+                      Ver curso →
+                    </button>
+                  </div>
+                </div>
+
                 <p className="text-gray-600 mb-6">
-                  Temas: Feature Engineering, Ensemble Methods, Hyperparameter Tuning, AutoML, MLOps
+                  Temas avanzados: Feature Engineering, Ensemble Methods, Hyperparameter Tuning, AutoML, MLOps
                 </p>
                 <button className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition text-lg">
                   Matricularse en Asignatura 2
@@ -206,8 +270,35 @@ export const MasterIEPPage: React.FC<MasterIEPPageProps> = () => {
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">
                   Asignatura 3: Deep Learning Especializado
                 </h2>
+
+                {/* Curso Nativo Integrado */}
+                <div className="bg-gradient-to-r from-primary to-red-700 text-white rounded-lg p-6 mb-8">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold mb-2">🚀 Curso Nativo Integrado: DL-101</h3>
+                      <p className="text-red-100 mb-4">
+                        Deep Learning Fundamentals (Equivalente Andrew Ng Specialization)
+                      </p>
+                      <p className="text-red-100 mb-4">
+                        Este curso nativo es PARTE DEL PLAN DE ESTUDIO del Master. Domina redes neuronales profundas con rigor de especialización.
+                      </p>
+                      <div className="flex gap-4 text-sm">
+                        <span>📚 18 créditos</span>
+                        <span>📅 16 semanas</span>
+                        <span>✅ Rigor Andrew Ng</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => window.location.href = '/native-courses/native-dl-101'}
+                      className="bg-white text-primary px-6 py-2 rounded font-semibold hover:bg-red-50 transition whitespace-nowrap ml-4"
+                    >
+                      Ver curso →
+                    </button>
+                  </div>
+                </div>
+
                 <p className="text-gray-600 mb-6">
-                  Temas: Transfer Learning, Fine-tuning, GANs, NLP con Transformers, Vision Transformers
+                  Temas especializados: Transfer Learning, Fine-tuning, GANs, NLP con Transformers, Vision Transformers
                 </p>
                 <button className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition text-lg">
                   Matricularse en Asignatura 3
@@ -217,83 +308,6 @@ export const MasterIEPPage: React.FC<MasterIEPPageProps> = () => {
           </div>
         )}
 
-        {/* Cursos Nativos Equivalentes */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">
-            🚀 Cursos Nativos de Excelencia Académica
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Cursos diseñados específicamente para garantizar asimilación profunda de conceptos, equivalentes en rigor a MIT, Google y Andrew Ng.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* AI-101 */}
-            <div className="bg-white rounded-lg shadow-md border-t-4 border-primary">
-              <div className="bg-gradient-to-r from-primary to-red-700 text-white p-6">
-                <h3 className="text-xl font-bold mb-2">Fundamentos de IA</h3>
-                <p className="text-sm opacity-90">native-ai-101</p>
-              </div>
-              <div className="p-6">
-                <p className="text-gray-600 mb-4">
-                  Equivalente: MIT 6.034 Artificial Intelligence
-                </p>
-                <ul className="text-sm text-gray-600 mb-6 space-y-2">
-                  <li>✓ 12 créditos</li>
-                  <li>✓ 12 semanas</li>
-                  <li>✓ Nivel: Principiante-Intermedio</li>
-                  <li>✓ Rigor académico garantizado</li>
-                </ul>
-                <button className="w-full bg-primary text-white py-2 rounded font-semibold hover:bg-red-700 transition">
-                  Ver curso →
-                </button>
-              </div>
-            </div>
-
-            {/* ML-101 */}
-            <div className="bg-white rounded-lg shadow-md border-t-4 border-primary">
-              <div className="bg-gradient-to-r from-primary to-red-700 text-white p-6">
-                <h3 className="text-xl font-bold mb-2">Machine Learning</h3>
-                <p className="text-sm opacity-90">native-ml-101</p>
-              </div>
-              <div className="p-6">
-                <p className="text-gray-600 mb-4">
-                  Equivalente: Google ML Crash Course
-                </p>
-                <ul className="text-sm text-gray-600 mb-6 space-y-2">
-                  <li>✓ 12 créditos</li>
-                  <li>✓ 8 semanas</li>
-                  <li>✓ Nivel: Principiante</li>
-                  <li>✓ Implementación práctica</li>
-                </ul>
-                <button className="w-full bg-primary text-white py-2 rounded font-semibold hover:bg-red-700 transition">
-                  Ver curso →
-                </button>
-              </div>
-            </div>
-
-            {/* DL-101 */}
-            <div className="bg-white rounded-lg shadow-md border-t-4 border-primary">
-              <div className="bg-gradient-to-r from-primary to-red-700 text-white p-6">
-                <h3 className="text-xl font-bold mb-2">Deep Learning</h3>
-                <p className="text-sm opacity-90">native-dl-101</p>
-              </div>
-              <div className="p-6">
-                <p className="text-gray-600 mb-4">
-                  Equivalente: Andrew Ng Specialization
-                </p>
-                <ul className="text-sm text-gray-600 mb-6 space-y-2">
-                  <li>✓ 18 créditos</li>
-                  <li>✓ 16 semanas</li>
-                  <li>✓ Nivel: Intermedio-Avanzado</li>
-                  <li>✓ Experto en redes neuronales</li>
-                </ul>
-                <button className="w-full bg-primary text-white py-2 rounded font-semibold hover:bg-red-700 transition">
-                  Ver curso →
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Garantía de Asimilación */}
         <div className="bg-primary text-white rounded-lg shadow-lg p-8">
