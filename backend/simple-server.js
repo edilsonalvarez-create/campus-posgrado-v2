@@ -112,6 +112,21 @@ const submissions = {};
 // Calificaciones (grades)
 const grades = {};
 
+// Matriculaciones
+const enrollments = {
+  'c1': {
+    'instructor-1': { userId: 'instructor-1', courseId: 'c1', role: 'instructor' },
+    '550e8400-e29b-41d4-a716-446655440000': { userId: '550e8400-e29b-41d4-a716-446655440000', courseId: 'c1', role: 'student' }
+  },
+  'c2': {
+    'instructor-1': { userId: 'instructor-1', courseId: 'c2', role: 'instructor' },
+    '550e8400-e29b-41d4-a716-446655440000': { userId: '550e8400-e29b-41d4-a716-446655440000', courseId: 'c2', role: 'student' }
+  },
+  'c3': {
+    'instructor-2': { userId: 'instructor-2', courseId: 'c3', role: 'instructor' }
+  }
+};
+
 const tokens = new Map();
 
 function generateToken(user) {
@@ -300,10 +315,82 @@ const server = http.createServer((req, res) => {
           updatedAt: new Date().toISOString()
         };
         courses[newCourse.id] = newCourse;
+        enrollments[newCourse.id] = {};
+        enrollments[newCourse.id][user.id] = { userId: user.id, courseId: newCourse.id, role: 'instructor' };
         sendJSON(res, 201, newCourse);
       } catch (e) {
         sendJSON(res, 400, { message: 'Invalid JSON' });
       }
+    });
+    return;
+  }
+
+  if (pathname.match(/^\/api\/courses\/[a-zA-Z0-9-]+$/) && req.method === 'PUT') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const courseId = pathname.split('/')[3];
+    const course = courses[courseId];
+    if (!course || course.instructorId !== user.id) {
+      sendJSON(res, 403, { message: 'Forbidden' });
+      return;
+    }
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const updates = JSON.parse(body);
+        Object.assign(course, updates, { updatedAt: new Date().toISOString() });
+        sendJSON(res, 200, course);
+      } catch (e) {
+        sendJSON(res, 400, { message: 'Invalid JSON' });
+      }
+    });
+    return;
+  }
+
+  if (pathname.match(/^\/api\/courses\/[a-zA-Z0-9-]+\/analytics$/) && req.method === 'GET') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const courseId = pathname.split('/')[3];
+    const course = courses[courseId];
+    if (!course || (user.role === 'instructor' && course.instructorId !== user.id)) {
+      sendJSON(res, 403, { message: 'Forbidden' });
+      return;
+    }
+
+    const courseEnrollments = enrollments[courseId] || {};
+    const students = Object.values(courseEnrollments).filter(e => e.role === 'student');
+    const courseSubmissions = Object.values(submissions).filter(s => s.courseId === courseId);
+    const gradedSubmissions = courseSubmissions.filter(s => s.status === 'graded');
+
+    const avgGrade = gradedSubmissions.length > 0
+      ? (gradedSubmissions.reduce((sum, s) => sum + (s.grade || 0), 0) / gradedSubmissions.length).toFixed(2)
+      : 0;
+
+    const completionRate = students.length > 0
+      ? Math.round((students.filter(s => progress[s.userId]?.[courseId]?.percentage === 100).length / students.length) * 100)
+      : 0;
+
+    sendJSON(res, 200, {
+      courseId,
+      totalStudents: students.length,
+      totalSubmissions: courseSubmissions.length,
+      gradedSubmissions: gradedSubmissions.length,
+      pendingSubmissions: courseSubmissions.filter(s => s.status === 'submitted').length,
+      averageGrade: parseFloat(avgGrade),
+      completionRate,
+      students: students.map(s => ({
+        id: s.userId,
+        name: Object.values(users).find(u => u.id === s.userId)?.name,
+        progress: progress[s.userId]?.[courseId]?.percentage || 0,
+        submissions: courseSubmissions.filter(sub => sub.studentId === s.userId).length
+      }))
     });
     return;
   }
@@ -433,20 +520,89 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ===== ENROLLMENTS ENDPOINTS =====
+
+  if (pathname === '/api/enrollments' && req.method === 'POST') {
+    const user = getAuthUser(req);
+    if (!user || user.role !== 'instructor') {
+      sendJSON(res, 403, { message: 'Forbidden' });
+      return;
+    }
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { courseId, studentEmail } = JSON.parse(body);
+        const course = courses[courseId];
+        if (!course || course.instructorId !== user.id) {
+          sendJSON(res, 403, { message: 'Forbidden' });
+          return;
+        }
+        const student = users[studentEmail];
+        if (!student) {
+          sendJSON(res, 404, { message: 'Student not found' });
+          return;
+        }
+        if (!enrollments[courseId]) enrollments[courseId] = {};
+        enrollments[courseId][student.id] = {
+          userId: student.id,
+          courseId,
+          role: 'student'
+        };
+        if (!progress[student.id]) progress[student.id] = {};
+        progress[student.id][courseId] = { courseId, completed: 0, total: 0, percentage: 0 };
+        sendJSON(res, 201, enrollments[courseId][student.id]);
+      } catch (e) {
+        sendJSON(res, 400, { message: 'Invalid JSON' });
+      }
+    });
+    return;
+  }
+
+  if (pathname === '/api/enrollments' && req.method === 'GET') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const allEnrollments = [];
+    for (const courseId in enrollments) {
+      for (const userId in enrollments[courseId]) {
+        allEnrollments.push(enrollments[courseId][userId]);
+      }
+    }
+    if (user.role === 'student') {
+      const filtered = allEnrollments.filter(e => e.userId === user.id);
+      sendJSON(res, 200, filtered);
+    } else {
+      sendJSON(res, 200, allEnrollments);
+    }
+    return;
+  }
+
   // 404
   sendJSON(res, 404, { message: 'Not found' });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Campus Posgrado API Mock running on port ${PORT}/api`);
+  console.log(`   Auth:`);
   console.log(`   - POST /api/auth/register`);
   console.log(`   - POST /api/auth/login`);
   console.log(`   - GET  /api/auth/me`);
+  console.log(`   Courses:`);
   console.log(`   - GET  /api/courses`);
   console.log(`   - GET  /api/courses/:id`);
+  console.log(`   - POST /api/courses (instructor)`);
+  console.log(`   - PUT  /api/courses/:id (instructor)`);
+  console.log(`   - GET  /api/courses/:id/analytics`);
+  console.log(`   Progress & Submissions:`);
   console.log(`   - GET  /api/progress`);
   console.log(`   - POST /api/submissions`);
   console.log(`   - GET  /api/submissions`);
-  console.log(`   - PUT  /api/submissions/:id/grade`);
+  console.log(`   - PUT  /api/submissions/:id/grade (instructor)`);
   console.log(`   - GET  /api/courses/:id/submissions`);
+  console.log(`   Enrollments:`);
+  console.log(`   - POST /api/enrollments (instructor)`);
+  console.log(`   - GET  /api/enrollments`);
 });
