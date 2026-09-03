@@ -61,6 +61,12 @@ export const MasterIEPPage: React.FC<MasterIEPPageProps> = () => {
               AI-101 (MIT 6.034) + ML-101 (Google) + DL-101 (Andrew Ng) - Todos incluidos en el plan de estudio
             </p>
           </div>
+          <a
+            href="/courses/master-iep"
+            className="inline-block bg-primary text-white px-5 py-2.5 rounded-lg font-semibold hover:opacity-90 transition mb-2"
+          >
+            📖 Entrar al Máster y ver los módulos →
+          </a>
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="text-3xl font-bold text-primary">42</div>

@@ -18,8 +18,10 @@ export default function Dashboard() {
     navigate('/login')
   }
 
-  const activeCourses = courses?.filter(c => c.progress.percentage < 100) || []
-  const completedCourses = courses?.filter(c => c.progress.percentage === 100) || []
+  const enrolledIds = new Set(Object.keys(progress?.courses || {}))
+  const myCourses = (courses || []).filter(c => enrolledIds.has(c.id))
+  const activeCourses = myCourses.filter(c => c.progress.percentage < 100)
+  const completedCourses = myCourses.filter(c => c.progress.percentage === 100)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,7 +66,7 @@ export default function Dashboard() {
               <h2 className="text-3xl font-bold mb-2">¡Bienvenido, {user?.name}!</h2>
               <p className="text-blue-100">
                 {user?.role === 'student'
-                  ? `Estás en ${courses?.length || 0} programa(s). Tu progreso general es ${progress?.averageProgress || 0}%.`
+                  ? `Estás matriculado en ${progress?.totalCourses ?? 0} de ${courses?.length ?? 0} cursos del catálogo. Tu progreso general es ${progress?.averageProgress || 0}%.`
                   : 'Gestiona tus cursos y estudiantes.'}
               </p>
             </div>

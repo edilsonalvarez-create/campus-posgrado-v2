@@ -167,7 +167,13 @@ export const NativeCoursesPage: React.FC = () => {
           </div>
           <h1 className="text-4xl font-bold mb-2">{course.title}</h1>
           <p className="text-lg opacity-90 mb-4">Equivalente: {course.equivalentTo}</p>
-          <p className="text-base">{course.description}</p>
+          <p className="text-base mb-5">{course.description}</p>
+          <a
+            href={`/courses/${course.id}`}
+            className="inline-block bg-white text-primary px-5 py-2.5 rounded-lg font-semibold hover:bg-red-50 transition"
+          >
+            📖 Entrar al curso y ver las lecciones →
+          </a>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
