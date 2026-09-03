@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Campus Posgrado",
+    "slug": "campus-posgrado-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.sumimedical.campusposgrado"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.sumimedical.campusposgrado"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icons": [
+            "./assets/notification-icon.png"
+          ]
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "https://campus-posgrado-v2-api.railway.app/api"
+    }
+  }
+}
