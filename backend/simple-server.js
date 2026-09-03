@@ -159,6 +159,51 @@ const enrollments = {
   }
 };
 
+// Quiz y respuestas
+const quizzes = {
+  'q1': {
+    id: 'q1',
+    resourceId: 'r3',
+    courseId: 'c1',
+    title: 'Cuestionario 1: Fundamentos de IA',
+    questions: [
+      {
+        id: 'q1-1',
+        text: '¿Qué es Machine Learning?',
+        type: 'multiple-choice',
+        options: [
+          { id: 'a', text: 'Un subcampo de la IA que permite a las máquinas aprender' },
+          { id: 'b', text: 'Un lenguaje de programación' },
+          { id: 'c', text: 'Una base de datos' },
+          { id: 'd', text: 'Un framework web' }
+        ],
+        correctAnswer: 'a'
+      },
+      {
+        id: 'q1-2',
+        text: '¿Cuál es el propósito principal de las redes neuronales?',
+        type: 'multiple-choice',
+        options: [
+          { id: 'a', text: 'Simular el funcionamiento del cerebro humano' },
+          { id: 'b', text: 'Almacenar datos' },
+          { id: 'c', text: 'Comprimir imágenes' },
+          { id: 'd', text: 'Traducir idiomas' }
+        ],
+        correctAnswer: 'a'
+      }
+    ]
+  }
+};
+
+// Respuestas de quiz de estudiantes
+const quizResponses = {};
+
+// Certificados
+const certificates = {};
+
+// Notificaciones
+const notifications = {};
+
 const tokens = new Map();
 
 function generateToken(user) {
@@ -642,6 +687,136 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ===== QUIZ ENDPOINTS =====
+
+  if (pathname.match(/^\/api\/quizzes\/[a-zA-Z0-9-]+$/) && req.method === 'GET') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const quizId = pathname.split('/')[3];
+    const quiz = quizzes[quizId];
+    if (!quiz) {
+      sendJSON(res, 404, { message: 'Quiz not found' });
+      return;
+    }
+    sendJSON(res, 200, quiz);
+    return;
+  }
+
+  if (pathname === '/api/quiz-responses' && req.method === 'POST') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { quizId, answers } = JSON.parse(body);
+        const quiz = quizzes[quizId];
+        if (!quiz) {
+          sendJSON(res, 404, { message: 'Quiz not found' });
+          return;
+        }
+
+        let correctCount = 0;
+        for (const answer of answers) {
+          const question = quiz.questions.find(q => q.id === answer.questionId);
+          if (question && question.correctAnswer === answer.answer) {
+            correctCount++;
+          }
+        }
+
+        const score = Math.round((correctCount / quiz.questions.length) * 100);
+        const responseId = crypto.randomUUID();
+        const response = {
+          id: responseId,
+          userId: user.id,
+          quizId,
+          answers,
+          score,
+          completedAt: new Date().toISOString()
+        };
+
+        quizResponses[responseId] = response;
+
+        // Award certificate if score >= 70
+        if (score >= 70 && !certificates[user.id]?.[quiz.courseId]) {
+          if (!certificates[user.id]) certificates[user.id] = {};
+          certificates[user.id][quiz.courseId] = {
+            id: crypto.randomUUID(),
+            userId: user.id,
+            courseId: quiz.courseId,
+            courseName: courses[quiz.courseId].title,
+            issuedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+          };
+
+          // Add notification
+          if (!notifications[user.id]) notifications[user.id] = [];
+          notifications[user.id].push({
+            id: crypto.randomUUID(),
+            type: 'certificate',
+            title: 'Certificado obtenido',
+            message: `Felicitaciones! Completaste el curso "${courses[quiz.courseId].title}" con ${score}%`,
+            read: false,
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        sendJSON(res, 201, response);
+      } catch (e) {
+        sendJSON(res, 400, { message: 'Invalid JSON' });
+      }
+    });
+    return;
+  }
+
+  // ===== CERTIFICATES ENDPOINTS =====
+
+  if (pathname === '/api/certificates' && req.method === 'GET') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const userCerts = certificates[user.id] || {};
+    sendJSON(res, 200, Object.values(userCerts));
+    return;
+  }
+
+  // ===== NOTIFICATIONS ENDPOINTS =====
+
+  if (pathname === '/api/notifications' && req.method === 'GET') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const userNotifications = notifications[user.id] || [];
+    sendJSON(res, 200, userNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    return;
+  }
+
+  if (pathname.match(/^\/api\/notifications\/[a-zA-Z0-9-]+\/read$/) && req.method === 'PUT') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJSON(res, 401, { message: 'Unauthorized' });
+      return;
+    }
+    const notificationId = pathname.split('/')[3];
+    const userNotifications = notifications[user.id] || [];
+    const notification = userNotifications.find(n => n.id === notificationId);
+    if (notification) {
+      notification.read = true;
+    }
+    sendJSON(res, 200, { message: 'Notification marked as read' });
+    return;
+  }
+
   // 404
   sendJSON(res, 404, { message: 'Not found' });
 });
@@ -667,4 +842,11 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`   Enrollments:`);
   console.log(`   - POST /api/enrollments (instructor)`);
   console.log(`   - GET  /api/enrollments`);
+  console.log(`   Quiz & Certificates:`);
+  console.log(`   - GET  /api/quizzes/:id`);
+  console.log(`   - POST /api/quiz-responses`);
+  console.log(`   - GET  /api/certificates`);
+  console.log(`   Notifications:`);
+  console.log(`   - GET  /api/notifications`);
+  console.log(`   - PUT  /api/notifications/:id/read`);
 });
