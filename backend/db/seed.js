@@ -60,6 +60,7 @@ const AULA_CONTENT_FILES = {
   'Made With ML': 'aula-made-with-ml.js',
   'Cursos cortos: evaluación de LLMs y sistemas de prompts': 'aula-cursos-cortos-llm.js',
   'Kaggle Learn: Intro to ML, Intermediate ML, Feature Engineering': 'aula-kaggle-learn.js',
+  'Practical Deep Learning for Coders': 'aula-fastai-practical-dl.js',
 };
 function tryRequireAulaContent(name) {
   const file = AULA_CONTENT_FILES[name];
