@@ -416,6 +416,75 @@ route('GET', '/api/native-courses', async ({ res, user }) => {
   sendJSON(res, 200, await coursesForUser(user && user.id, ['native']));
 });
 
+// --- programs (agrupa asignaturas-curso por meta.programSlug, ej. el Máster) ---
+const PROGRAM_TITLES = {
+  'master-iep': 'Máster en Inteligencia Artificial y Tecnologías Disruptivas para la Innovación en la Industria 4.0',
+};
+const TRACK_ORDER = ['PRO-essentials', 'PROadvance', 'PROexpertify', 'TFM'];
+const TRACK_LABEL = {
+  'PRO-essentials': 'Certificado en Innovación y Tecnologías Disruptivas para la Transformación de la Industria 4.0',
+  PROadvance: 'Certificado en Tecnologías Disruptivas e Inteligencia Artificial Avanzada',
+  PROexpertify: 'Certificado en Cloud Computing e IA para entornos Seguros',
+  TFM: 'Proyecto Fin de Programa',
+};
+
+route('GET', '/api/programs/:slug', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const { rows } = await pool.query(
+    `SELECT c.*,
+       (SELECT count(*) FROM resources r JOIN modules m ON m.id = r.module_id WHERE m.course_id = c.id) AS total,
+       (SELECT count(*) FROM progress p JOIN resources r ON r.id = p.resource_id JOIN modules m ON m.id = r.module_id
+          WHERE m.course_id = c.id AND p.user_id = $2 AND p.completed) AS completed
+     FROM courses c
+     WHERE c.meta->>'programSlug' = $1
+     ORDER BY (c.meta->>'programOrder')::int`,
+    [params.slug, user.id],
+  );
+  if (!rows.length) return sendJSON(res, 404, { message: 'Programa no encontrado' });
+
+  const progressBySlug = {};
+  const asignaturas = rows.map((r) => {
+    const total = Number(r.total);
+    const completed = Number(r.completed);
+    const percentage = total ? Math.round((completed / total) * 100) : 0;
+    progressBySlug[r.slug] = percentage;
+    const meta = r.meta || {};
+    return {
+      id: r.id, slug: r.slug, title: r.title, description: r.description,
+      track: meta.track, programOrder: meta.programOrder,
+      prerequisiteSlug: meta.prerequisiteSlug || null,
+      officialCode: meta.officialCode || null,
+      contenidos: meta.contenidos || [],
+      progress: { completed, total, percentage },
+    };
+  });
+  for (const a of asignaturas) {
+    a.locked = !!(a.prerequisiteSlug && (progressBySlug[a.prerequisiteSlug] || 0) < 100);
+  }
+
+  const tracks = TRACK_ORDER.map((key) => {
+    const items = asignaturas.filter((a) => a.track === key);
+    if (!items.length) return null;
+    const total = items.reduce((n, a) => n + a.progress.total, 0);
+    const completed = items.reduce((n, a) => n + a.progress.completed, 0);
+    return {
+      key, label: TRACK_LABEL[key], asignaturas: items,
+      progress: { completed, total, percentage: total ? Math.round((completed / total) * 100) : 0 },
+      completed: items.every((a) => a.progress.percentage === 100),
+    };
+  }).filter(Boolean);
+
+  const total = asignaturas.reduce((n, a) => n + a.progress.total, 0);
+  const completed = asignaturas.reduce((n, a) => n + a.progress.completed, 0);
+
+  sendJSON(res, 200, {
+    slug: params.slug,
+    title: PROGRAM_TITLES[params.slug] || params.slug,
+    tracks,
+    progress: { completed, total, percentage: total ? Math.round((completed / total) * 100) : 0 },
+  });
+});
+
 // --- progress ---
 route('GET', '/api/progress', async ({ res, user }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
@@ -672,6 +741,15 @@ route('PUT', '/api/notifications/:id/read', async ({ res, user, params }) => {
   if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
   await pool.query('UPDATE notifications SET read = true WHERE id = $1 AND user_id = $2', [params.id, user.id]);
   sendJSON(res, 200, { ok: true });
+});
+
+// --- admin: re-sembrar el catálogo bajo demanda (mismo TRUNCATE+insert que el arranque
+// con catálogo vacío, pero disparable sin reiniciar el servicio) ---
+route('POST', '/api/admin/reseed', async ({ res, user }) => {
+  if (!user || user.role !== 'instructor') return sendJSON(res, 403, { message: 'Forbidden' });
+  console.log(`[admin] reseed disparado por ${user.email}`);
+  await require('./db/seed')();
+  sendJSON(res, 200, { ok: true, message: 'Catálogo re-sembrado.' });
 });
 
 // ---------- servidor ----------

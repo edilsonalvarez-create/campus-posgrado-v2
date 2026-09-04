@@ -65,9 +65,7 @@ const BOOKS = evalLiteral(extractObjectLiteral(html, 'BOOKS'), 'BOOKS');
 const AULAS = evalLiteral(extractObjectLiteral(html, 'AULAS'), 'AULAS');
 
 let nativeCurriculum = {};
-let masterIep = {};
 try { nativeCurriculum = require('../native-curriculum.js'); } catch (e) { console.warn('native-curriculum.js:', e.message); }
-try { masterIep = require('../master-iep-data.js'); } catch (e) { console.warn('master-iep-data.js:', e.message); }
 
 fs.mkdirSync(OUT, { recursive: true });
 const write = (f, obj) => {
@@ -78,7 +76,9 @@ write('template.json', TEMPLATE);
 write('books.json', BOOKS);
 write('aulas.json', AULAS);
 write('native-curriculum.json', nativeCurriculum);
-write('master-iep.json', masterIep);
+// master-iep-data.js YA NO se usa: era contenido fabricado (3 asignaturas inventadas,
+// sin relación con el documento oficial del Máster). Las 11 asignaturas + TFM reales
+// se siembran ahora desde TEMPLATE con títulos del documento oficial (ver db/seed.js).
 
 const aulaStats = Object.entries(AULAS).map(([k, v]) => ({
   aula: k.slice(0, 40),

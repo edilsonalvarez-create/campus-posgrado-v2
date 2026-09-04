@@ -1,6 +1,11 @@
 // Seed del catálogo completo desde backend/db/seed-data/*.json
 // (generado por scripts/extract-legacy-content.mjs a partir del artefacto legado
-//  campus-posgrado.html + native-curriculum.js + master-iep-data.js).
+//  campus-posgrado.html + native-curriculum.js).
+//
+// Las 11 asignaturas oficiales del Máster + TFM se siembran como cursos propios
+// (kind='program', meta.programSlug='master-iep'), con título y agrupación por
+// tramo tomados del documento oficial del programa (fuente de verdad); el
+// contenido/recursos curados de cada una vienen del artefacto legado (TEMPLATE).
 //
 // Idempotente: TRUNCATE del catálogo y re-inserción. Los usuarios se conservan
 // (upsert). El progreso del usuario se re-siembra en un estado inicial realista.
@@ -121,36 +126,110 @@ async function main() {
       return id;
     }
 
-    // ---- 1. Programa IA-40 (TEMPLATE) ----
+    // ---- 1. Máster IEP: 11 asignaturas oficiales + TFM (cada una = un curso propio) ----
+    // Fuente de verdad de títulos/tramos: el documento oficial del programa
+    // (IEP_Master_Online_..._Industria_4_0_LAT.docx). La estructura (módulos/recursos
+    // curados) viene del artefacto legado (TEMPLATE), que ya coincide casi palabra por
+    // palabra con el documento; aquí se corrige el título a la forma exacta del documento
+    // y se añade la agrupación por tramo/certificado que el documento sí declara.
     const TEMPLATE = read('template.json');
-    await insertCourse({
-      slug: 'programa-ia-industria-40',
-      kind: 'program',
-      title: TEMPLATE.title,
-      description: TEMPLATE.subtitle || '',
-      meta: {
-        code: TEMPLATE.code, area: TEMPLATE.area, level: TEMPLATE.level,
-        hoursWeek: TEMPLATE.hoursWeek, weeks: TEMPLATE.weeks,
-      },
-      modules: (TEMPLATE.modules || []).map((m) => ({
-        title: `${m.numeral}. ${m.title}`,
-        numeral: m.numeral,
-        subtitle: m.weeks || null,
+    const byNumeral = Object.fromEntries((TEMPLATE.modules || []).map((m) => [m.numeral, m]));
+
+    const MASTER_ASIGNATURAS = [
+      { numeral: 'I', slug: 'master-i', title: 'I. Artificial Intelligence', track: 'PRO-essentials',
+        officialCode: '2702799205636',
+        contenidos: ['IA y Toma de Decisiones Automatizadas', 'Machine Learning', 'Generative AI', 'Ethics in AI', 'Casos de Uso en Diferentes Sectores', 'Plataformas de Software'] },
+      { numeral: 'II', slug: 'master-ii', title: 'II. Innovación tecnológica: Principales Tecnologías Disruptivas', track: 'PRO-essentials',
+        officialCode: '2702799205366',
+        contenidos: ['Conceptos fundamentales del Big Data', 'Conceptos fundamentales de la Inteligencia Artificial', 'Conceptos fundamentales del IoT', 'Computación en la nube y su rol en el IoT', 'Conceptos fundamentales de Blockchain', 'El futuro de las tecnologías emergentes'] },
+      { numeral: 'III', slug: 'master-iii', title: 'III. Big Data Dentro de la informática', track: 'PRO-essentials',
+        officialCode: '2702799209255',
+        contenidos: ['Arquitecturas y Soluciones de Big Data: Análisis, Procesamiento y Escalabilidad', 'Entornos de trabajo para arquitecturas Deep Learning', 'Aprendizaje Automático', 'Regresiones y series temporales autorregresivas', 'Árboles de decisión y Algoritmos', 'Redes neuronales Artificiales'] },
+      { numeral: 'IV', slug: 'master-iv', title: 'IV. Metodologías Ágiles para gestión de proyectos', track: 'PROadvance',
+        officialCode: '2702799205392',
+        contenidos: ['Principios y fundamentos de la agilidad', 'Comparativa de marcos ágiles (Scrum, Kanban, Lean)', 'Roles y eventos en Scrum', 'Prácticas de planificación y seguimiento en Scrum', 'Ciclos iterativos para la mejora de productos y procesos', 'Evaluación y ajuste continuo en proyectos ágiles'] },
+      { numeral: 'V', slug: 'master-v', title: 'V. Ética y regulaciones en el Uso de la IA', track: 'PROadvance',
+        officialCode: null,
+        contenidos: ['Introducción a la Inteligencia Artificial', 'Regulación jurídica de la IA', 'Consideraciones éticas en el uso de la IA', 'Principales Retos y desafíos en el uso de IA', 'Inteligencia Artificial aplicada para la detección y prevención de riesgos', 'Modelo de Gobernanza de la IA. Big Data, Blockchain y otras tecnologías disruptivas'] },
+      { numeral: 'VI', slug: 'master-vi', title: 'VI. Machine Learning', track: 'PROadvance',
+        officialCode: '2702799208864',
+        contenidos: ['Introducción a Machine Learning', 'Aprendizaje Supervisado', 'Aprendizaje supervisado de regresión', 'Aprendizaje no supervisado', 'Aprendizaje semi-supervisado y por Refuerzo', 'Interpretabilidad de Modelos'] },
+      { numeral: 'VII', slug: 'master-vii', title: 'VII. Prompts Multimodales y Adaptación a Contextos Complejos', track: 'PROadvance',
+        officialCode: '2702799209304',
+        contenidos: ['Integración de texto, imagen y sonido', 'Aplicaciones en arte digital y transmedia', 'Desafíos en entornos multimodales', 'Adaptación de Prompts a Diferentes audiencias', 'Creación de Prompts para interfaces inteligentes', 'Evaluación de la usabilidad'] },
+      { numeral: 'VIII', slug: 'master-viii', title: 'VIII. Metodologías para el desarrollo de productos tecnológicos innovadores', track: 'PROadvance',
+        officialCode: null,
+        contenidos: ['Fundamentos de Design Thinking', 'Fases de empatía y definición de problemas', 'Técnicas de ideación para soluciones innovadoras', 'Prototipado rápido y validación inicial', 'Iteración y mejoras continuas del prototipo', 'Pruebas con usuarios y retroalimentación'] },
+      { numeral: 'IX', slug: 'master-ix', title: 'IX. Uso e Implementación de Modelos de Inteligencia Artificial Generativa en la Industria 4.0', track: 'PROadvance',
+        officialCode: '2702799209220',
+        contenidos: ['Conceptos básicos de IA Generativa', 'Paradigmas de ML en la IA Generativa', 'Redes Neuronales Generativas', 'Modelos Generativos', 'IA Generativa para contenido Multimedia y multimodal', 'Tendencias y dirección futura de la IA Generativa'] },
+      { numeral: 'X', slug: 'master-x', title: 'X. AI Platforms', track: 'PROexpertify',
+        officialCode: '2702799211500',
+        contenidos: ['Computación en la nube', 'Arquitectura de referencia', 'Principales servicios', 'Amazon Web Services', 'Microsoft Azure', 'Google Cloud'] },
+      { numeral: 'XI', slug: 'master-xi', title: 'XI. Principios de Inteligencia Artificial aplicada a entornos seguros', track: 'PROexpertify',
+        officialCode: '2702799179257',
+        contenidos: ['Introducción a la Inteligencia Artificial y aprendizaje automático', 'Principios y aplicaciones Big Data en la ciberseguridad', 'Manejo y procesamiento de datos', 'Modelos predictivos en ciberseguridad', 'Introducción a los modelos generativos en Inteligencia Artificial', 'Retos y oportunidades de la Inteligencia Artificial en el contexto de la ciberseguridad'] },
+      { numeral: 'TFM', slug: 'master-tfm', title: 'Proyecto Fin de Programa (TFM)', track: 'TFM',
+        officialCode: null,
+        contenidos: ['Trabajo académico de cierre que aplica competencias generales del programa'] },
+    ];
+
+    let prevSlug = null;
+    for (const [i, asig] of MASTER_ASIGNATURAS.entries()) {
+      const tm = byNumeral[asig.numeral] || {};
+      await insertCourse({
+        slug: asig.slug,
+        kind: 'program',
+        title: asig.title,
+        description: tm.objective || '',
         meta: {
-          objective: m.objective, practice: m.practice,
-          deliverable: m.deliverable, mastery: m.mastery,
-          hours: m.hours, weeks: m.weeks,
+          programSlug: 'master-iep',
+          track: asig.track,
+          programOrder: i + 1,
+          prerequisiteSlug: prevSlug,
+          officialCode: asig.officialCode,
+          contenidos: asig.contenidos,
+          legacyTitle: tm.title || null,
+          practice: tm.practice || null, deliverable: tm.deliverable || null, mastery: tm.mastery || null,
+          hours: tm.hours || null, weeks: tm.weeks || null,
         },
-        resources: (m.resources || []).map((r) => ({
-          title: r.n,
-          type: mapType(r.t),
-          url: r.u || null,
-          source: r.s || null,
-          note: r.m || null,
-          content: r.r || null,
-        })),
-      })),
-    });
+        modules: [
+          {
+            title: 'Recursos de la asignatura',
+            subtitle: 'Lecturas, cursos y videos curados para esta asignatura',
+            resources: (tm.resources || []).map((r) => ({
+              title: r.n,
+              type: mapType(r.t),
+              url: r.u || null,
+              source: r.s || null,
+              note: r.m || null,
+              content: r.r || null,
+            })),
+          },
+        ],
+      });
+      prevSlug = asig.slug;
+    }
+
+    // ---- 1b. Módulo puente (adición propia del legado, NO parte del programa oficial) ----
+    const puente = byNumeral['+'];
+    if (puente) {
+      await insertCourse({
+        slug: 'modulo-puente-mlops',
+        kind: 'program',
+        title: puente.title,
+        description: (puente.objective || '') + ' — Adición propia del campus, no forma parte del pensum oficial del Máster.',
+        meta: { legacyTitle: puente.title, bonus: true },
+        modules: [
+          {
+            title: 'Recursos',
+            resources: (puente.resources || []).map((r) => ({
+              title: r.n, type: mapType(r.t), url: r.u || null, source: r.s || null, note: r.m || null, content: r.r || null,
+            })),
+          },
+        ],
+      });
+    }
 
     // ---- 2. Aulas (AULAS) ----
     const AULAS = read('aulas.json');
@@ -211,32 +290,7 @@ async function main() {
       ],
     });
 
-    // ---- 4. Máster IEP (master-iep-data.js) ----
-    const MASTER = read('master-iep.json');
-    await insertCourse({
-      slug: 'master-iep',
-      kind: 'master',
-      title: 'Máster IEP — Inteligencia Artificial y Tecnologías Disruptivas',
-      description: 'Programa completo del Instituto Europeo de Posgrado, con sus asignaturas, módulos y recursos integrados.',
-      meta: { asignaturas: Object.keys(MASTER).length },
-      modules: Object.values(MASTER).map((asig) => ({
-        title: asig.title,
-        subtitle: asig.description || null,
-        meta: { credits: asig.credits, weeks: asig.weeks, level: asig.level },
-        resources: (asig.modules || []).flatMap((mod) =>
-          (mod.topics || []).flatMap((t) =>
-            (t.resources || []).map((r) => ({
-              title: `${t.title} — ${r.title}`,
-              type: mapType(r.type),
-              content: r.content || r.description || null,
-              content_json: r,
-            })),
-          ),
-        ),
-      })),
-    });
-
-    // ---- 5. Cursos nativos (native-curriculum.js) ----
+    // ---- 4. Cursos nativos (native-curriculum.js) ----
     const NATIVE = read('native-curriculum.json');
     for (const nc of Object.values(NATIVE)) {
       await insertCourse({
@@ -276,9 +330,8 @@ async function main() {
 
     // ---- matrículas + progreso inicial del usuario de prueba ----
     const enrollSlugs = [
-      'programa-ia-industria-40',
+      ...MASTER_ASIGNATURAS.map((a) => a.slug),
       'biblioteca-master',
-      'master-iep',
       'aula-ai-for-everyone',
       'aula-elements-of-ai',
       'native-ai-101',
