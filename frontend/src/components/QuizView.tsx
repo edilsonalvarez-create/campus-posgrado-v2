@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuiz, useSubmitQuiz } from '../hooks/useQuiz';
 
 interface QuizViewProps {
@@ -13,6 +13,37 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [completed, setCompleted] = useState(false);
   const [score, setScore] = useState<number | null>(null);
+  const submittedRef = useRef(false);
+
+  const atEnd = !!quiz && currentQuestion >= quiz.questions.length;
+
+  // Enviar las respuestas es un efecto secundario (llama a la API), no algo
+  // que deba disparase durante el render: si se llama inline en el cuerpo
+  // del componente, cada re-render mientras isPending cambia vuelve a
+  // invocar submitQuiz, disparando envíos duplicados en carrera entre sí y
+  // dejando la pantalla de "Procesando respuestas..." sin resolver nunca.
+  useEffect(() => {
+    if (!atEnd || submittedRef.current || !quiz) return;
+    submittedRef.current = true;
+    const quizAnswers = quiz.questions.map((q) => ({
+      questionId: q.id,
+      answer: answers[q.id] || '',
+    }));
+    submitQuiz(
+      { quizId, answers: quizAnswers },
+      {
+        onSuccess: (response: any) => {
+          setScore(response.score);
+          setCompleted(true);
+          onComplete?.(response.score);
+        },
+        onError: () => {
+          submittedRef.current = false;
+        },
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atEnd]);
 
   if (isLoading) {
     return <div className="text-center py-8 text-gray-500">Cargando cuestionario...</div>;
@@ -39,6 +70,7 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
         </p>
         <button
           onClick={() => {
+            submittedRef.current = false;
             setCompleted(false);
             setCurrentQuestion(0);
             setAnswers({});
@@ -52,23 +84,7 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
     );
   }
 
-  if (currentQuestion >= quiz.questions.length) {
-    const quizAnswers = quiz.questions.map((q) => ({
-      questionId: q.id,
-      answer: answers[q.id] || ''
-    }));
-
-    submitQuiz(
-      { quizId, answers: quizAnswers },
-      {
-        onSuccess: (response: any) => {
-          setScore(response.score);
-          setCompleted(true);
-          onComplete?.(response.score);
-        }
-      }
-    );
-
+  if (atEnd) {
     return (
       <div className="text-center py-8 text-gray-500">
         Procesando respuestas...
