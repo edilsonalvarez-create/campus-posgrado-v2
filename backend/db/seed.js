@@ -18,6 +18,39 @@ const DATA = path.join(__dirname, 'seed-data');
 const read = (f) => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
+// Lecciones propias por asignatura (FASE 3 en adelante): un módulo .js opcional por
+// slug, con { lecciones: [...], examen: [...] } siguiendo el modelo estándar de
+// lección del plan. Si no existe el archivo, la asignatura sigue solo con su lista
+// de recursos curados (comportamiento anterior a la Fase 3).
+function tryRequireLecciones(slug) {
+  try {
+    return require(path.join(DATA, `${slug}-lecciones.js`));
+  } catch (err) {
+    if (err.code !== 'MODULE_NOT_FOUND') console.warn(`[seed] ${slug}-lecciones.js:`, err.message);
+    return null;
+  }
+}
+function leccionAResource(l) {
+  return {
+    title: l.title,
+    type: 'lesson',
+    content: (l.contenido || []).join('\n\n'),
+    content_json: {
+      contenidoOficial: l.contenidoOficial,
+      objetivo: l.objetivo,
+      introduccion: l.introduccion,
+      conceptosClave: l.conceptosClave || [],
+      body: l.contenido || [],
+      example: l.ejemplo ? { title: l.ejemplo.titulo, text: l.ejemplo.texto } : null,
+      exercise: l.actividad ? { mins: l.actividad.minutos, text: l.actividad.texto } : null,
+      preguntaReflexion: l.preguntaReflexion || null,
+      keys: l.resumen || [],
+      quiz: l.quiz || [],
+      criterioFinalizacion: l.criterioFinalizacion || null,
+    },
+  };
+}
+
 const slugify = (s) =>
   s
     .toLowerCase()
@@ -177,6 +210,35 @@ async function main() {
     let prevSlug = null;
     for (const [i, asig] of MASTER_ASIGNATURAS.entries()) {
       const tm = byNumeral[asig.numeral] || {};
+      const propias = tryRequireLecciones(asig.slug);
+      const modules = [];
+      if (propias && Array.isArray(propias.lecciones) && propias.lecciones.length) {
+        const resources = propias.lecciones.map(leccionAResource);
+        if (Array.isArray(propias.examen) && propias.examen.length) {
+          resources.push({
+            title: 'Examen de la asignatura',
+            type: 'exam',
+            content_json: { questions: propias.examen },
+          });
+        }
+        modules.push({
+          title: 'Lecciones',
+          subtitle: 'Una lección por cada Contenido oficial de la asignatura',
+          resources,
+        });
+      }
+      modules.push({
+        title: 'Recursos de la asignatura',
+        subtitle: 'Lecturas, cursos y videos curados para esta asignatura',
+        resources: (tm.resources || []).map((r) => ({
+          title: r.n,
+          type: mapType(r.t),
+          url: r.u || null,
+          source: r.s || null,
+          note: r.m || null,
+          content: r.r || null,
+        })),
+      });
       await insertCourse({
         slug: asig.slug,
         kind: 'program',
@@ -193,20 +255,7 @@ async function main() {
           practice: tm.practice || null, deliverable: tm.deliverable || null, mastery: tm.mastery || null,
           hours: tm.hours || null, weeks: tm.weeks || null,
         },
-        modules: [
-          {
-            title: 'Recursos de la asignatura',
-            subtitle: 'Lecturas, cursos y videos curados para esta asignatura',
-            resources: (tm.resources || []).map((r) => ({
-              title: r.n,
-              type: mapType(r.t),
-              url: r.u || null,
-              source: r.s || null,
-              note: r.m || null,
-              content: r.r || null,
-            })),
-          },
-        ],
+        modules,
       });
       prevSlug = asig.slug;
     }

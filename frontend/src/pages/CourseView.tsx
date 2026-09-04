@@ -107,6 +107,27 @@ function ResourceBody({ resource }: { resource: Resource }) {
     return (
       <div>
         {cj.mins ? <p className="text-sm text-gray-500 mb-4">⏱️ {cj.mins} min</p> : null}
+        {cj.objetivo && (
+          <div className="mb-4 flex gap-2 items-start bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded p-3">
+            <span className="text-lg leading-none">🎯</span>
+            <p className="text-sm text-indigo-900 dark:text-indigo-200">
+              <span className="font-semibold">Objetivo: </span>
+              {cj.objetivo}
+            </p>
+          </div>
+        )}
+        {cj.introduccion && (
+          <p className="my-3 leading-relaxed text-gray-600 dark:text-gray-400 italic">{cj.introduccion}</p>
+        )}
+        {Array.isArray(cj.conceptosClave) && cj.conceptosClave.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {cj.conceptosClave.map((c: string, i: number) => (
+              <span key={i} className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                {c}
+              </span>
+            ))}
+          </div>
+        )}
         {cj.body.map((p: string, i: number) => (
           <p key={i} className="my-3 leading-relaxed text-gray-700 dark:text-gray-300">
             {p}
@@ -136,7 +157,19 @@ function ResourceBody({ resource }: { resource: Resource }) {
             <p className="text-gray-700 dark:text-gray-300">{cj.exercise.text}</p>
           </div>
         )}
+        {cj.preguntaReflexion && (
+          <div className="my-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded">
+            <p className="font-semibold text-gray-900 dark:text-white mb-1">💭 Pregunta de reflexión</p>
+            <p className="text-gray-700 dark:text-gray-300">{cj.preguntaReflexion}</p>
+          </div>
+        )}
         {Array.isArray(cj.quiz) && cj.quiz.length > 0 && <LessonQuiz quiz={cj.quiz} />}
+        {cj.criterioFinalizacion && (
+          <p className="mt-6 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 pt-3">
+            <span className="font-semibold">Criterio de finalización: </span>
+            {cj.criterioFinalizacion}
+          </p>
+        )}
       </div>
     )
   }
