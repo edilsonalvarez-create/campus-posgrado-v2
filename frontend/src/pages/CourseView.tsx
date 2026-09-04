@@ -294,6 +294,16 @@ export default function CourseView() {
   const modules: Module[] = course?.modules || []
   const flatResources = useMemo(() => modules.flatMap((m) => m.resources), [modules])
 
+  // Navegar de un curso a otro (p. ej. desde el botón "Ver este curso completo
+  // aquí" de un recurso curado) reutiliza esta misma instancia del componente,
+  // así que hay que olvidar la selección del curso anterior explícitamente —
+  // si no, selectedId sigue apuntando a un id que no existe en flatResources
+  // del curso nuevo y la vista se queda mostrando "sin contenido".
+  useEffect(() => {
+    setSelectedId(null)
+    setOpenModules({})
+  }, [courseId])
+
   useEffect(() => {
     if (!selectedId && flatResources.length) {
       setSelectedId(flatResources[0].id)
@@ -412,6 +422,14 @@ export default function CourseView() {
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{selected.title}</h2>
               {selected.note && <p className="text-gray-500 dark:text-gray-400 mb-4">{selected.note}</p>}
+              {selected.contentJson?.internalCourseSlug && (
+                <button
+                  onClick={() => navigate(`/courses/${selected.contentJson.internalCourseSlug}`)}
+                  className="inline-flex items-center gap-2 mb-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                >
+                  ▶ Ver este curso completo aquí — sin salir de la plataforma
+                </button>
+              )}
               {selected.url && (
                 <a
                   href={selected.url}
@@ -419,7 +437,7 @@ export default function CourseView() {
                   rel="noreferrer"
                   className="inline-block mb-4 text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  Abrir material ↗
+                  {selected.contentJson?.internalCourseSlug ? 'También disponible en el sitio original ↗' : 'Abrir material ↗'}
                 </a>
               )}
 

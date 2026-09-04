@@ -60,6 +60,15 @@ const slugify = (s) =>
     .replace(/(^-|-$)/g, '')
     .slice(0, 60);
 
+// Algunas aulas en aulas.json solo tienen el esqueleto (título + duración estimada
+// por lección, sin body/example/quiz) mientras se termina de escribir su contenido.
+// Enlazar un recurso curado a una aula así sería peor que el enlace externo que
+// reemplaza: prometería "disponible sin salir de la plataforma" y entregaría
+// "Contenido en preparación." en cada lección. Solo se enlaza si al menos una
+// lección tiene cuerpo real.
+const aulaHasContent = (aula) =>
+  (aula.units || []).some((u) => (u.lessons || []).some((l) => Array.isArray(l.body) && l.body.length > 0));
+
 const TYPE_MAP = {
   curso: 'lecture', course: 'lecture', lecture: 'lecture',
   video: 'video',
@@ -167,6 +176,9 @@ async function main() {
     // y se añade la agrupación por tramo/certificado que el documento sí declara.
     const TEMPLATE = read('template.json');
     const byNumeral = Object.fromEntries((TEMPLATE.modules || []).map((m) => [m.numeral, m]));
+    // Leído aquí (antes de sembrar las aulas en la sección 2) solo para poder enlazar cada
+    // recurso curado tipo 'curso' con la aula que ya lo recrea completo en la plataforma.
+    const AULAS_FOR_LINKING = read('aulas.json');
 
     const MASTER_ASIGNATURAS = [
       { numeral: 'I', slug: 'master-i', title: 'I. Artificial Intelligence', track: 'PRO-essentials',
@@ -246,14 +258,22 @@ async function main() {
       modules.push({
         title: 'Recursos de la asignatura',
         subtitle: 'Lecturas, cursos y videos curados para esta asignatura',
-        resources: (tm.resources || []).map((r) => ({
-          title: r.n,
-          type: mapType(r.t),
-          url: r.u || null,
-          source: r.s || null,
-          note: r.m || null,
-          content: r.r || null,
-        })),
+        resources: (tm.resources || []).map((r) => {
+          // Si el recurso es un curso externo y ese mismo curso ya está recreado
+          // completo como aula (mismo nombre exacto), se enlaza a la versión interna
+          // en vez de mandar al estudiante fuera de la plataforma.
+          const aula = r.t === 'curso' ? AULAS_FOR_LINKING[r.n] : null;
+          const isAula = aula && aulaHasContent(aula);
+          return {
+            title: r.n,
+            type: mapType(r.t),
+            url: r.u || null,
+            source: r.s || null,
+            note: r.m || null,
+            content: r.r || null,
+            content_json: isAula ? { internalCourseSlug: 'aula-' + slugify(r.n) } : null,
+          };
+        }),
       });
       await insertCourse({
         slug: asig.slug,
