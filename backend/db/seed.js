@@ -51,6 +51,35 @@ function leccionAResource(l) {
   };
 }
 
+// Aulas cuyo esqueleto en aulas.json (solo título + duración por lección) se
+// reemplaza en tiempo de siembra por un archivo con contenido propio completo,
+// siguiendo el mismo patrón que <slug>-lecciones.js para las asignaturas del
+// Máster. Cuando se completa una nueva aula, se añade aquí su entrada.
+const AULA_CONTENT_FILES = {
+  'Enterprise Design Thinking — Practitioner': 'aula-enterprise-design-thinking.js',
+};
+function tryRequireAulaContent(name) {
+  const file = AULA_CONTENT_FILES[name];
+  if (!file) return null;
+  try {
+    return require(path.join(DATA, file));
+  } catch (err) {
+    console.warn(`[seed] ${file}:`, err.message);
+    return null;
+  }
+}
+// AULAS con los overrides ya aplicados: fuente única usada tanto para sembrar
+// las aulas (sección 2) como para decidir a qué recursos curados del Máster se
+// les puede enlazar la versión interna (sección 1, aulaHasContent()).
+function loadAulasWithOverrides() {
+  const raw = read('aulas.json');
+  for (const [name, override] of Object.entries(AULA_CONTENT_FILES)) {
+    const content = tryRequireAulaContent(name);
+    if (content && raw[name]) raw[name] = { ...raw[name], units: content.units };
+  }
+  return raw;
+}
+
 const slugify = (s) =>
   s
     .toLowerCase()
@@ -176,9 +205,11 @@ async function main() {
     // y se añade la agrupación por tramo/certificado que el documento sí declara.
     const TEMPLATE = read('template.json');
     const byNumeral = Object.fromEntries((TEMPLATE.modules || []).map((m) => [m.numeral, m]));
-    // Leído aquí (antes de sembrar las aulas en la sección 2) solo para poder enlazar cada
+    // Calculado aquí (antes de sembrar las aulas en la sección 2) para poder enlazar cada
     // recurso curado tipo 'curso' con la aula que ya lo recrea completo en la plataforma.
-    const AULAS_FOR_LINKING = read('aulas.json');
+    // Ya incluye los overrides de contenido propio (AULA_CONTENT_FILES), así que una aula
+    // que se completa hoy queda enlazable sin más cambios en esta sección.
+    const AULAS_FOR_LINKING = loadAulasWithOverrides();
 
     const MASTER_ASIGNATURAS = [
       { numeral: 'I', slug: 'master-i', title: 'I. Artificial Intelligence', track: 'PRO-essentials',
@@ -317,7 +348,9 @@ async function main() {
     }
 
     // ---- 2. Aulas (AULAS) ----
-    const AULAS = read('aulas.json');
+    // Reusa AULAS_FOR_LINKING (misma fuente, overrides de contenido ya aplicados) en
+    // vez de releer aulas.json, para que siembra y enlazado nunca puedan divergir.
+    const AULAS = AULAS_FOR_LINKING;
     for (const [name, aula] of Object.entries(AULAS)) {
       await insertCourse({
         slug: 'aula-' + slugify(name),
@@ -335,6 +368,7 @@ async function main() {
             content_json: {
               mins: l.mins, body: l.body || [], example: l.example || null,
               keys: l.keys || [], exercise: l.exercise || null, quiz: l.quiz || [],
+              diagram: l.diagram || null, recursos: l.recursos || null,
             },
           }));
           if (Array.isArray(u.exam) && u.exam.length) {

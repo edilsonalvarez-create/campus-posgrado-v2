@@ -6,6 +6,7 @@ import { useSubmissions } from '../hooks/useSubmissions'
 import { Markdown } from '../components/Markdown'
 import { QuizView } from '../components/QuizView'
 import { SubmissionForm } from '../components/SubmissionForm'
+import { DiagramView } from '../components/DiagramView'
 
 interface Resource {
   id: string
@@ -213,6 +214,7 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
             {p}
           </p>
         ))}
+        {cj.diagram?.mermaid && <DiagramView title={cj.diagram.title} chart={cj.diagram.mermaid} />}
         {cj.example && (
           <div className="my-5 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r">
             <p className="font-semibold text-gray-900 dark:text-white mb-1">{cj.example.title || 'Ejemplo'}</p>
@@ -235,6 +237,38 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
               Ejercicio {cj.exercise.mins ? `(${cj.exercise.mins} min)` : ''}
             </p>
             <p className="text-gray-700 dark:text-gray-300">{cj.exercise.text}</p>
+          </div>
+        )}
+        {(cj.recursos?.libros?.length > 0 || cj.recursos?.videos?.length > 0) && (
+          <div className="my-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {cj.recursos.libros?.length > 0 && (
+              <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                <p className="font-semibold text-gray-900 dark:text-white mb-2">📚 Para profundizar</p>
+                <ul className="space-y-2">
+                  {cj.recursos.libros.map((b: any, i: number) => (
+                    <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">{b.titulo}</span>
+                      {b.autor && <span className="text-gray-500 dark:text-gray-400"> — {b.autor}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {cj.recursos.videos?.length > 0 && (
+              <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
+                <p className="font-semibold text-gray-900 dark:text-white mb-2">🎬 Videos recomendados</p>
+                <ul className="space-y-2">
+                  {cj.recursos.videos.map((v: any, i: number) => (
+                    <li key={i} className="text-sm">
+                      <a href={v.url} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                        {v.titulo}
+                      </a>
+                      {v.canal && <span className="text-gray-500 dark:text-gray-400"> · {v.canal}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
         {cj.preguntaReflexion && (
