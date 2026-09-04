@@ -227,6 +227,22 @@ async function main() {
           resources,
         });
       }
+      if (asig.slug === 'master-tfm') {
+        modules.push({
+          title: 'Entrega del TFM',
+          subtitle: 'Sube tu memoria para evaluación del instructor',
+          resources: [{
+            title: 'Entrega: Proyecto Fin de Programa',
+            type: 'project',
+            content_json: {
+              contenidos: asig.contenidos,
+              deliverable: tm.deliverable || null,
+              practice: tm.practice || null,
+              mastery: tm.mastery || null,
+            },
+          }],
+        });
+      }
       modules.push({
         title: 'Recursos de la asignatura',
         subtitle: 'Lecturas, cursos y videos curados para esta asignatura',

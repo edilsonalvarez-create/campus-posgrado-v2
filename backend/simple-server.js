@@ -353,14 +353,15 @@ route('GET', '/api/courses/:id/submissions', async ({ res, user, params }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
   const course = await findCourseRow(params.id);
   if (!course) return sendJSON(res, 404, { message: 'Course not found' });
+  const ownOnly = user.role === 'student';
   const { rows } = await pool.query(
     `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.graded_at, g.graded_by
        FROM submissions s
        JOIN users u ON u.id = s.user_id
        LEFT JOIN grades g ON g.submission_id = s.id
-      WHERE s.course_id = $1
+      WHERE s.course_id = $1 ${ownOnly ? 'AND s.user_id = $2' : ''}
       ORDER BY s.submitted_at DESC`,
-    [course.id],
+    ownOnly ? [course.id, user.id] : [course.id],
   );
   sendJSON(res, 200, rows.map(submissionRow));
 });
@@ -616,6 +617,36 @@ route('PUT', '/api/submissions/:id/grade', async ({ res, user, params, body }) =
      VALUES ($1, 'grade', 'Entrega calificada', $2)`,
     [sub.rows[0].user_id, `Tu entrega recibió ${grade}/100`],
   );
+  // Una entrega de tipo "project" (p. ej. el TFM) que aprueba cuenta como
+  // recurso completado y certifica el curso, igual que un examen aprobado.
+  if (grade >= 70 && sub.rows[0].resource_id) {
+    const resRow = (
+      await pool.query(
+        `SELECT r.id, m.course_id, c.title AS course_title FROM resources r
+           JOIN modules m ON m.id = r.module_id
+           JOIN courses c ON c.id = m.course_id
+          WHERE r.id = $1 AND r.type IN ('project', 'assignment')`,
+        [sub.rows[0].resource_id],
+      )
+    ).rows[0];
+    if (resRow) {
+      await pool.query(
+        `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
+         ON CONFLICT (user_id, resource_id) DO UPDATE SET completed = true, completed_at = now()`,
+        [sub.rows[0].user_id, resRow.id],
+      );
+      await pool.query(
+        `INSERT INTO certificates (user_id, course_id, course_name) VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, course_id) DO NOTHING`,
+        [sub.rows[0].user_id, resRow.course_id, resRow.course_title],
+      );
+      await pool.query(
+        `INSERT INTO notifications (user_id, type, title, message)
+         VALUES ($1, 'certificate', 'Nuevo certificado', $2)`,
+        [sub.rows[0].user_id, `Aprobaste la entrega de ${resRow.course_title}`],
+      );
+    }
+  }
   sendJSON(res, 200, { ok: true });
 });
 

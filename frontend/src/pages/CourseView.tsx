@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCourse } from '../hooks/useCourses'
 import { useMarkResource } from '../hooks/useProgress'
+import { useSubmissions } from '../hooks/useSubmissions'
 import { Markdown } from '../components/Markdown'
 import { QuizView } from '../components/QuizView'
+import { SubmissionForm } from '../components/SubmissionForm'
 
 interface Resource {
   id: string
@@ -33,6 +35,7 @@ const TYPE_LABEL: Record<string, string> = {
   lecture: 'Clase',
   exercise: 'Ejercicio',
   assignment: 'Entrega',
+  project: 'Entrega',
   docs: 'Documentación',
   tool: 'Herramienta',
   dataset: 'Dataset',
@@ -88,7 +91,80 @@ function LessonQuiz({ quiz }: { quiz: any[] }) {
   )
 }
 
-function ResourceBody({ resource }: { resource: Resource }) {
+const SUBMISSION_STATUS_LABEL: Record<string, string> = {
+  submitted: 'Enviada · pendiente de calificación',
+  graded: 'Calificada',
+  draft: 'Borrador',
+}
+
+function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId: string }) {
+  const cj = resource.contentJson || {}
+  const { data: submissions = [] } = useSubmissions({ courseId })
+  const mine = submissions.filter((s) => s.resourceId === resource.id)
+
+  return (
+    <div>
+      {Array.isArray(cj.contenidos) && cj.contenidos.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {cj.contenidos.map((c: string, i: number) => (
+            <span key={i} className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
+      {cj.deliverable && (
+        <div className="mb-5 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r">
+          <p className="font-semibold text-gray-900 dark:text-white mb-1">Qué debes entregar</p>
+          <p className="text-gray-700 dark:text-gray-300">{cj.deliverable}</p>
+        </div>
+      )}
+      {cj.practice && (
+        <div className="mb-5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded">
+          <p className="font-semibold text-gray-900 dark:text-white mb-1">Opciones de práctica sugeridas</p>
+          <p className="text-gray-700 dark:text-gray-300">{cj.practice}</p>
+        </div>
+      )}
+      {cj.mastery && (
+        <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded">
+          <p className="font-semibold text-gray-900 dark:text-white mb-1">Criterio de dominio</p>
+          <p className="text-gray-700 dark:text-gray-300">{cj.mastery}</p>
+        </div>
+      )}
+
+      {mine.length > 0 && (
+        <div className="mb-6">
+          <p className="font-semibold text-gray-900 dark:text-white mb-2">Tus entregas</p>
+          <div className="space-y-3">
+            {mine.map((s) => (
+              <div key={s.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    {new Date(s.submittedAt).toLocaleDateString('es-CO')} · {SUBMISSION_STATUS_LABEL[s.status] || s.status}
+                  </span>
+                  {typeof s.grade === 'number' && (
+                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">{s.grade}/100</span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{s.content}</p>
+                {s.feedback && (
+                  <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2">
+                    <span className="font-semibold">Retroalimentación: </span>
+                    {s.feedback}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <SubmissionForm resourceId={resource.id} courseId={courseId} resourceTitle={resource.title} />
+    </div>
+  )
+}
+
+function ResourceBody({ resource, courseId }: { resource: Resource; courseId: string }) {
   const cj = resource.contentJson || {}
 
   if (resource.type === 'exam') {
@@ -101,6 +177,10 @@ function ResourceBody({ resource }: { resource: Resource }) {
         <QuizView quizId={resource.id} />
       </div>
     )
+  }
+
+  if (resource.type === 'project') {
+    return <ProjectDelivery resource={resource} courseId={courseId} />
   }
 
   if (resource.type === 'lesson' && Array.isArray(cj.body) && cj.body.length) {
@@ -307,7 +387,7 @@ export default function CourseView() {
                                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                             }`}
                           >
-                            <span>{r.completed ? '✅' : r.type === 'exam' ? '📝' : '○'}</span>
+                            <span>{r.completed ? '✅' : r.type === 'exam' ? '📝' : r.type === 'project' ? '📄' : '○'}</span>
                             <span className="flex-1">{r.title}</span>
                           </button>
                         </li>
@@ -343,7 +423,7 @@ export default function CourseView() {
                 </a>
               )}
 
-              <ResourceBody resource={selected} />
+              <ResourceBody resource={selected} courseId={course.id} />
 
               <div className="mt-8 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4">
                 <button
@@ -353,7 +433,7 @@ export default function CourseView() {
                 >
                   ← Anterior
                 </button>
-                {selected.type !== 'exam' && (
+                {selected.type !== 'exam' && selected.type !== 'project' && (
                   <button
                     onClick={() => mark.mutate({ resourceId: selected.id, completed: !selected.completed })}
                     disabled={mark.isPending}
