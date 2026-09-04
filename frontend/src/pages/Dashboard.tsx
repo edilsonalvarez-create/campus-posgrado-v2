@@ -81,38 +81,42 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Master & Native Courses Section */}
+        {/* Máster */}
         {user?.role === 'student' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            {/* Master IEP */}
+          <div className="mb-12">
             <button
               onClick={() => navigate('/master-iep')}
-              className="bg-gradient-to-br from-primary to-red-700 rounded-lg shadow-lg p-8 text-white hover:shadow-xl transition text-left"
+              className="w-full bg-gradient-to-br from-primary to-red-700 rounded-lg shadow-lg p-8 text-white hover:shadow-xl transition text-left"
             >
               <div className="text-4xl mb-3">🎓</div>
-              <h3 className="text-2xl font-bold mb-2">Master de IEP</h3>
+              <h3 className="text-2xl font-bold mb-2">Máster en IA y Tecnologías Disruptivas</h3>
               <p className="text-red-100 mb-4">
-                Programa completo: Inteligencia Artificial y Tecnologías Disruptivas
+                11 asignaturas + Proyecto Fin de Programa, en 3 certificados: PRO-essentials, PROadvance,
+                PROexpertify.
               </p>
               <div className="flex items-center gap-2 text-red-200">
-                <span>Ver programa →</span>
+                <span>Ver programa completo →</span>
               </div>
             </button>
 
-            {/* Native Courses */}
-            <button
-              onClick={() => navigate('/native-courses')}
-              className="bg-gradient-to-br from-primary to-red-700 rounded-lg shadow-lg p-8 text-white hover:shadow-xl transition text-left"
-            >
-              <div className="text-4xl mb-3">🚀</div>
-              <h3 className="text-2xl font-bold mb-2">Cursos Nativos</h3>
-              <p className="text-red-100 mb-4">
-                AI-101, ML-101, DL-101: Excelencia académica garantizada
-              </p>
-              <div className="flex items-center gap-2 text-red-200">
-                <span>Explorar cursos →</span>
+            {/* Recurso complementario — no forma parte del plan oficial del Máster */}
+            <div className="mt-4 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg p-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold mb-1">
+                  Recurso complementario · no forma parte del plan oficial
+                </p>
+                <h4 className="font-semibold text-gray-900 dark:text-white">🚀 Cursos Nativos</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Refuerzo opcional inspirado en cursos abiertos de referencia.
+                </p>
               </div>
-            </button>
+              <button
+                onClick={() => navigate('/native-courses')}
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
+              >
+                Explorar →
+              </button>
+            </div>
           </div>
         )}
 
