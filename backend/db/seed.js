@@ -57,6 +57,7 @@ function leccionAResource(l) {
 // Máster. Cuando se completa una nueva aula, se añade aquí su entrada.
 const AULA_CONTENT_FILES = {
   'Enterprise Design Thinking — Practitioner': 'aula-enterprise-design-thinking.js',
+  'Made With ML': 'aula-made-with-ml.js',
 };
 function tryRequireAulaContent(name) {
   const file = AULA_CONTENT_FILES[name];
