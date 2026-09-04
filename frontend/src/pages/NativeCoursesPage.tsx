@@ -131,7 +131,7 @@ export const NativeCoursesPage: React.FC = () => {
                 href={`/native-courses/${c.id}`}
                 className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
               >
-                <div className="bg-gradient-to-r from-primary to-red-700 text-white p-6 h-40 flex flex-col justify-between">
+                <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 h-40 flex flex-col justify-between">
                   <div>
                     <h3 className="text-xl font-bold mb-2">{c.title}</h3>
                     <p className="text-sm opacity-90">Equivalente: {c.equivalentTo}</p>
@@ -164,7 +164,7 @@ export const NativeCoursesPage: React.FC = () => {
         </a>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary to-red-700 text-white rounded-lg shadow-lg p-8 mb-8">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg shadow-lg p-8 mb-8">
           <div className="inline-block bg-white text-primary px-4 py-2 rounded-full text-sm font-bold mb-4">
             {course.level}
           </div>
@@ -216,7 +216,7 @@ export const NativeCoursesPage: React.FC = () => {
           <div className="space-y-3">
             {course.modules.map((module, idx) => (
               <div key={idx} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm">
+                <div className="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm">
                   {idx + 1}
                 </div>
                 <div className="flex-1">
@@ -233,7 +233,7 @@ export const NativeCoursesPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">📊 Sistema de Evaluación</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Object.entries(course.evaluation).map(([name, percentage]) => (
-              <div key={name} className="bg-gradient-to-br from-primary to-red-700 text-white p-4 rounded-lg">
+              <div key={name} className="bg-gradient-to-br from-red-600 to-red-700 text-white p-4 rounded-lg">
                 <div className="text-3xl font-bold mb-2">{percentage}%</div>
                 <p className="text-sm">{name}</p>
               </div>
@@ -242,7 +242,7 @@ export const NativeCoursesPage: React.FC = () => {
         </div>
 
         {/* Guarantee */}
-        <div className="bg-primary text-white rounded-lg shadow-lg p-8 mb-8">
+        <div className="bg-red-600 text-white rounded-lg shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold mb-6">✅ Garantía de Asimilación</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
@@ -268,10 +268,10 @@ export const NativeCoursesPage: React.FC = () => {
 
         {/* Enrollment */}
         <div className="flex gap-4">
-          <button className="flex-1 bg-primary text-white py-4 rounded-lg font-bold text-lg hover:bg-red-700 transition">
+          <button className="flex-1 bg-red-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-red-700 transition">
             Matricularme ahora
           </button>
-          <button className="flex-1 border-2 border-primary text-primary py-4 rounded-lg font-bold text-lg hover:bg-red-50 transition">
+          <button className="flex-1 border-2 border-red-600 text-primary py-4 rounded-lg font-bold text-lg hover:bg-red-50 transition">
             Más información
           </button>
         </div>

@@ -35,7 +35,7 @@ function AsignaturaCard({
   return (
     <button
       onClick={onOpen}
-      className="text-left bg-white dark:bg-gray-800 rounded-lg border-l-4 border-primary shadow-md hover:shadow-lg transition p-5 flex flex-col"
+      className="text-left bg-white dark:bg-gray-800 rounded-lg border-l-4 border-red-600 shadow-md hover:shadow-lg transition p-5 flex flex-col"
     >
       <h3 className="font-bold text-gray-900 dark:text-white mb-2">{asignatura.title}</h3>
       {asignatura.contenidos.length > 0 && (
@@ -56,7 +56,7 @@ function AsignaturaCard({
           <span>{asignatura.progress.completed}/{asignatura.progress.total} · {pct}%</span>
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-          <div className="bg-primary h-1.5 rounded-full" style={{ width: `${pct}%` }} />
+          <div className="bg-red-600 h-1.5 rounded-full" style={{ width: `${pct}%` }} />
         </div>
       </div>
       <span className="mt-3 text-sm font-semibold text-primary">Ver asignatura →</span>
@@ -135,7 +135,7 @@ export function MasterIEPPage() {
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-6">
-              <div className="bg-primary h-2 rounded-full" style={{ width: `${track.progress.percentage}%` }} />
+              <div className="bg-red-600 h-2 rounded-full" style={{ width: `${track.progress.percentage}%` }} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {track.asignaturas.map((a) => (

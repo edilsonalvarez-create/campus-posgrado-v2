@@ -86,7 +86,7 @@ export default function Dashboard() {
           <div className="mb-12">
             <button
               onClick={() => navigate('/master-iep')}
-              className="w-full bg-gradient-to-br from-primary to-red-700 rounded-lg shadow-lg p-8 text-white hover:shadow-xl transition text-left"
+              className="w-full bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-lg p-8 text-white hover:shadow-xl transition text-left"
             >
               <div className="text-4xl mb-3">🎓</div>
               <h3 className="text-2xl font-bold mb-2">Máster en IA y Tecnologías Disruptivas</h3>
