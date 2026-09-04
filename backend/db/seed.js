@@ -18,6 +18,11 @@ const DATA = path.join(__dirname, 'seed-data');
 const read = (f) => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
+// Proyecto práctico por asignatura (retroalimentación de una alumna: el plan
+// debe ser más práctico que teórico). Misma forma {deliverable,practice,mastery}
+// que ya usa el TFM, reutilizando sin cambios su mecanismo de entrega/calificación.
+const PROYECTOS_PRACTICOS = require(path.join(DATA, 'proyectos-practicos.js'));
+
 // Lecciones propias por asignatura (FASE 3 en adelante): un módulo .js opcional por
 // slug, con { lecciones: [...], examen: [...] } siguiendo el modelo estándar de
 // lección del plan. Si no existe el archivo, la asignatura sigue solo con su lista
@@ -276,18 +281,19 @@ async function main() {
           resources,
         });
       }
-      if (asig.slug === 'master-tfm') {
+      const proyecto = asig.slug === 'master-tfm' ? tm : PROYECTOS_PRACTICOS[asig.slug];
+      if (proyecto) {
         modules.push({
-          title: 'Entrega del TFM',
-          subtitle: 'Sube tu memoria para evaluación del instructor',
+          title: asig.slug === 'master-tfm' ? 'Entrega del TFM' : 'Proyecto práctico',
+          subtitle: 'Sube tu entrega para evaluación del instructor',
           resources: [{
-            title: 'Entrega: Proyecto Fin de Programa',
+            title: asig.slug === 'master-tfm' ? 'Entrega: Proyecto Fin de Programa' : 'Entrega: proyecto práctico de la asignatura',
             type: 'project',
             content_json: {
               contenidos: asig.contenidos,
-              deliverable: tm.deliverable || null,
-              practice: tm.practice || null,
-              mastery: tm.mastery || null,
+              deliverable: proyecto.deliverable || null,
+              practice: proyecto.practice || null,
+              mastery: proyecto.mastery || null,
             },
           }],
         });
