@@ -53,7 +53,7 @@ module.exports = {
             'La ISO/IEC 25010 incluye la seguridad como una de las ocho características de calidad de producto: probar seguridad es, formalmente, parte de QA.',
             'El riesgo es el idioma común de ambos carriles: el mismo proceso de identificar-valorar-tratar sirve para decidir qué controlar y qué probar primero.',
           ],
-          recursos: { libros: [{ titulo: 'How to Measure Anything in Cybersecurity Risk', autor: 'Douglas W. Hubbard, Richard Seiersen' }] },
+          recursos: { libros: [{ titulo: 'How to Measure Anything in Cybersecurity Risk', autor: 'Douglas W. Hubbard, Richard Seiersen', url: 'https://www.google.com/search?tbm=bks&q=How+to+Measure+Anything+in+Cybersecurity+Risk+Hubbard+Seiersen' }] },
           exercise: { mins: 15, text: 'De las dos listas de exigencias, marca con honestidad en cuáles ya tienes práctica real desde tu rol actual de administrador (por ejemplo: gestión de proveedores, presupuesto, indicadores) y en cuáles partes de cero. Esa lista es tu mapa personal de dónde este programa te va a rendir más.' },
           quiz: [
             { q: '¿Por qué la seguridad y la calidad comparten un idioma común según esta lección?', opts: ['Porque ambas usan el mismo software de gestión', 'Porque ambas usan el mismo proceso de identificar, valorar y tratar el riesgo', 'Porque las dos las audita siempre la misma persona', 'Porque comparten presupuesto obligatoriamente'], a: 1, why: ['No es una cuestión de herramienta compartida.', 'Correcto.', 'No hay tal regla de auditoría única.', 'No hay tal obligación presupuestal.'] },
@@ -88,7 +88,7 @@ module.exports = {
             'Un SGSI es un sistema de gestión con la misma lógica que uno de calidad; el NIST CSF 2.0 (gobernar-identificar-proteger-detectar-responder-recuperar) es la mejor puerta de entrada conceptual.',
           ],
           recursos: {
-            libros: [{ titulo: 'ISO/IEC 27000:2018 — Vocabulario', autor: 'ISO/IEC (descarga gratuita)' }],
+            libros: [{ titulo: 'ISO/IEC 27000:2018 — Vocabulario', autor: 'ISO/IEC (descarga gratuita)', url: 'https://www.iso.org/standard/73906.html' }],
             videos: [{ titulo: 'NIST Cybersecurity Framework (CSF) 2.0 Explained', canal: 'NIST', url: 'https://www.youtube.com/watch?v=X4a0EF9-vzo' }],
           },
           exercise: { mins: 15, text: 'Elige tres sistemas reales de tu organización (por ejemplo QA Horus, NominaBoard, Sumimedicalpro) y para cada uno identifica un activo de información concreto que maneje, una amenaza real y una vulnerabilidad conocida o sospechada. No completes la columna de riesgo todavía: eso llega en la Fase 1.' },
@@ -114,7 +114,7 @@ module.exports = {
             'Las pruebas exhaustivas son imposibles y la ausencia de defectos encontrados no prueba que el producto sirva: son los dos principios más útiles para defender decisiones de alcance.',
             'El costo de un defecto se multiplica según la etapa donde se detecta — es el argumento presupuestal central de cualquier líder de QA.',
           ],
-          recursos: { libros: [{ titulo: 'Lessons Learned in Software Testing', autor: 'Cem Kaner, James Bach, Bret Pettichord' }] },
+          recursos: { libros: [{ titulo: 'Lessons Learned in Software Testing', autor: 'Cem Kaner, James Bach, Bret Pettichord', url: 'https://www.google.com/search?tbm=bks&q=Lessons+Learned+in+Software+Testing+Kaner+Bach+Pettichord' }] },
           exercise: { mins: 15, text: 'Busca un requisito reciente de alguno de los siete desarrollos activos que no tenga un criterio de aceptación explícito y verificable. Reescríbelo con un criterio que permita a alguien diseñar un caso de prueba sin tener que adivinar qué significa "terminado".' },
           quiz: [
             { q: '¿Cuál es la diferencia correcta entre verificación y validación?', opts: ['Son sinónimos exactos', 'Verificación responde si se construyó bien conforme a la especificación; validación responde si la especificación era la correcta', 'Verificación la hace el usuario, validación la hace el desarrollador', 'Validación ocurre siempre antes que verificación'], a: 1, why: ['No son sinónimos.', 'Correcto.', 'No es una distinción de quién la ejecuta.', 'No hay tal orden fijo obligatorio.'] },
@@ -171,7 +171,7 @@ module.exports = {
             'Apetito (cuánto riesgo tolera la organización en general), tolerancia (margen para un riesgo específico) y riesgo residual (lo que queda tras el control, nunca cero) son tres conceptos distintos.',
             'El Anexo A de ISO/IEC 27001:2022 tiene 93 controles en cuatro temas; la Declaración de Aplicabilidad documenta cuáles aplican y por qué.',
           ],
-          recursos: { libros: [{ titulo: 'NIST SP 800-30 Rev. 1 — Guide for Conducting Risk Assessments', autor: 'NIST (descarga gratuita)' }] },
+          recursos: { libros: [{ titulo: 'NIST SP 800-30 Rev. 1 — Guide for Conducting Risk Assessments', autor: 'NIST (descarga gratuita)', url: 'https://csrc.nist.gov/pubs/sp/800/30/r1/final' }] },
           exercise: { mins: 20, text: 'Toma los tres activos que identificaste en el ejercicio de la Fase 0 y complétales ahora una valoración de riesgo: probabilidad, impacto, riesgo inherente, respuesta elegida (mitigar/transferir/aceptar/evitar) y riesgo residual esperado tras el control propuesto.' },
           quiz: [
             { q: '¿Cuáles son los cinco pasos del proceso de gestión de riesgo?', opts: ['Planear, hacer, verificar, actuar, cerrar', 'Identificar, analizar, valorar, tratar, monitorear', 'Detectar, contener, erradicar, recuperar, aprender', 'Inventariar, clasificar, auditar, certificar, renovar'], a: 1, why: ['Es el ciclo PDCA.', 'Correcto.', 'Es el ciclo de respuesta a incidentes.', 'No es el proceso de riesgo descrito.'] },
@@ -246,7 +246,7 @@ module.exports = {
             'Responsable decide el uso de los datos; encargado los trata por instrucción del responsable. Los proveedores de nube son, casi siempre, encargados y deben tener contrato que lo formalice.',
             'El RNBD ante la SIC y el reporte de incidentes de datos personales son obligaciones concretas; los plazos vigentes deben verificarse en la fuente oficial, no asumirse.',
           ],
-          recursos: { libros: [{ titulo: 'Guías de Protección de Datos Personales', autor: 'Superintendencia de Industria y Comercio (SIC), gratuitas' }] },
+          recursos: { libros: [{ titulo: 'Guías de Protección de Datos Personales', autor: 'Superintendencia de Industria y Comercio (SIC), gratuitas', url: 'https://www.sic.gov.co/proteccion-de-datos-personales' }] },
           exercise: { mins: 20, text: 'Identifica un flujo real de datos de salud que sale de tu organización hoy (hacia un proveedor, la nube, correo o mensajería) y verifica: ¿existe un contrato o cláusula de transmisión que cubra ese flujo? Si no existe, ese es tu primer hallazgo real para el entregable de esta fase.' },
           quiz: [
             { q: '¿Qué régimen aplica a los datos de salud bajo la Ley 1581?', opts: ['El mismo régimen que cualquier dato personal común', 'Un régimen reforzado por ser datos sensibles, con autorización explícita', 'Ningún régimen especial, están excluidos de la ley', 'Solo aplica a datos de salud mental'], a: 1, why: ['Los datos de salud tienen un régimen reforzado, no el régimen común.', 'Correcto.', 'Sí están cubiertos por la ley, con régimen reforzado.', 'Aplica a datos de salud en general, no solo mental.'] },
@@ -406,7 +406,7 @@ module.exports = {
             'RTO y RPO por proceso, definidos en un análisis de impacto, son la base de los planes de continuidad y recuperación; la única evidencia válida de que funcionan es una restauración probada de verdad.',
             'La seguridad de proveedores exige revisión periódica, no solo evaluación al firmar; el programa de concientización sigue siendo el control más barato y más efectivo.',
           ],
-          recursos: { libros: [{ titulo: 'NIST SP 800-61 Rev. 2 — Computer Security Incident Handling Guide', autor: 'NIST (descarga gratuita)' }] },
+          recursos: { libros: [{ titulo: 'NIST SP 800-61 Rev. 2 — Computer Security Incident Handling Guide', autor: 'NIST (descarga gratuita)', url: 'https://csrc.nist.gov/pubs/sp/800/61/r2/final' }] },
           exercise: { mins: 20, text: 'Redacta un primer borrador de uno de los tres textos de comunicación de incidente (dirección, titulares afectados, o autoridad) para el escenario de fuga de datos de historia clínica, antes de que ocurra ningún incidente real.' },
           quiz: [
             { q: '¿Cuáles son los cuatro momentos del ciclo de respuesta a incidentes?', opts: ['Planear, hacer, verificar, actuar', 'Preparación, detección y análisis, contención-erradicación-recuperación, lecciones aprendidas', 'Identificar, analizar, valorar, tratar', 'Diseñar, construir, probar, desplegar'], a: 1, why: ['Es el ciclo PDCA.', 'Correcto.', 'Es el proceso de riesgo.', 'Es un ciclo de desarrollo genérico.'] },
@@ -505,7 +505,7 @@ module.exports = {
             'Una retrospectiva útil convierte una queja recurrente en un cambio de proceso concreto y medible, no en un desahogo repetido sin acción.',
             'El cierre del carril de QA es la transición de "probar al final" a "construir calidad desde el requisito": cuanto antes se involucra el criterio de calidad, menor el costo de cada defecto evitado.',
           ],
-          recursos: { libros: [{ titulo: 'TMMi — Test Maturity Model integration, Guidelines for Test Process Improvement', autor: 'TMMi Foundation (descarga libre)' }] },
+          recursos: { libros: [{ titulo: 'TMMi — Test Maturity Model integration, Guidelines for Test Process Improvement', autor: 'TMMi Foundation (descarga libre)', url: 'https://www.tmmi.org/tmmi-documents/' }] },
           exercise: { mins: 15, text: 'Ubica, con la mejor evidencia disponible, en qué nivel de madurez de TMMi describirías hoy el proceso de pruebas de tu organización, y qué única mejora concreta lo movería al siguiente nivel.' },
           quiz: [
             { q: '¿Cuál es el propósito real de usar el modelo TMMi?', opts: ['Perseguir el nivel más alto posible por prestigio corporativo', 'Diagnosticar el nivel real de madurez del proceso de pruebas para identificar la siguiente mejora relevante', 'Reemplazar completamente la necesidad de indicadores de calidad', 'Certificar formalmente a cada probador individual'], a: 1, why: ['No es el propósito descrito en la lección.', 'Correcto.', 'No reemplaza los indicadores.', 'No es una certificación individual.'] },

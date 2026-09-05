@@ -55,7 +55,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron' },
+              { titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron', url: 'https://www.google.com/search?tbm=bks&q=Hands-On+Machine+Learning+Scikit-Learn+Keras+TensorFlow+Geron' },
             ],
           },
           exercise: { mins: 15, text: 'Si tienes acceso a un cuaderno de Kaggle o similar, entrena tres árboles de decisión con profundidades máximas de 2, 10 y sin límite sobre el mismo conjunto de datos. Compara el desempeño de cada uno en entrenamiento y en un conjunto separado de validación.' },
@@ -163,7 +163,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Feature Engineering for Machine Learning', autor: 'Alice Zheng, Amanda Casari' },
+              { titulo: 'Feature Engineering for Machine Learning', autor: 'Alice Zheng, Amanda Casari', url: 'https://www.google.com/search?tbm=bks&q=Feature+Engineering+for+Machine+Learning+Alice+Zheng' },
             ],
           },
           exercise: { mins: 15, text: 'Revisa un flujo de trabajo de modelado que uses o hayas visto: ¿las transformaciones de datos (imputación, escalado) se calculan sobre todo el conjunto o solo sobre el conjunto de entrenamiento? Si es sobre todo el conjunto, identifica el riesgo de fuga de datos concreto.' },
@@ -293,7 +293,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Feature Engineering for Machine Learning', autor: 'Alice Zheng, Amanda Casari' },
+              { titulo: 'Feature Engineering for Machine Learning', autor: 'Alice Zheng, Amanda Casari', url: 'https://www.google.com/search?tbm=bks&q=Feature+Engineering+for+Machine+Learning+Alice+Zheng' },
             ],
           },
           exercise: { mins: 15, text: 'Para una variable categórica de muchas categorías en tu contexto, describe cómo aplicarías codificación por objetivo evitando la fuga de datos, y cómo suavizarías la estimación para las categorías con pocos ejemplos históricos.' },

@@ -31,7 +31,7 @@ module.exports = {
           },
           recursos: {
             libros: [
-              { titulo: 'AI Engineering', autor: 'Chip Huyen' },
+              { titulo: 'AI Engineering', autor: 'Chip Huyen', url: 'https://www.google.com/search?tbm=bks&q=AI+Engineering+Chip+Huyen' },
             ],
           },
           exercise: { mins: 15, text: 'Toma un prompt que uses regularmente (o uno improvisado de un colega) y reescríbelo separando explícitamente rol, tarea, formato de salida y restricciones de caso límite. Pruébalo con un caso límite deliberado (una entrada vacía, ambigua o inesperada) y compara el comportamiento antes y después.' },
@@ -134,7 +134,7 @@ module.exports = {
           },
           recursos: {
             libros: [
-              { titulo: 'The LLM Engineering Handbook', autor: 'Paul Iusztin, Maxime Labonne' },
+              { titulo: 'The LLM Engineering Handbook', autor: 'Paul Iusztin, Maxime Labonne', url: 'https://www.google.com/search?tbm=bks&q=The+LLM+Engineering+Handbook+Paul+Iusztin' },
             ],
           },
           exercise: { mins: 15, text: 'Si tu equipo usa (o planea usar) un juez automático para evaluar respuestas, diseña un experimento pequeño: toma 10 casos, evalúalos con el juez automático y con criterio humano por separado, y mide en cuántos coinciden. Ese porcentaje de acuerdo es tu primera calibración real.' },
@@ -211,7 +211,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'AI Engineering', autor: 'Chip Huyen' },
+              { titulo: 'AI Engineering', autor: 'Chip Huyen', url: 'https://www.google.com/search?tbm=bks&q=AI+Engineering+Chip+Huyen' },
             ],
             videos: [{ titulo: 'What is Retrieval-Augmented Generation (RAG)?', canal: 'IBM Technology', url: 'https://www.youtube.com/watch?v=T-D1OfcDW1M' }],
           },

@@ -107,7 +107,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Deep Learning for Coders with fastai and PyTorch', autor: 'Jeremy Howard, Sylvain Gugger' },
+              { titulo: 'Deep Learning for Coders with fastai and PyTorch', autor: 'Jeremy Howard, Sylvain Gugger', url: 'https://www.google.com/search?tbm=bks&q=Deep+Learning+for+Coders+with+fastai+and+PyTorch' },
             ],
           },
           exercise: { mins: 20, text: 'Sin usar ninguna biblioteca de alto nivel, describe en pseudocódigo (o código simple) los pasos de un descenso de gradiente para ajustar los dos parámetros de una recta (pendiente e intercepto) que mejor se ajuste a un conjunto pequeño de puntos.' },
@@ -211,7 +211,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Deep Learning', autor: 'Ian Goodfellow, Yoshua Bengio, Aaron Courville' },
+              { titulo: 'Deep Learning', autor: 'Ian Goodfellow, Yoshua Bengio, Aaron Courville', url: 'https://www.google.com/search?tbm=bks&q=Deep+Learning+Ian+Goodfellow+Bengio+Courville' },
             ],
           },
           exercise: { mins: 15, text: 'Para un sistema de recomendación de tu contexto (real o hipotético): ¿cómo resolverías el problema de arranque en frío para un usuario completamente nuevo? ¿Y para un producto recién agregado sin ninguna interacción todavía?' },

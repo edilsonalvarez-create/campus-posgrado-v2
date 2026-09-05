@@ -24,7 +24,7 @@ module.exports = {
           },
           recursos: {
             libros: [
-              { titulo: 'Natural Language Processing with Transformers', autor: 'Lewis Tunstall, Leandro von Werra, Thomas Wolf' },
+              { titulo: 'Natural Language Processing with Transformers', autor: 'Lewis Tunstall, Leandro von Werra, Thomas Wolf', url: 'https://www.google.com/search?tbm=bks&q=Natural+Language+Processing+with+Transformers+Tunstall' },
             ],
             videos: [
               { titulo: 'But what is a GPT? Visual intro to Transformers', canal: '3Blue1Brown', url: 'https://www.youtube.com/watch?v=wjZofJX0v4M' },
@@ -254,7 +254,7 @@ module.exports = {
           },
           recursos: {
             libros: [
-              { titulo: 'AI Engineering', autor: 'Chip Huyen' },
+              { titulo: 'AI Engineering', autor: 'Chip Huyen', url: 'https://www.google.com/search?tbm=bks&q=AI+Engineering+Chip+Huyen' },
             ],
           },
           exercise: { mins: 15, text: 'Para un modelo desplegado o considerado en tu contexto, evalúa cuál de las tres técnicas (cuantización, destilación, procesamiento por lotes) sería más apropiada según tu restricción principal: memoria disponible, latencia por solicitud individual, o rendimiento agregado bajo alta concurrencia.' },

@@ -247,7 +247,13 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
                 <ul className="space-y-2">
                   {cj.recursos.libros.map((b: any, i: number) => (
                     <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
-                      <span className="font-medium">{b.titulo}</span>
+                      {b.url ? (
+                        <a href={b.url} target="_blank" rel="noreferrer" className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                          {b.titulo}
+                        </a>
+                      ) : (
+                        <span className="font-medium">{b.titulo}</span>
+                      )}
                       {b.autor && <span className="text-gray-500 dark:text-gray-400"> — {b.autor}</span>}
                     </li>
                   ))}

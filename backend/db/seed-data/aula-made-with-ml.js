@@ -31,7 +31,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Designing Machine Learning Systems', autor: 'Chip Huyen' },
+              { titulo: 'Designing Machine Learning Systems', autor: 'Chip Huyen', url: 'https://www.google.com/search?tbm=bks&q=Designing+Machine+Learning+Systems+Chip+Huyen' },
             ],
             videos: [
               { titulo: 'Made With ML — Learning How to Apply MLOps with Goku Mohandas', canal: 'Anyscale', url: 'https://www.youtube.com/watch?v=QlSI_JLYiBQ' },
@@ -138,7 +138,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Machine Learning Design Patterns', autor: 'Valliappa Lakshmanan, Sara Robinson, Michael Munn' },
+              { titulo: 'Machine Learning Design Patterns', autor: 'Valliappa Lakshmanan, Sara Robinson, Michael Munn', url: 'https://www.google.com/search?tbm=bks&q=Machine+Learning+Design+Patterns+Lakshmanan+Robinson+Munn' },
             ],
           },
           exercise: { mins: 20, text: 'Revisa el último proyecto de modelado en el que participaste: ¿cuántas veces se consultó el conjunto de prueba durante el desarrollo, no solo al final? Si fue más de una vez, ¿qué decisiones podrían haber estado influenciadas por ese resultado sin que el equipo lo notara?' },
@@ -247,7 +247,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Reliable Machine Learning', autor: 'Cathy Chen, Niall Richard Murphy, Kranti Parisa, D. Sculley, Todd Underwood' },
+              { titulo: 'Reliable Machine Learning', autor: 'Cathy Chen, Niall Richard Murphy, Kranti Parisa, D. Sculley, Todd Underwood', url: 'https://www.google.com/search?tbm=bks&q=Reliable+Machine+Learning+Cathy+Chen+Sculley' },
             ],
           },
           exercise: { mins: 20, text: 'Para un modelo en producción de tu contexto (o uno hipotético): ¿cuánto tiempo tardan en llegar las etiquetas reales que permitirían evaluar su rendimiento? Si ese tiempo es de semanas o más, diseña qué señal de deriva de entradas monitorearías mientras tanto como alerta temprana.' },

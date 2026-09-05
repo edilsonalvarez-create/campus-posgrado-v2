@@ -192,7 +192,7 @@ module.exports = {
           },
           recursos: {
             libros: [
-              { titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron' },
+              { titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron', url: 'https://www.google.com/search?tbm=bks&q=Hands-On+Machine+Learning+Scikit-Learn+Keras+TensorFlow+Geron' },
             ],
           },
           example: { title: 'Capturar una curva con características polinómicas', text: 'Una relación entre la dosis de un fertilizante y el rendimiento de un cultivo crece, alcanza un máximo y luego decrece con dosis excesivas. Un modelo lineal simple con solo "dosis" como entrada no puede capturar esta forma. Añadiendo "dosis al cuadrado" como una segunda característica derivada, y aplicando regresión lineal sobre ambas, el modelo puede aprender exactamente esta forma de curva con un solo máximo.' },
@@ -277,7 +277,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Deep Learning', autor: 'Ian Goodfellow, Yoshua Bengio, Aaron Courville' },
+              { titulo: 'Deep Learning', autor: 'Ian Goodfellow, Yoshua Bengio, Aaron Courville', url: 'https://www.google.com/search?tbm=bks&q=Deep+Learning+Ian+Goodfellow+Bengio+Courville' },
             ],
           },
           exercise: { mins: 20, text: 'Si tienes acceso a un cuaderno de código, entrena un modelo de clasificación con regularización en tres valores distintos de lambda (muy bajo, apropiado, muy alto) sobre el mismo conjunto de datos, y compara visualmente las tres fronteras de decisión resultantes.' },
@@ -427,7 +427,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron' },
+              { titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron', url: 'https://www.google.com/search?tbm=bks&q=Hands-On+Machine+Learning+Scikit-Learn+Keras+TensorFlow+Geron' },
             ],
           },
           exercise: { mins: 15, text: 'Para un modelo de tu contexto (real o hipotético) con errores de entrenamiento y validación conocidos, diagnostica si sufre de sesgo alto, varianza alta, o ninguno de los dos, y justifica qué acción correctiva tomarías según ese diagnóstico específico.' },
@@ -584,7 +584,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron' },
+              { titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron', url: 'https://www.google.com/search?tbm=bks&q=Hands-On+Machine+Learning+Scikit-Learn+Keras+TensorFlow+Geron' },
             ],
           },
           exercise: { mins: 15, text: 'Para un sistema de recomendación de tu contexto: ¿qué características explícitas de contenido (no basadas en valoraciones previas) podrías usar para recomendar elementos recién agregados sin ninguna valoración todavía?' },

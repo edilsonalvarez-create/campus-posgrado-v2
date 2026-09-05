@@ -39,8 +39,8 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Change by Design', autor: 'Tim Brown (IDEO)' },
-              { titulo: 'Sprint: Resuelve grandes problemas y prueba nuevas ideas en solo cinco días', autor: 'Jake Knapp, John Zeratsky, Braden Kowitz' },
+              { titulo: 'Change by Design', autor: 'Tim Brown (IDEO)', url: 'https://www.google.com/search?tbm=bks&q=Change+by+Design+Tim+Brown+IDEO' },
+              { titulo: 'Sprint: Resuelve grandes problemas y prueba nuevas ideas en solo cinco días', autor: 'Jake Knapp, John Zeratsky, Braden Kowitz', url: 'https://www.google.com/search?tbm=bks&q=Sprint+Jake+Knapp+Zeratsky+Kowitz' },
             ],
             videos: [
               { titulo: 'Understand IBM Design Thinking in 10 minutes', canal: 'IBM', url: 'https://www.youtube.com/watch?v=psLjEBUOnVs' },
@@ -121,7 +121,7 @@ module.exports = {
           ],
           recursos: {
             libros: [
-              { titulo: 'Inspired: How to Create Products Customers Love', autor: 'Marty Cagan' },
+              { titulo: 'Inspired: How to Create Products Customers Love', autor: 'Marty Cagan', url: 'https://www.google.com/search?tbm=bks&q=Inspired+Marty+Cagan' },
             ],
           },
           exercise: { mins: 20, text: 'Toma un proyecto real o hipotético de tu organización y escribe entre tres y cinco colinas para él, siguiendo la estructura fija: usuario, qué podrá hacer, bajo qué condición. Revisa cada una: ¿describe un resultado, o se te coló una funcionalidad disfrazada de colina?' },

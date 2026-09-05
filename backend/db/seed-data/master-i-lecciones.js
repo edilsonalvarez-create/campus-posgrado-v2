@@ -136,7 +136,7 @@ const lecciones = [
     },
     recursos: {
       videos: [{ titulo: 'But what is a Neural Network? | Deep learning', canal: '3Blue1Brown', url: 'https://www.youtube.com/watch?v=aircAruvnKk' }],
-      libros: [{ titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron' }],
+      libros: [{ titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron', url: 'https://www.google.com/search?tbm=bks&q=Hands-On+Machine+Learning+Scikit-Learn+Keras+TensorFlow+Geron' }],
     },
     quiz: [
       {
