@@ -78,7 +78,7 @@ const lecciones = [
     preguntaReflexion: '¿Tu organización tiene una persona con autoridad real (no solo formal) para detener un despliegue de IA por motivos éticos? Si la respuesta es no, ¿qué pasaría si surgiera un caso límite mañana?',
     diagram: {
       title: 'De principio abstracto a práctica verificable',
-      mermaid: 'graph LR\n  P["Principio: \\"IA justa y transparente\\""] --> Q["Pregunta operacional:\\n¿quién puede detener un despliegue\\ny con qué autoridad real?"]\n  Q --> R["Práctica: registro de decisión,\\nresponsable nombrado, criterio de veto"]',
+      mermaid: 'graph LR\n  P["Principio: IA justa y transparente"] --> Q["Pregunta operacional:\\n¿quién puede detener un despliegue\\ny con qué autoridad real?"]\n  Q --> R["Práctica: registro de decisión,\\nresponsable nombrado, criterio de veto"]',
     },
     quiz: [
       { q: '¿Cuál es la diferencia entre un principio ético declarado y una práctica ética verificable?', opts: ['No hay diferencia real entre ambos', 'La práctica verificable define una métrica concreta y un mecanismo de comprobación; el principio es solo una declaración de intención', 'El principio siempre es más estricto que la práctica', 'Las prácticas verificables son ilegales en la mayoría de países'], a: 1, why: ['La diferencia es real y es el foco central de esta lección.', 'Correcto: esa es la distinción exacta que hace la lección.', 'No hay tal jerarquía de estrictez entre ambos por definición.', 'No existe tal restricción legal.'] },

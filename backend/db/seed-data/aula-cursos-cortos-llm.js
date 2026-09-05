@@ -104,7 +104,7 @@ module.exports = {
           ],
           diagram: {
             title: 'Construir un conjunto de evaluación con casos difíciles',
-            mermaid: 'graph LR\n  T["Casos típicos\\n(fáciles)"] --> S["Falsa sensación\\nde seguridad si son los únicos"]\n  A["Casos ambiguos"] --> E["Conjunto de evaluación robusto"]\n  F["Casos fuera de dominio"] --> E\n  L["Casos límite\\n(\\"no sé\\" es la respuesta correcta)"] --> E',
+            mermaid: 'graph LR\n  T["Casos típicos\\n(fáciles)"] --> S["Falsa sensación\\nde seguridad si son los únicos"]\n  A["Casos ambiguos"] --> E["Conjunto de evaluación robusto"]\n  F["Casos fuera de dominio"] --> E\n  L["Casos límite:\\nla respuesta correcta es no sé"] --> E',
           },
           exercise: { mins: 20, text: 'Diseña 5 casos para un conjunto de evaluación de un sistema basado en LLM de tu contexto: al menos uno típico, uno ambiguo, uno fuera de dominio y uno donde la respuesta correcta debería ser "no sé" o "fuera de mi alcance". Para cada uno, escribe el criterio explícito de qué constituye una respuesta aceptable.' },
           quiz: [

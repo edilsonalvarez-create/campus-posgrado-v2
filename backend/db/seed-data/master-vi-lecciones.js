@@ -51,7 +51,7 @@ const lecciones = [
     preguntaReflexion: '¿Alguna vez un modelo con alta exactitud global resultó inútil en la práctica porque fallaba sistemáticamente en la clase minoritaria que realmente importaba?',
     diagram: {
       title: 'Por qué la exactitud global puede engañar',
-      mermaid: 'graph TD\n  A["1000 casos: 990 normales, 10 fraude"] --> B["Modelo que siempre predice \\"normal\\""]\n  B --> C["99% de exactitud global...\\npero 0% de fraudes detectados"]\n  A --> D["Matriz de confusión\\nrevela el fallo real por clase"]',
+      mermaid: 'graph TD\n  A["1000 casos: 990 normales, 10 fraude"] --> B["Modelo que siempre predice normal"]\n  B --> C["99% de exactitud global...\\npero 0% de fraudes detectados"]\n  A --> D["Matriz de confusión\\nrevela el fallo real por clase"]',
     },
     recursos: {
       videos: [{ titulo: 'ROC and AUC, Clearly Explained!', canal: 'StatQuest', url: 'https://www.youtube.com/watch?v=4jRBRDbJemM' }],

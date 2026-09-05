@@ -81,7 +81,7 @@ const lecciones = [
     preguntaReflexion: '¿Recuerdas alguna sesión de "lluvia de ideas" en tu organización donde las ideas se criticaban en el mismo momento de proponerse? ¿Qué tipo de ideas crees que se perdieron por eso?',
     diagram: {
       title: 'Generar antes de filtrar',
-      mermaid: 'graph LR\n  A["Fase de generación\\ncantidad, sin crítica"] --> B["Muchas ideas,\\nincluso las \\"malas\\""]\n  B --> C["Fase de filtrado\\n(separada en el tiempo)"]\n  C --> D["Pocas ideas\\nseleccionadas para prototipar"]',
+      mermaid: 'graph LR\n  A["Fase de generación\\ncantidad, sin crítica"] --> B["Muchas ideas,\\nincluso las poco viables"]\n  B --> C["Fase de filtrado\\n(separada en el tiempo)"]\n  C --> D["Pocas ideas\\nseleccionadas para prototipar"]',
     },
     recursos: {
       videos: [{ titulo: 'IDEO: Brainstorming and Other Ideation Techniques', canal: 'IDEO', url: 'https://www.youtube.com/watch?v=xXsHI_VlhmY' }],

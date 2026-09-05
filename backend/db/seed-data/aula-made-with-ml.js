@@ -20,7 +20,7 @@ module.exports = {
           ],
           diagram: {
             title: 'De la necesidad de producto al problema de aprendizaje',
-            mermaid: 'graph LR\n  A["Necesidad de producto\\n(\\\"reducir devoluciones\\\")"] --> B["¿Qué acción se toma\\ncon la predicción?"]\n  B --> C["¿Qué señales existen\\nen el momento real?"]\n  C --> D["Formulación técnica\\n(clasificación / regresión / ranking)"]',
+            mermaid: 'graph LR\n  A["Necesidad de producto:\\nreducir devoluciones"] --> B["¿Qué acción se toma\\ncon la predicción?"]\n  B --> C["¿Qué señales existen\\nen el momento real?"]\n  C --> D["Formulación técnica\\n(clasificación / regresión / ranking)"]',
           },
           example: { title: 'La fuga de información al revés', text: 'Un equipo entrena un modelo que predice con 94% de precisión si un pedido será devuelto, usando entre las variables "el cliente abrió un ticket de soporte". En producción, ese ticket casi siempre se abre después de decidir devolver el producto, no antes. El modelo funcionaba en el entrenamiento porque esa variable ya "sabía" la respuesta.' },
           keys: [

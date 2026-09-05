@@ -20,6 +20,11 @@ export function DiagramView({ title, chart }: { title?: string; chart: string })
         const { svg: rendered } = await mermaid.render(id, chart)
         if (!cancelled) setSvg(rendered)
       } catch (err) {
+        // El diagrama se oculta sin más para el estudiante (ver "if (error) return null"
+        // abajo) para no mostrar una caja de error rota, pero el fallo se deja rastreable
+        // en consola — un mermaid.mermaid malformado no debería desaparecer en silencio
+        // total, como ocurrió con un diagrama real de esta plataforma antes de este log.
+        console.error('DiagramView: fallo al renderizar diagrama mermaid', title, err)
         if (!cancelled) setError('No se pudo renderizar el diagrama.')
       }
     }

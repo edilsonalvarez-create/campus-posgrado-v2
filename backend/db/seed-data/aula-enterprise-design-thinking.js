@@ -65,7 +65,7 @@ module.exports = {
           example: { title: 'De entregable a resultado', text: '"Implementar el nuevo portal de RR. HH." es un entregable. "Un empleado puede solicitar y confirmar sus vacaciones sin escribir un correo ni esperar respuesta de alguien" es un resultado humano. El segundo enunciado, a diferencia del primero, permite saber en cualquier momento si el proyecto está funcionando de verdad, aunque el portal técnicamente ya esté "lanzado".' },
           diagram: {
             title: 'Entregable cumplido, resultado ausente',
-            mermaid: 'graph LR\n  E["Entregable: \\"lanzar el portal\\""] --> C["Se puede cumplir\\nsin cambiar nada real"]\n  R["Resultado humano:\\n\\"un empleado puede X sin Y\\""] --> V["Tiene forma evidente\\nde fracasar — es verificable"]',
+            mermaid: 'graph LR\n  E["Entregable: lanzar el portal"] --> C["Se puede cumplir\\nsin cambiar nada real"]\n  R["Resultado humano:\\nun empleado puede X sin Y"] --> V["Tiene forma evidente\\nde fracasar — es verificable"]',
           },
           keys: [
             'Un entregable puede completarse sin cambiar nada para nadie; un resultado humano no puede "cumplirse" sin que algo cambie en la vida de una persona concreta.',
@@ -110,7 +110,7 @@ module.exports = {
           ],
           diagram: {
             title: 'De la intención vaga a la colina accionable',
-            mermaid: 'graph TD\n  A["Intención vaga:\\n\\"mejorar la analítica\\""] --> B["Funcionalidad:\\n\\"construir un dashboard\\""]\n  A --> C["Colina:\\nusuario + resultado + condición"]\n  C --> D["Explorar varias soluciones posibles"]\n  B --> E["Una sola solución, sin explorar alternativas"]',
+            mermaid: 'graph TD\n  A["Intención vaga:\\nmejorar la analítica"] --> B["Funcionalidad:\\nconstruir un dashboard"]\n  A --> C["Colina:\\nusuario + resultado + condición"]\n  C --> D["Explorar varias soluciones posibles"]\n  B --> E["Una sola solución, sin explorar alternativas"]',
           },
           example: { title: 'Tres colinas de un mismo proyecto', text: 'Un banco que quiere modernizar la apertura de cuentas podría escribir: (1) "Un cliente nuevo puede abrir una cuenta desde su teléfono en menos de 8 minutos, sin visitar una sucursal." (2) "Un asesor puede ver el estado de una solicitud en curso sin llamar a otro departamento." (3) "Un cliente rechazado entiende por qué, sin tener que preguntar." Ninguna menciona tecnología; las tres son verificables.' },
           keys: [
