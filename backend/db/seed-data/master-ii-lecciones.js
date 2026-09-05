@@ -19,6 +19,13 @@ const lecciones = [
     ejemplo: { titulo: 'Data lake en una planta industrial', texto: 'Una planta guarda en un data lake toda la telemetría cruda de sus sensores (vibración, temperatura, consumo) sin procesar, además de los registros de mantenimiento en texto libre. Un año después, un equipo de datos que nunca imaginó ese uso combina ambas fuentes para entrenar un modelo de mantenimiento predictivo: eso solo fue posible porque los datos crudos se conservaron sin forzar un esquema previo.' },
     actividad: { minutos: 20, texto: 'Para un proceso de tu organización que genera datos continuamente, identifica: ¿cuál de las tres V (volumen, velocidad, variedad) es la más determinante? ¿El análisis que necesitas es por lotes o en flujo? ¿Hoy se guarda en un data warehouse, un data lake, o no se guarda?' },
     preguntaReflexion: '¿Qué datos genera hoy tu organización y se descartan, que podrían tener valor futuro si se conservaran en un data lake?',
+    diagram: {
+      title: 'Cuándo el volumen exige cambiar de técnica',
+      mermaid: 'graph LR\n  A["Volumen de datos crece"] --> B{"¿Cabe en una\\nsola máquina?"}\n  B -->|Sí| C["Base de datos tradicional"]\n  B -->|No| D["Arquitectura distribuida\\n(procesamiento en múltiples nodos)"]\n  D --> E["Data lake: se almacena todo,\\naunque no se use hoy"]',
+    },
+    recursos: {
+      videos: [{ titulo: 'Big Data Explained', canal: 'IBM Technology', url: 'https://www.youtube.com/watch?v=HRfR4dJoKDc' }],
+    },
     quiz: [
       { q: '¿Qué determina que un problema sea de "Big Data" y no de datos convencionales?', opts: ['Que el proyecto tenga presupuesto grande', 'Que el volumen, la velocidad o la variedad superen lo que una máquina y herramientas tradicionales gestionan bien', 'Que use inteligencia artificial', 'Que los datos estén en la nube'], a: 1, why: ['El presupuesto no define la naturaleza técnica del problema.', 'Correcto: son las tres V las que definen el umbral.', 'El uso de IA es independiente de si el problema es de Big Data.', 'Estar en la nube no es requisito ni garantía de ser Big Data.'] },
       { q: '¿Cuándo conviene procesamiento en flujo en vez de por lotes?', opts: ['Siempre, es superior en todos los casos', 'Cuando se necesita reaccionar a eventos con latencia muy baja, como detección de fraude', 'Solo cuando el volumen de datos es pequeño', 'Cuando no hay presupuesto para almacenamiento'], a: 1, why: ['El flujo tiene costes y limitaciones que no lo hacen superior en todo caso.', 'Correcto: la baja latencia es la razón principal para elegir flujo.', 'El volumen no es el criterio decisivo para esta elección.', 'La elección no depende del presupuesto de almacenamiento.'] },
@@ -42,6 +49,13 @@ const lecciones = [
     ejemplo: { titulo: 'El ciclo cerrado en mantenimiento predictivo', texto: 'Sensores IoT generan datos de vibración (IoT). Se almacenan a escala en la nube (cloud + Big Data). Un modelo de IA predice fallos con esos datos. Cada predicción se compara después con si el fallo ocurrió realmente o no, y ese resultado —correcto o incorrecto— se añade al conjunto de entrenamiento para el siguiente ciclo de reentrenamiento. Un registro en blockchain, en versiones más maduras del sistema, deja constancia auditable de cada predicción y su resultado real, útil para cumplimiento normativo.' },
     actividad: { minutos: 15, texto: 'Para un sistema de IA de tu organización (real o propuesto), identifica qué otra de las cuatro tecnologías de esta asignatura (Big Data, IoT, cloud, blockchain) le falta para funcionar mejor, y qué obtendría exactamente de ella.' },
     preguntaReflexion: '¿En qué punto del ciclo de sobre-expectativa dirías que está hoy la IA generativa en tu sector: subiendo, en el pico, o ya ajustándose a un uso más realista?',
+    diagram: {
+      title: 'Qué distingue a la IA de otras tecnologías disruptivas',
+      mermaid: 'graph LR\n  A["Tecnología disruptiva típica\\n(automatiza una tarea fija)"] --> B["Comportamiento predecible\\ny estable en el tiempo"]\n  C["IA"] --> D["Mejora con más datos\\ny puede cambiar de comportamiento\\nal reentrenarse"]',
+    },
+    recursos: {
+      videos: [{ titulo: 'AI, Machine Learning, Deep Learning and Generative AI Explained', canal: 'IBM Technology', url: 'https://www.youtube.com/watch?v=qYNweeDHiyU' }],
+    },
     quiz: [
       { q: '¿Por qué se dice que la IA es una "tecnología de propósito general"?', opts: ['Porque resuelve un único problema muy bien', 'Porque mejora la forma de resolver casi cualquier problema formulable como entrada→salida', 'Porque solo se usa en tecnología', 'Porque no requiere datos para funcionar'], a: 1, why: ['Eso describiría una tecnología específica, no de propósito general.', 'Correcto: esa amplitud de aplicación es la definición de tecnología de propósito general.', 'Se aplica a prácticamente cualquier industria, no solo tecnología.', 'La IA depende críticamente de datos para funcionar.'] },
       { q: '¿Qué aporta típicamente el IoT al ciclo de un sistema de IA?', opts: ['Cómputo elástico para entrenar modelos', 'Flujos continuos de datos del mundo físico en tiempo real', 'Un registro auditable de decisiones', 'Almacenamiento estructurado tipo warehouse'], a: 1, why: ['Eso lo aporta el cloud computing, no el IoT.', 'Correcto: esa es la contribución característica del IoT al ciclo.', 'Eso corresponde típicamente al blockchain.', 'No es la contribución distintiva del IoT.'] },
@@ -66,6 +80,13 @@ const lecciones = [
     ejemplo: { titulo: 'Sensor de vibración con procesamiento en el borde', texto: 'Un sensor de vibración en un motor toma 1.000 lecturas por segundo, demasiado para enviarlas todas a la nube con la batería disponible. En el propio dispositivo, un algoritmo simple calcula un resumen estadístico cada minuto y solo envía una alerta MQTT cuando ese resumen se desvía del patrón normal. La nube nunca ve el dato crudo, solo la alerta ocasional, lo que multiplica por meses la duración de la batería.' },
     actividad: { minutos: 15, texto: 'Para un despliegue IoT real o hipotético en tu contexto, decide qué procesamiento haría el propio dispositivo (borde) y qué enviaría a la nube, justificando la decisión por energía, latencia o privacidad.' },
     preguntaReflexion: '¿Qué dispositivo de tu organización, si tuviera un sensor, generaría el dato más valioso, y qué te impide hoy instalarlo?',
+    diagram: {
+      title: 'Del sensor al dato útil, en el borde o en la nube',
+      mermaid: 'graph LR\n  S["Sensor\\n(vibración, temperatura, etc.)"] --> E{"¿Se procesa\\nen el borde (edge)?"}\n  E -->|Sí| L["Decisión local inmediata\\n(baja latencia, sin depender de red)"]\n  E -->|No| C["Se envía a la nube\\npara análisis más complejo"]',
+    },
+    recursos: {
+      videos: [{ titulo: 'How It Works: Internet of Things', canal: 'IBM Think Academy', url: 'https://www.youtube.com/watch?v=Mpe651AdmZA' }],
+    },
     quiz: [
       { q: '¿Cuál es la diferencia entre un sensor y un actuador?', opts: ['No hay diferencia, son sinónimos', 'El sensor convierte una magnitud física en señal digital; el actuador convierte una decisión digital en acción física', 'El actuador siempre es más caro', 'El sensor solo funciona con electricidad'], a: 1, why: ['Cumplen funciones opuestas y complementarias.', 'Correcto: esa es la distinción funcional exacta.', 'El coste relativo no es una diferencia definitoria.', 'Ambos requieren energía, no es una diferencia distintiva.'] },
       { q: '¿Por qué conviene procesar datos en el borde en vez de enviarlo todo a la nube?', opts: ['Porque la nube nunca funciona con IoT', 'Porque reduce latencia, consumo de energía/ancho de banda y puede mejorar privacidad', 'Porque es obligatorio por ley en todos los países', 'Porque los microcontroladores no pueden conectarse a internet'], a: 1, why: ['La nube sí funciona con IoT, de hecho es un componente central del ciclo.', 'Correcto: son las tres razones prácticas para procesar en el borde.', 'No existe tal obligación legal universal.', 'Sí pueden conectarse; la cuestión es qué conviene enviar.'] },
@@ -89,6 +110,13 @@ const lecciones = [
     ejemplo: { titulo: 'De miles de sensores a un modelo entrenado', texto: 'Una red de 5.000 sensores de una empresa de logística envía datos por MQTT a un servicio de ingesta IoT en la nube (IaaS/PaaS). Los datos se almacenan en un data lake gestionado. Cada noche, un trabajo por lotes reentrena un modelo de predicción de retrasos usando cómputo elástico que solo se activa durante ese proceso y se apaga después, pagando solo esas horas de cómputo en vez de mantener servidores propios encendidos todo el año.' },
     actividad: { minutos: 15, texto: 'Clasifica tres herramientas o sistemas que uses en tu organización según sean IaaS, PaaS o SaaS, y para cada uno evalúa si el nivel de control que tienes es el adecuado o si convendría cambiar de capa.' },
     preguntaReflexion: '¿Tu organización depende hoy fuertemente de un solo proveedor de nube? ¿Qué pasaría si tuvieran que migrar en seis meses?',
+    diagram: {
+      title: 'Cloud como motor elástico del IoT',
+      mermaid: 'graph LR\n  A["Miles de sensores IoT\\nenvían datos constantemente"] --> B["Nube: escala automáticamente\\nsegún el volumen de datos"]\n  B --> C["Pago solo por lo que se usa,\\nsin comprar infraestructura propia"]',
+    },
+    recursos: {
+      videos: [{ titulo: 'I Explain Cloud Computing in About 10 Minutes', canal: 'Techquickie/afín', url: 'https://www.youtube.com/watch?v=aGMYBsBvRWs' }],
+    },
     quiz: [
       { q: '¿Qué significa "elasticidad" en cloud computing?', opts: ['Que el software nunca falla', 'Que los recursos pueden aumentar o reducirse casi instantáneamente, pagando solo por el uso real', 'Que los datos se cifran automáticamente', 'Que el proveedor garantiza velocidad ilimitada'], a: 1, why: ['La elasticidad no garantiza ausencia de fallos.', 'Correcto: esa es la definición precisa de elasticidad.', 'El cifrado es una característica de seguridad, no de elasticidad.', 'No implica velocidad ilimitada, sino recursos ajustables.'] },
       { q: '¿Qué capa de servicio en la nube entrega una aplicación completa lista para usar, sin gestión de infraestructura por parte del cliente?', opts: ['IaaS', 'PaaS', 'SaaS', 'Ninguna, siempre hay que gestionar infraestructura'], a: 2, why: ['IaaS exige gestionar sistema operativo y software.', 'PaaS reduce la gestión pero aún exige preocuparse de la aplicación.', 'Correcto: SaaS entrega la aplicación completa lista para usar.', 'SaaS precisamente elimina esa necesidad de gestión.'] },
@@ -113,6 +141,13 @@ const lecciones = [
     ejemplo: { titulo: 'Trazabilidad de componentes críticos', texto: 'Un fabricante de equipos industriales registra en un blockchain cada componente crítico de sus máquinas: proveedor de origen, lote, fecha de fabricación, cada cambio de custodia hasta la instalación final. Si un componente falla, la cadena completa de origen es auditable sin depender de que cada proveedor de la cadena mantenga honestamente sus propios registros internos.' },
     actividad: { minutos: 15, texto: 'Evalúa una propuesta (real o hipotética) de "usar blockchain" en tu organización con el criterio de la lección: ¿existe ya una autoridad de confianza que podría llevar ese registro? Si la respuesta es sí, justifica por qué blockchain seguiría o no aportando valor.' },
     preguntaReflexion: '¿Puedes pensar en un caso donde tu organización insistió en usar una tecnología de moda cuando una solución más simple habría bastado? ¿Qué llevó a esa decisión?',
+    diagram: {
+      title: 'Consenso distribuido sin autoridad central',
+      mermaid: 'graph TD\n  N1["Nodo 1"] <--> N2["Nodo 2"]\n  N2 <--> N3["Nodo 3"]\n  N3 <--> N1\n  N1 -->|propone bloque| V["Todos validan\\nantes de aceptarlo"]\n  N2 -->|propone bloque| V\n  N3 -->|propone bloque| V',
+    },
+    recursos: {
+      videos: [{ titulo: 'Blockchain Explained', canal: 'IBM Technology', url: 'https://www.youtube.com/watch?v=QphJEO9ZX6s' }],
+    },
     quiz: [
       { q: '¿Qué problema resuelve específicamente un blockchain?', opts: ['Almacenar cualquier tipo de dato más barato que una base de datos', 'Lograr consenso sobre un registro compartido entre partes que no confían entre sí, sin autoridad central', 'Acelerar cualquier transacción financiera', 'Sustituir siempre a las bases de datos relacionales'], a: 1, why: ['El almacenamiento en blockchain es más caro, no más barato, que una base de datos convencional.', 'Correcto: ese es el problema exacto que resuelve.', 'No acelera transacciones por sí solo; de hecho suele ser más lento.', 'No sustituye a las bases de datos convencionales quando ya existe una autoridad de confianza.'] },
       { q: '¿Cuándo NO conviene usar blockchain según el criterio de la lección?', opts: ['Cuando hay muchos participantes', 'Cuando ya existe una autoridad de confianza aceptable para todas las partes que puede llevar el registro', 'Cuando se necesita trazabilidad', 'Cuando el registro debe ser auditable'], a: 1, why: ['El número de participantes no es el criterio decisivo por sí solo.', 'Correcto: si ya existe una autoridad de confianza, una base de datos convencional es mejor opción.', 'La necesidad de trazabilidad puede justificar blockchain, no lo descarta.', 'La auditabilidad puede ser precisamente un motivo para usarlo, no para evitarlo.'] },
@@ -136,6 +171,10 @@ const lecciones = [
     ejemplo: { titulo: 'Aplicar el criterio a una tecnología nueva', texto: 'Ante una tecnología emergente cualquiera —por ejemplo, computación cuántica aplicada a optimización industrial— el criterio se aplica así: ¿qué problema resuelve exactamente que las técnicas actuales no resuelven? ¿En qué fase del ciclo de expectativa está —seguramente cerca del pico en muchos titulares—? ¿Qué otras tecnologías necesita para ser útil en la práctica? ¿Cuál es la barrera de adopción real en una organización típica, más allá de poder probarla en un laboratorio?' },
     actividad: { minutos: 20, texto: 'Elige una tecnología emergente que no se haya cubierto en esta asignatura (por ejemplo, computación cuántica, biotecnología computacional, o interfaces cerebro-computadora) y aplícale el criterio completo de la lección: problema que resuelve, fase del ciclo de expectativa, tecnologías que necesita, y barrera de adopción real.' },
     preguntaReflexion: '¿Qué tecnología crees que está hoy en la "caída de desilusión" y que, sin embargo, podría alcanzar una meseta de productividad real en los próximos años?',
+    diagram: {
+      title: 'El ciclo de sobre-expectativa de una tecnología emergente',
+      mermaid: 'graph LR\n  A["Disparador\\ntecnológico"] --> B["Pico de expectativas\\ninfladas"]\n  B --> C["Caída de\\ndesilusión"]\n  C --> D["Rampa de\\nconsolidación"]\n  D --> E["Meseta de\\nproductividad real"]',
+    },
     quiz: [
       { q: '¿Qué caracteriza la "meseta de productividad" en el ciclo de sobre-expectativa de una tecnología?', opts: ['El momento de mayor entusiasmo mediático', 'Las aplicaciones reales y sostenibles, generalmente más modestas que lo prometido en el pico', 'El abandono total de la tecnología', 'El lanzamiento inicial de la tecnología'], a: 1, why: ['Ese es el pico de sobre-expectativa, no la meseta.', 'Correcto: la meseta es donde la tecnología encuentra su uso real y duradero.', 'La meseta no implica abandono, sino adopción madura.', 'Ese es el despegue inicial, no la meseta.'] },
       { q: '¿Por qué muchos proyectos piloto exitosos no llegan a producción?', opts: ['Porque la tecnología nunca funciona', 'Porque se evalúa la barrera de entrada (barata) sin evaluar la barrera de adopción real en la organización', 'Porque siempre falta presupuesto', 'Porque los pilotos son obligatorios por ley'], a: 1, why: ['Si funcionó en el piloto, la tecnología sí funciona; el problema es de integración.', 'Correcto: esa es la causa más común según la lección.', 'El presupuesto puede ser un factor, pero no es la causa estructural descrita.', 'No existe tal obligación legal.'] },

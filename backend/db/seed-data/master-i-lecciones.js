@@ -36,6 +36,13 @@ const lecciones = [
       texto: 'Identifica tres decisiones que hoy se toman manualmente en tu organización (o una que conozcas bien) y que podrían apoyarse en IA. Para cada una, escribe en una sola línea el par entrada→salida, y clasifícala en el espectro asistir / automatizar con supervisión / automatizar por completo, justificando el coste del error en cada caso.',
     },
     preguntaReflexion: '¿Qué decisión de tu organización nunca deberías automatizar por completo, sin importar cuán preciso fuera el modelo, y por qué?',
+    diagram: {
+      title: 'El espectro de automatización de decisiones',
+      mermaid: 'graph LR\n  A["Asistir\\nel sistema sugiere,\\nla persona decide siempre"] --> B["Automatizar con supervisión\\nel sistema decide,\\nse revisan casos de baja confianza"]\n  B --> C["Automatizar por completo\\nel sistema decide sin revisión"]\n  style A fill:#dbeafe\n  style B fill:#fef3c7\n  style C fill:#fecaca',
+    },
+    recursos: {
+      videos: [{ titulo: 'AI, Machine Learning, Deep Learning and Generative AI Explained', canal: 'IBM Technology', url: 'https://www.youtube.com/watch?v=qYNweeDHiyU' }],
+    },
     quiz: [
       {
         q: 'Un proveedor ofrece un sistema que "entiende las necesidades del cliente y decide la mejor oferta". ¿Cómo se evalúa correctamente esa propuesta?',
@@ -123,6 +130,14 @@ const lecciones = [
       texto: 'Toma tres problemas reales de tu contexto (uno por paradigma) y para cada uno responde: ¿tengo ejemplos etiquetados históricos? ¿Busco estructura desconocida en los datos? ¿Hay un agente que actúa y recibe una señal de resultado tras cada acción? Justifica en una frase por qué cada problema corresponde a ese paradigma y no a otro.',
     },
     preguntaReflexion: 'Piensa en un modelo que "funcionó perfecto en las pruebas internas" y falló en producción. ¿Qué señales de sobreajuste se habrían podido detectar antes de desplegarlo?',
+    diagram: {
+      title: 'Los tres paradigmas de Machine Learning',
+      mermaid: 'graph TD\n  D["Datos disponibles"] --> S{"¿Tienen\\netiquetas históricas?"}\n  S -->|Sí| SUP["Aprendizaje supervisado\\nentrada→salida conocida"]\n  S -->|No| NOSUP["Aprendizaje no supervisado\\ndescubrir estructura oculta"]\n  D --> REF["Aprendizaje por refuerzo\\nun agente actúa y recibe una señal tras cada acción"]',
+    },
+    recursos: {
+      videos: [{ titulo: 'But what is a Neural Network? | Deep learning', canal: '3Blue1Brown', url: 'https://www.youtube.com/watch?v=aircAruvnKk' }],
+      libros: [{ titulo: 'Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow', autor: 'Aurélien Géron' }],
+    },
     quiz: [
       {
         q: 'Un equipo quiere descubrir qué patrones de consumo existen entre sus clientes, sin tener ninguna categoría predefinida. ¿Qué paradigma corresponde?',
@@ -200,6 +215,13 @@ const lecciones = [
       texto: 'Elige una tarea de tu trabajo que hoy resolverías consultando un documento interno (una política, un manual, un procedimiento). Describe cómo se vería resuelta con RAG: qué documentos habría que indexar, qué pregunta harías, y qué riesgo de alucinación tendría una respuesta sin esa fuente.',
     },
     preguntaReflexion: '¿En qué situación preferirías ajuste fino sobre RAG, a pesar de su mayor coste, y por qué?',
+    diagram: {
+      title: 'Dos caminos para adaptar un modelo fundacional',
+      mermaid: 'graph LR\n  M["Modelo fundacional\\npreentrenado"] --> AF["Ajuste fino\\nreentrena parte del modelo\\ncon datos propios"]\n  M --> RAG["RAG (anclaje en datos propios)\\nel modelo no cambia,\\nse le entregan documentos relevantes en cada consulta"]\n  AF --> R1["Más costoso, exige reentrenar si cambian los datos"]\n  RAG --> R2["Más barato, auditable, se actualiza solo cambiando documentos"]',
+    },
+    recursos: {
+      videos: [{ titulo: 'What is Generative AI? Explained in 60 Seconds | AI for Beginners', canal: 'AI for Beginners', url: 'https://www.youtube.com/watch?v=KhpF1Y7f6-0' }],
+    },
     quiz: [
       {
         q: '¿Cuál es la diferencia esencial entre un modelo discriminativo y uno generativo?',
@@ -282,6 +304,13 @@ const lecciones = [
       texto: 'Toma un sistema de IA (real o hipotético) relevante para tu organización. Aplica el marco de cuatro preguntas de decisión responsable: población afectada y medición desagregada, mecanismo de apelación, responsable del resultado, y comunicación a los afectados. Señala cuál de las cuatro es hoy la más débil en tu contexto.',
     },
     preguntaReflexion: '¿Puede un sistema ser "justo en promedio" y a la vez profundamente injusto? Explica con un ejemplo propio, distinto al de la lección.',
+    diagram: {
+      title: 'El ciclo del sesgo algorítmico',
+      mermaid: 'graph LR\n  A["Datos históricos\\ncon sesgo humano previo"] --> B["Modelo entrenado\\naprende ese sesgo como patrón válido"]\n  B --> C["Predicciones sesgadas\\nen producción"]\n  C --> D["Decisiones reales afectadas\\n(crédito, contratación, etc.)"]\n  D -.->|Retroalimenta| A',
+    },
+    recursos: {
+      videos: [{ titulo: 'What is Algorithmic Bias in AI?', canal: 'IBM Technology', url: 'https://www.youtube.com/watch?v=htcPiuxMXCM' }],
+    },
     quiz: [
       {
         q: 'Un modelo de contratación no usa el género como variable, pero reproduce un sesgo de género histórico. ¿Cuál es la explicación más probable?',
@@ -370,6 +399,10 @@ const lecciones = [
       texto: 'Elige dos sectores distintos al tuyo (por ejemplo salud y logística) y para cada uno de los cuatro patrones (mantenimiento predictivo, personalización, detección de anomalías, optimización) escribe un ejemplo concreto de ese sector. Después identifica cuál de los cuatro patrones es más aplicable a tu propio contexto y por qué.',
     },
     preguntaReflexion: '¿Qué patrón de los cuatro está hoy menos explotado en tu sector, y qué dato haría falta para empezar a aplicarlo?',
+    diagram: {
+      title: 'Un mismo patrón, distintos sectores',
+      mermaid: 'graph TD\n  P["Patrón: predecir un evento futuro\\na partir de datos históricos"] --> S1["Salud: riesgo de reingreso hospitalario"]\n  P --> S2["Finanzas: probabilidad de impago"]\n  P --> S3["Manufactura: falla de un equipo"]\n  P --> S4["Retail: quiebre de inventario"]',
+    },
     quiz: [
       {
         q: '¿Qué tienen en común el mantenimiento predictivo en manufactura y en energía?',
@@ -458,6 +491,10 @@ const lecciones = [
       texto: 'Para un caso de IA que te interese, decide en qué categoría de plataforma empezarías (experimentación, nube gestionada, modelo preentrenado, o API de terceros) y justifica la elección considerando coste, privacidad de datos y madurez de tu equipo.',
     },
     preguntaReflexion: '¿En qué caso preferirías alojar un modelo propio en vez de usar la API de un proveedor externo, a pesar del coste adicional?',
+    diagram: {
+      title: 'Niveles de abstracción para construir con IA',
+      mermaid: 'graph BT\n  A["Infraestructura básica\\n(máquinas virtuales, GPU)"] --> B["Servicio gestionado de ML\\n(entrenar y desplegar modelo propio)"]\n  B --> C["API de IA preentrenada\\n(consumir directamente, sin entrenar)"]\n  A -.->|más control, más esfuerzo| Z1[" "]\n  C -.->|menos esfuerzo, menos control| Z2[" "]',
+    },
     quiz: [
       {
         q: '¿Cuál es la ventaja principal de partir de un modelo del repositorio de Hugging Face en vez de entrenar uno desde cero?',

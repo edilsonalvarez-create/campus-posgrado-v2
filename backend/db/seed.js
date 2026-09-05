@@ -52,6 +52,8 @@ function leccionAResource(l) {
       keys: l.resumen || [],
       quiz: l.quiz || [],
       criterioFinalizacion: l.criterioFinalizacion || null,
+      diagram: l.diagram || null,
+      recursos: l.recursos || null,
     },
   };
 }
