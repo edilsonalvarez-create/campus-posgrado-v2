@@ -7,6 +7,7 @@ import { Markdown } from '../components/Markdown'
 import { QuizView } from '../components/QuizView'
 import { SubmissionForm } from '../components/SubmissionForm'
 import { DiagramView } from '../components/DiagramView'
+import { LecturaGuiada } from '../components/LecturaGuiada'
 
 interface Resource {
   id: string
@@ -231,6 +232,7 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
             </ul>
           </div>
         )}
+        {cj.lecturaGuiada && <LecturaGuiada data={cj.lecturaGuiada} />}
         {cj.exercise && (
           <div className="my-5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded">
             <p className="font-semibold text-gray-900 dark:text-white mb-1">

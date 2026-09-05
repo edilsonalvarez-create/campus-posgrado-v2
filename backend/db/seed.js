@@ -384,6 +384,7 @@ async function main() {
               mins: l.mins, body: l.body || [], example: l.example || null,
               keys: l.keys || [], exercise: l.exercise || null, quiz: l.quiz || [],
               diagram: l.diagram || null, recursos: l.recursos || null,
+              lecturaGuiada: l.lecturaGuiada || null,
             },
           }));
           if (Array.isArray(u.exam) && u.exam.length) {
