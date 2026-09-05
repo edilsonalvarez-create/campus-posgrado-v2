@@ -63,6 +63,10 @@ module.exports = {
             'Escribir un resultado centrado en el usuario obliga además a decidir quién es esa persona con más precisión de la habitual: "los clientes" no es una persona, es una categoría demasiado amplia para diseñar nada concreto. "Un cliente que llama por primera vez con una factura que no reconoce" sí lo es, y sobre esa persona concreta se puede observar, prototipar y medir con sentido.',
           ],
           example: { title: 'De entregable a resultado', text: '"Implementar el nuevo portal de RR. HH." es un entregable. "Un empleado puede solicitar y confirmar sus vacaciones sin escribir un correo ni esperar respuesta de alguien" es un resultado humano. El segundo enunciado, a diferencia del primero, permite saber en cualquier momento si el proyecto está funcionando de verdad, aunque el portal técnicamente ya esté "lanzado".' },
+          diagram: {
+            title: 'Entregable cumplido, resultado ausente',
+            mermaid: 'graph LR\n  E["Entregable: \\"lanzar el portal\\""] --> C["Se puede cumplir\\nsin cambiar nada real"]\n  R["Resultado humano:\\n\\"un empleado puede X sin Y\\""] --> V["Tiene forma evidente\\nde fracasar — es verificable"]',
+          },
           keys: [
             'Un entregable puede completarse sin cambiar nada para nadie; un resultado humano no puede "cumplirse" sin que algo cambie en la vida de una persona concreta.',
             'Un resultado humano bien escrito tiene una forma evidente de fracasar; un entregable normalmente no la tiene.',
@@ -136,6 +140,10 @@ module.exports = {
             'El error más común al adoptar playbacks es tratarlos como una demo pulida diseñada para impresionar. Un playback bien ejecutado incluye deliberadamente lo que no funcionó, las hipótesis que resultaron falsas y las preguntas todavía abiertas, porque su función es generar retroalimentación honesta, no validación social. Un equipo que solo muestra lo que salió bien en sus playbacks está, sin darse cuenta, entrenando a su audiencia para no darle malas noticias — exactamente lo contrario de lo que necesita un proyecto que todavía está explorando.',
             'La cadencia importa tanto como el contenido: un solo playback al final del proyecto no cumple la función de alineación temprana que el método busca. Los playbacks regulares, aunque muestren avances pequeños o incompletos, permiten corregir el rumbo con el costo de una conversación, no con el costo de meses de trabajo mal orientado.',
           ],
+          diagram: {
+            title: 'Los tres playbacks reconocidos',
+            mermaid: 'graph LR\n  A["Playback de colinas\\n(antes de construir)"] --> B["Playback cero\\n(primer prototipo navegable)"]\n  B --> C["Playbacks de entrega\\n(avances reales, en intervalos)"]',
+          },
           example: { title: 'Buscar el desacuerdo, no la aprobación', text: 'En un playback de colinas, un patrocinador dice: "Esto no es lo que yo tenía en mente." Un equipo que busca aprobación lo vive como un fracaso de la sesión. Un equipo que entiende el propósito del playback lo vive como el mejor resultado posible: acaba de evitar meses de trabajo construido sobre un malentendido, al costo de una conversación de veinte minutos.' },
           keys: [
             'Un playback cuenta lo aprendido y construido, buscando activamente el desacuerdo y la corrección, no la aprobación.',
@@ -164,6 +172,10 @@ module.exports = {
             'Conseguir usuarios patrocinadores genuinos —no un panel corporativo entrenado para decir lo que el equipo quiere oír— es, en la práctica, el mayor desafío de este componente del método. La señal de que un usuario patrocinador es genuino es que a veces dice cosas que incomodan al equipo; si nunca lo hace, probablemente esté respondiendo lo que cree que se espera de él, no lo que observa.',
             'La validación continua que ofrecen los usuarios patrocinadores se combina con los playbacks de la lección anterior en un mismo propósito: reducir al mínimo posible el tiempo entre que una decisión se toma y que su efecto real se conoce. Un proyecto sin usuarios patrocinadores ni playbacks regulares puede acumular meses de decisiones sin que nadie sepa, hasta el lanzamiento, si alguna de ellas fue un error.',
           ],
+          diagram: {
+            title: 'Usuario patrocinador: una serie, no una foto',
+            mermaid: 'graph LR\n  E1["Entrevista única\\n(una foto de un momento)"] --> L["Limitada: no ve evolución"]\n  U["Usuario patrocinador\\n(serie continua)"] --> V["Revela si el proyecto\\nse acerca o aleja del objetivo"]',
+          },
           keys: [
             'Un usuario patrocinador participa de forma continua durante todo el proyecto, no en una única entrevista inicial.',
             'La continuidad revela problemas que una fotografía única no puede: cómo se siente usar la versión 8 después de las siete anteriores.',

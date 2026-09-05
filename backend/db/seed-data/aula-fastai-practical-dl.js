@@ -122,6 +122,10 @@ module.exports = {
             'Para datos tabulares, las redes neuronales compiten directamente con los métodos de conjunto basados en árboles —como el bosque aleatorio y XGBoost, vistos en otra aula de este campus—, y la elección entre ambos enfoques no tiene un ganador universal: los métodos basados en árboles suelen ser más rápidos de entrenar, requieren menos ajuste de hiperparámetros, y con frecuencia igualan o superan a las redes neuronales en muchos conjuntos de datos tabulares de tamaño moderado.',
             'Una técnica específica para datos tabulares con redes neuronales es el uso de embeddings para variables categóricas: en vez de codificación one-hot como se vio en otra aula, se aprende una representación numérica densa de cada categoría durante el entrenamiento, capaz de capturar relaciones de similitud entre categorías —por ejemplo, que dos ciudades vecinas se comportan de forma parecida— que una codificación one-hot, por diseño, no puede expresar.',
           ],
+          diagram: {
+            title: 'Datos tabulares: árboles frente a redes neuronales',
+            mermaid: 'graph LR\n  D["Datos tabulares\\n(columnas numéricas y categóricas)"] --> A["Árboles (XGBoost)\\nrápido, poco ajuste"]\n  D --> N["Red neuronal + embeddings\\nmás ajuste, potencialmente más flexible"]',
+          },
           example: { title: 'Cuándo elegir árboles sobre redes neuronales', text: 'Un equipo con un conjunto de datos tabular de tamaño moderado —unas decenas de miles de filas, con columnas numéricas y categóricas mezcladas— prueba tanto XGBoost como una red neuronal con embeddings. XGBoost entrena en minutos con ajuste mínimo y alcanza un desempeño comparable al de la red neuronal, que exigió mucho más tiempo de ajuste de hiperparámetros para llegar al mismo resultado — una situación habitual, no excepcional, en datos tabulares de este tamaño.' },
           keys: [
             'Los principios de aprendizaje por transferencia se aplican al texto: un modelo de lenguaje preentrenado se ajusta finamente con menos ejemplos etiquetados que entrenar desde cero.',
@@ -164,6 +168,10 @@ module.exports = {
             'El sesgo de los datos de entrenamiento no es un defecto que se "arregla" con una técnica única: datos históricos que reflejan decisiones humanas pasadas —de contratación, de crédito, de justicia penal— frecuentemente codifican las desigualdades de esas decisiones pasadas, y un modelo entrenado sobre ellos aprende a reproducir esos mismos patrones con la apariencia de objetividad matemática, precisamente porque "el modelo solo sigue los datos" suena neutral aunque el resultado no lo sea.',
             'La responsabilidad de considerar estas consecuencias no puede delegarse por completo a un equipo separado de ética o cumplimiento normativo, ajeno al desarrollo técnico: quien diseña el sistema, elige los datos y define la métrica que se optimiza tiene, en la práctica, mucha más influencia sobre el resultado ético final que cualquier revisión posterior, precisamente porque esas decisiones técnicas tempranas son las que determinan qué es posible corregir después y qué ya quedó estructuralmente fijado en el sistema.',
           ],
+          diagram: {
+            title: 'Cómo el sesgo entra sin ser programado',
+            mermaid: 'graph LR\n  H["Decisiones humanas\\npasadas (con sesgo)"] --> D["Datos históricos\\nde entrenamiento"]\n  D --> M["Modelo aprende\\nesa correlación como válida"]\n  M --> P["Predicciones que\\nreplican el sesgo original"]',
+          },
           example: { title: 'La métrica que determina el sesgo', text: 'Un sistema de selección de currículums optimizado para "predecir quién tendrá buen desempeño, según el desempeño histórico de contrataciones pasadas" aprenderá, si esas contrataciones pasadas favorecieron sistemáticamente a un grupo demográfico, a preferir currículums parecidos a los de ese grupo — no porque alguien lo haya programado explícitamente, sino porque esa es exactamente la correlación presente en los datos históricos que se usaron para entrenar.' },
           keys: [
             'La ética en aprendizaje profundo es consecuencia directa de decisiones técnicas concretas: qué datos, qué métrica se optimiza, y a quién beneficia el sistema funcionando como fue diseñado.',
@@ -263,6 +271,10 @@ module.exports = {
             'La arquitectura transformer, brevemente introducida al cierre de esta unidad como puente hacia temas más avanzados, resuelve un problema distinto: procesar secuencias —texto, principalmente— prestando atención simultánea a todas las posiciones de la secuencia entre sí, en vez de procesarlas estrictamente en orden una por una, como hacían las arquitecturas anteriores especializadas en secuencias. Ese mecanismo de atención permite al modelo relacionar directamente una palabra con otra palabra distante en el mismo texto, sin que la distancia entre ellas dificulte esa relación.',
             'Esta introducción breve a transformers, dentro de un curso centrado principalmente en imágenes, refleja un patrón real del campo: las mismas ideas arquitectónicas fundamentales —convolución para estructura espacial, atención para relaciones entre elementos de una secuencia, difusión para generación progresiva— se combinan y reutilizan constantemente entre dominios que en un inicio parecían completamente separados, imágenes y texto entre ellos.',
           ],
+          diagram: {
+            title: 'Difusión: añadir ruido y aprender a revertirlo',
+            mermaid: 'graph LR\n  I["Imagen real"] --> N1["+ruido"] --> N2["+ruido..."] --> R["Ruido puro"]\n  R -.->|modelo revierte,\\npaso a paso| N2\n  N2 -.-> N1 -.-> I2["Imagen nueva generada"]',
+          },
           example: { title: 'Difusión en reversa: de la imagen al ruido y de vuelta', text: 'Durante el entrenamiento, se toma una foto real de un perro y se le añade ruido en 50 pasos hasta volverla estática irreconocible. El modelo aprende a predecir, en cada uno de esos 50 pasos, cómo se veía la imagen un paso antes, menos ruidosa. Para generar una imagen nueva, se invierte el proceso completo: partiendo de estática pura, se aplican los 50 pasos de "limpieza" aprendidos, produciendo finalmente una imagen coherente de algo que nunca fue fotografiado realmente.' },
           keys: [
             'Un modelo de difusión aprende a revertir el proceso de añadir ruido progresivamente a una imagen real, prediciendo cómo era el paso anterior, menos ruidoso.',

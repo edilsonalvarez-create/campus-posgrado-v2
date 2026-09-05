@@ -25,6 +25,10 @@ module.exports = {
             'Versionar prompts como código permite responder con evidencia a "por qué cambió el comportamiento del sistema", en vez de sospechar sin datos.',
             'La fuente más común de fallos silenciosos en sistemas que integran un LLM es un formato de salida no especificado con precisión, no el modelo en sí.',
           ],
+          diagram: {
+            title: 'Cuatro elementos de un prompt reproducible',
+            mermaid: 'graph TD\n  P["Prompt reproducible"] --> R["Rol / contexto"]\n  P --> T["Tarea específica"]\n  P --> F["Formato de salida exacto"]\n  P --> C["Restricciones y casos límite"]',
+          },
           recursos: {
             libros: [
               { titulo: 'AI Engineering', autor: 'Chip Huyen' },
@@ -98,6 +102,10 @@ module.exports = {
             'Los mejores casos de evaluación provienen de interacciones reales de producción, no solo de casos inventados por el equipo de desarrollo.',
             'Cada fallo real diagnosticado en producción debería convertirse en un nuevo caso del conjunto de evaluación, para que ese tipo de fallo nunca vuelva a pasar desapercibido.',
           ],
+          diagram: {
+            title: 'Construir un conjunto de evaluación con casos difíciles',
+            mermaid: 'graph LR\n  T["Casos típicos\\n(fáciles)"] --> S["Falsa sensación\\nde seguridad si son los únicos"]\n  A["Casos ambiguos"] --> E["Conjunto de evaluación robusto"]\n  F["Casos fuera de dominio"] --> E\n  L["Casos límite\\n(\\"no sé\\" es la respuesta correcta)"] --> E',
+          },
           exercise: { mins: 20, text: 'Diseña 5 casos para un conjunto de evaluación de un sistema basado en LLM de tu contexto: al menos uno típico, uno ambiguo, uno fuera de dominio y uno donde la respuesta correcta debería ser "no sé" o "fuera de mi alcance". Para cada uno, escribe el criterio explícito de qué constituye una respuesta aceptable.' },
           quiz: [
             { q: '¿Qué problema tiene evaluar un sistema de LLM "probándolo a mano hasta que se vea bien"?', opts: ['Ningún problema, es suficiente para producción', 'No es repetible ni cubre sistemáticamente los casos difíciles, dando falsa sensación de seguridad', 'Es demasiado costoso de hacer', 'Requiere demasiado tiempo de cómputo'], a: 1, why: ['Sí tiene un problema real señalado en la lección.', 'Correcto.', 'No es un problema de costo económico.', 'No es un problema de cómputo.'] },
@@ -120,6 +128,10 @@ module.exports = {
             'La autopreferencia hace que un modelo usado como juez tienda a calificar mejor a modelos de su misma familia, un problema real al comparar proveedores.',
             'La mitigación práctica no es abandonar los jueces automáticos, sino calibrarlos periódicamente contra una muestra evaluada por humanos.',
           ],
+          diagram: {
+            title: 'Sesgos de un juez automático',
+            mermaid: 'graph TD\n  J["Juez automático (LLM)"] --> L["Sesgo de longitud\\nprefiere respuestas largas"]\n  J --> P["Sesgo de posición\\nprefiere la 1ª o 2ª opción"]\n  J --> A["Autopreferencia\\nprefiere modelos de su misma familia"]\n  L --> C["Calibrar contra\\ncriterio humano"]\n  P --> C\n  A --> C',
+          },
           recursos: {
             libros: [
               { titulo: 'The LLM Engineering Handbook', autor: 'Paul Iusztin, Maxime Labonne' },
@@ -201,6 +213,7 @@ module.exports = {
             libros: [
               { titulo: 'AI Engineering', autor: 'Chip Huyen' },
             ],
+            videos: [{ titulo: 'What is Retrieval-Augmented Generation (RAG)?', canal: 'IBM Technology', url: 'https://www.youtube.com/watch?v=T-D1OfcDW1M' }],
           },
           exercise: { mins: 20, text: 'Para un caso de fallo real o hipotético de un sistema RAG, diseña un proceso de diagnóstico: ¿qué inspeccionarías primero (fragmentos recuperados, tamaño de fragmentación, o generación) y en qué orden, para aislar cuál de los tres componentes está fallando?' },
           quiz: [
@@ -225,6 +238,10 @@ module.exports = {
             'Los agentes aportan valor genuino cuando la secuencia depende de información que solo se conoce en tiempo de ejecución, no de antemano.',
             'La recomendación práctica es empezar con el flujo más simple y añadir la complejidad de un agente solo con evidencia concreta de que el flujo simple no alcanza.',
           ],
+          diagram: {
+            title: 'Flujo simple frente a agente',
+            mermaid: 'graph LR\n  Q{"¿La secuencia de pasos\\nes siempre la misma?"}\n  Q -->|Sí| S["Flujo simple encadenado\\nmenor costo y latencia"]\n  Q -->|No, depende de\\nlo que se descubre| A["Agente\\ndecide dinámicamente los pasos"]',
+          },
           exercise: { mins: 15, text: 'Para un sistema basado en agente de tu contexto (real o considerado), revisa el uso real: ¿qué porcentaje de casos sigue realmente la misma secuencia de pasos? Si es alto, diseña el flujo simple equivalente y compara mentalmente su costo y latencia esperados contra el agente actual.' },
           quiz: [
             { q: '¿Qué desventajas reales tiene un agente frente a un flujo simple, según la lección?', opts: ['Ninguna, los agentes son siempre superiores', 'Mayor latencia, mayor costo por consulta, mayor dificultad de depuración y comportamiento menos predecible', 'Solo son más lentos, sin ninguna otra desventaja', 'Solo cuestan más dinero, sin afectar la calidad del sistema'], a: 1, why: ['Sí tienen desventajas reales documentadas.', 'Correcto.', 'Tienen más de una desventaja, no solo velocidad.', 'Afectan más que solo el costo económico.'] },

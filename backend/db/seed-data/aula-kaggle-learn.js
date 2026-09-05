@@ -16,6 +16,10 @@ module.exports = {
             'Un modelo, en su forma más simple, es una función que aprende un patrón entre variables de entrada (características) y una variable de salida (el objetivo) a partir de ejemplos históricos donde ambas son conocidas. Un árbol de decisión —el modelo más simple e interpretable para empezar— aprende ese patrón dividiendo repetidamente los datos según el valor de una característica: "si el número de habitaciones es mayor a 3, ir por esta rama; si no, por esta otra", hasta llegar a grupos suficientemente homogéneos como para hacer una predicción confiable.',
             'La exploración de datos revela, casi siempre, algo que cambia el plan inicial: una columna con 40% de valores faltantes, una variable numérica con un valor claramente erróneo (una edad de 300 años), una columna categórica con cientos de valores únicos que en realidad son variantes de escritura del mismo valor. Ninguno de estos hallazgos se resuelve eligiendo un algoritmo distinto: se resuelven limpiando y entendiendo los datos antes de modelar, un paso que consume, en cualquier proyecto real, más tiempo que el entrenamiento del modelo mismo.',
           ],
+          diagram: {
+            title: 'De datos crudos a modelo confiable',
+            mermaid: 'graph LR\n  D["Datos crudos"] --> E["Exploración\\n(detectar errores, outliers)"]\n  E --> L["Datos limpios"]\n  L --> M["Entrenar modelo"]',
+          },
           example: { title: 'Lo que revela una exploración de cinco minutos', text: 'Un conjunto de datos de precios de vivienda tiene una columna "año_construccion" con valores desde 1900 hasta 2024, pero también algunos valores en "0" y "9999" — claramente errores de captura, no años reales. Sin revisar esta distribución antes de modelar, esos valores extremos distorsionarían cualquier modelo que use esa columna, y el error se atribuiría erróneamente al algoritmo elegido.' },
           keys: [
             'Un modelo aprende un patrón entre características de entrada y un objetivo, a partir de ejemplos históricos donde ambos son conocidos.',
@@ -70,6 +74,10 @@ module.exports = {
             'Un bosque aleatorio (random forest) mejora sobre un único árbol de decisión mediante una idea simple pero poderosa: entrenar muchos árboles distintos —cada uno sobre una muestra ligeramente distinta de los datos y considerando un subconjunto distinto de características en cada división— y promediar sus predicciones. Los errores individuales de árboles distintos, al ser generalmente distintos entre sí, tienden a cancelarse parcialmente al promediar, produciendo una predicción más estable que la de cualquier árbol individual.',
             'Esta idea —combinar varios modelos imperfectos para obtener una predicción más confiable que cualquiera de ellos por separado— es el principio general detrás de los métodos de conjunto (ensemble methods), de los cuales el bosque aleatorio es el ejemplo más accesible para empezar, y uno que en la práctica supera consistentemente a un árbol de decisión individual sin apenas ajuste adicional de configuración.',
           ],
+          diagram: {
+            title: 'Bosque aleatorio: promediar muchos árboles',
+            mermaid: 'graph LR\n  D["Mismos datos,\\nmuestras distintas"] --> A1["Árbol 1"]\n  D --> A2["Árbol 2"]\n  D --> A3["Árbol 3..."]\n  A1 --> P["Promedio de predicciones\\n(más estable)"]\n  A2 --> P\n  A3 --> P',
+          },
           example: { title: 'Por qué promediar árboles ayuda', text: 'Un árbol de decisión individual, entrenado con una muestra ligeramente distinta de los mismos datos, podría predecir el precio de una casa en $250,000 en un caso y $310,000 en otro para la misma propiedad, dependiendo de qué divisiones específicas aprendió. Un bosque de 100 árboles distintos, al promediar sus 100 predicciones individuales, converge hacia una estimación más estable, porque los errores específicos de cada árbol individual tienden a no repetirse en la misma dirección en todos los demás.' },
           keys: [
             'Medir el desempeño sobre los mismos datos de entrenamiento es optimista y engañoso; la validación usa datos que el modelo nunca vio.',
@@ -143,6 +151,10 @@ module.exports = {
             'La validación cruzada extiende la idea de separar entrenamiento y validación: en vez de una única partición fija, divide los datos en varios bloques (comúnmente cinco), entrena y valida el modelo varias veces usando cada bloque como validación una vez y el resto como entrenamiento, y promedia los resultados. Esto produce una estimación del desempeño más confiable que una única partición, especialmente quand el conjunto de datos disponible es pequeño y una sola partición podría no ser representativa por azar.',
             'El costo de la validación cruzada es computacional: entrenar el modelo varias veces —una por cada bloque— toma más tiempo que entrenar una sola vez. Ese costo se justifica especialmente en las etapas de comparación de configuraciones distintas, donde una estimación de desempeño poco confiable podría llevar a elegir la configuración equivocada; una vez elegida la configuración final, entrenar el modelo definitivo una sola vez sobre todos los datos disponibles es la práctica habitual.',
           ],
+          diagram: {
+            title: 'Un pipeline evita la fuga de datos',
+            mermaid: 'graph LR\n  T["Entrenamiento"] --> S["Calcular estadísticas\\n(solo con datos de entrenamiento)"]\n  S --> A1["Aplicar transformación\\na entrenamiento"]\n  S --> A2["Aplicar la MISMA transformación\\na prueba (sin recalcular)"]',
+          },
           keys: [
             'Un pipeline encadena transformación de datos y modelo en una sola unidad, evitando desajustes entre cómo se entrena y cómo se predice después.',
             'Calcular estadísticas de transformación sobre todo el conjunto de datos, incluyendo prueba, es una forma de fuga de datos; un pipeline bien construido las calcula solo sobre entrenamiento.',
@@ -170,6 +182,10 @@ module.exports = {
             'La fuga de datos —mencionada de forma general en la lección de pipelines— merece una categoría propia porque adopta formas particularmente difíciles de detectar en la práctica: una variable que, sin que el equipo lo note, contiene información del futuro respecto al momento de la predicción (como el ejemplo de "contactó a soporte" visto en otra asignatura de este campus), o una división de datos en entrenamiento y prueba que mezcla registros de la misma entidad —el mismo cliente, el mismo paciente— entre ambos conjuntos, permitiendo que el modelo memorice patrones específicos de esa entidad en vez de aprender un patrón que generalice a entidades nuevas.',
             'Detectar fuga de datos exige, con frecuencia, sospechar activamente de un resultado demasiado bueno: si un modelo alcanza una precisión sorprendentemente alta para lo difícil que parece el problema, la primera hipótesis a descartar —antes de celebrar— no es "el modelo es excelente", es "hay una fuga de datos en algún lugar del proceso que no se ha detectado todavía".',
           ],
+          diagram: {
+            title: 'Gradient boosting: corregir errores secuencialmente',
+            mermaid: 'graph LR\n  A1["Árbol 1"] --> E1["Errores residuales"]\n  E1 --> A2["Árbol 2\\ncorrige esos errores"]\n  A2 --> E2["Errores restantes"]\n  E2 --> A3["Árbol 3..."]',
+          },
           example: { title: 'La fuga por mezcla de entidades', text: 'Un modelo predice si un paciente desarrollará una complicación, entrenado con registros donde varias visitas del mismo paciente aparecen distribuidas al azar entre entrenamiento y prueba. El modelo alcanza 97% de precisión, sorprendentemente alto. La causa: al haber visto otras visitas del mismo paciente durante el entrenamiento, el modelo memorizó patrones específicos de pacientes individuales, no un patrón médico generalizable a pacientes nuevos.' },
           keys: [
             'XGBoost entrena árboles secuencialmente, cada uno corrigiendo los errores de los anteriores — distinto a promediar árboles independientes como el bosque aleatorio.',
@@ -212,6 +228,10 @@ module.exports = {
             'Crear nuevas características no es un proceso puramente automático: exige conocimiento del dominio del problema. Combinar "ingresos" y "número de dependientes" en "ingreso por dependiente" puede capturar un patrón de capacidad económica que ninguna de las dos variables originales expresa por separado; extraer "día de la semana" de una marca de tiempo puede revelar un patrón de comportamiento que la fecha completa, tratada como un valor continuo, no expone directamente al modelo.',
             'Un error común al empezar con ingeniería de características es crear docenas de combinaciones posibles sin criterio, esperando que el modelo "descubra" cuáles son útiles. Esto rara vez funciona bien: cada característica adicional, si no aporta señal real, añade ruido y aumenta el riesgo de sobreajuste. La disciplina correcta combina la intuición del dominio del problema con la medición explícita —como la información mutua— para decidir qué características crear y cuáles descartar, no la generación indiscriminada de combinaciones.',
           ],
+          diagram: {
+            title: 'Información mutua: decidir qué característica crear',
+            mermaid: 'graph LR\n  C["Característica candidata"] --> IM{"¿Información mutua\\nalta con el objetivo?"}\n  IM -->|Sí| U["Buena candidata\\npara el modelo"]\n  IM -->|No, cercana a cero| D["Probablemente no aporta señal"]',
+          },
           keys: [
             'La ingeniería de características suele ser más determinante para el resultado final que la elección del algoritmo.',
             'La información mutua mide cuánto reduce la incertidumbre sobre el objetivo conocer una característica, capturando relaciones lineales y no lineales, a diferencia de la correlación simple.',
@@ -260,6 +280,10 @@ module.exports = {
             'La forma correcta de calcular la codificación por objetivo evita este riesgo calculando el valor para cada ejemplo usando únicamente otros ejemplos —nunca el propio—, típicamente mediante una variante de validación cruzada aplicada específicamente a este cálculo: se divide el conjunto en bloques, y el valor de codificación para los ejemplos de un bloque se calcula solo con los datos de los demás bloques, nunca con datos del mismo bloque que se está codificando.',
             'Categorías con muy pocos ejemplos históricos merecen un tratamiento adicional: calcular su tasa promedio directamente, con pocos datos, produce una estimación con mucho ruido y poco confiable. Suavizar esa estimación hacia el promedio general del conjunto completo —ponderando más el promedio general cuando hay pocos ejemplos de esa categoría específica, y más la tasa propia de la categoría cuando hay muchos ejemplos— es la práctica recomendada para evitar que categorías raras introduzcan ruido desproporcionado en el modelo final.',
           ],
+          diagram: {
+            title: 'Codificación por objetivo sin fuga',
+            mermaid: 'graph LR\n  X["✗ Incorrecto: calcular con\\nel propio ejemplo incluido"] --> F["Fuga de datos"]\n  Y["✓ Correcto: calcular solo\\ncon OTROS ejemplos"] --> C["Codificación válida"]',
+          },
           example: { title: 'La fuga sutil de la codificación por objetivo', text: 'Se codifica la categoría "ciudad" con la tasa de conversión promedio de cada ciudad, calculada usando todos los ejemplos, incluyendo el ejemplo actual que se está codificando. Para una ciudad con solo tres ejemplos en el conjunto de datos, esa tasa promedio incluye directamente el resultado del ejemplo que se quiere predecir, dándole al modelo, indirectamente, la respuesta que se supone debe aprender a predecir.' },
           keys: [
             'La codificación por objetivo reemplaza cada categoría por un valor derivado del objetivo, útil especialmente con muchísimas categorías donde one-hot sería impráctico.',
