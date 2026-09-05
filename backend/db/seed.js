@@ -63,6 +63,7 @@ function leccionAResource(l) {
 // siguiendo el mismo patrón que <slug>-lecciones.js para las asignaturas del
 // Máster. Cuando se completa una nueva aula, se añade aquí su entrada.
 const AULA_CONTENT_FILES = {
+  'Ruta de Mando en Seguridad y QA': 'aula-ruta-mando-seguridad-qa.js',
   'Enterprise Design Thinking — Practitioner': 'aula-enterprise-design-thinking.js',
   'Made With ML': 'aula-made-with-ml.js',
   'Cursos cortos: evaluación de LLMs y sistemas de prompts': 'aula-cursos-cortos-llm.js',

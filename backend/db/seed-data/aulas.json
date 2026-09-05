@@ -1,4 +1,89 @@
 {
+  "Ruta de Mando en Seguridad y QA": {
+    "source": "Plan de mentoria propio: De administrador a lider de Seguridad y QA (Sumimedical)",
+    "url": null,
+    "note": "Curso propio del campus: plan de formacion y tutoria de 26 semanas para asumir el doble liderazgo de Seguridad de la Informacion y Aseguramiento de Calidad (QA), con dedicacion de 8 horas semanales. Cada fase combina los dos carriles y cierra con un entregable real de trabajo.",
+    "units": [
+      {
+        "n": "Unidad 0",
+        "title": "La premisa y los dos carriles",
+        "hours": 1,
+        "lessons": [
+          { "title": "Lee esto antes de empezar", "mins": 15 },
+          { "title": "Qué te van a exigir en cada carril", "mins": 15 }
+        ]
+      },
+      {
+        "n": "Unidad 1",
+        "title": "Fase 0 · Orientación (semanas 1–2)",
+        "hours": 2,
+        "lessons": [
+          { "title": "Carril A · El vocabulario y el mapa de la seguridad", "mins": 22 },
+          { "title": "Carril B · El vocabulario y los principios del testing", "mins": 20 },
+          { "title": "Entregable E1 · Inventario de activos y mapa de sistemas", "mins": 10 }
+        ]
+      },
+      {
+        "n": "Unidad 2",
+        "title": "Fase 1 · Riesgo (semanas 3–6)",
+        "hours": 2,
+        "lessons": [
+          { "title": "Carril A · Gestión de riesgo de seguridad", "mins": 22 },
+          { "title": "Carril B · Pruebas basadas en riesgo y estimación", "mins": 20 },
+          { "title": "Entregable E2 · Matriz de riesgos y repriorización", "mins": 10 }
+        ]
+      },
+      {
+        "n": "Unidad 3",
+        "title": "Fase 2 · Ley y norma (semanas 7–10)",
+        "hours": 2,
+        "lessons": [
+          { "title": "Carril A · Ley 1581, datos de salud y régimen colombiano", "mins": 22 },
+          { "title": "Carril B · ISO/IEC 25010, documentación de pruebas y trazabilidad", "mins": 20 },
+          { "title": "Entregable E3 · Registro de bases de datos y brechas legales", "mins": 10 }
+        ]
+      },
+      {
+        "n": "Unidad 4",
+        "title": "Fase 3 · Fundamento técnico (semanas 11–14)",
+        "hours": 2,
+        "lessons": [
+          { "title": "Carril A · La dosis técnica exacta para no dejarte vender humo", "mins": 22 },
+          { "title": "Carril B · Niveles, técnicas de diseño y anatomía del defecto", "mins": 20 },
+          { "title": "Entregable E4 · Plan Maestro de Pruebas y línea base técnica", "mins": 10 }
+        ]
+      },
+      {
+        "n": "Unidad 5",
+        "title": "Fase 4 · Operación (semanas 15–20)",
+        "hours": 2,
+        "lessons": [
+          { "title": "Carril A · Incidentes, continuidad y proveedores", "mins": 22 },
+          { "title": "Carril B · Indicadores, puertas de calidad e informes de cierre", "mins": 20 },
+          { "title": "Entregable E5 · Plan de respuesta a incidentes y tablero", "mins": 10 }
+        ]
+      },
+      {
+        "n": "Unidad 6",
+        "title": "Fase 5 · Gobierno y auditoría (semanas 21–26)",
+        "hours": 2,
+        "lessons": [
+          { "title": "Carril A · El SGSI como sistema de gestión y la auditoría interna", "mins": 22 },
+          { "title": "Carril B · Autoauditoría, madurez de pruebas y mejora continua", "mins": 20 },
+          { "title": "Entregable E6 · Plan del SGSI a 12 meses y presentación a la dirección", "mins": 10 }
+        ]
+      },
+      {
+        "n": "Unidad 7",
+        "title": "Los primeros 30 días y cómo funciona la tutoría",
+        "hours": 1,
+        "lessons": [
+          { "title": "Los primeros 30 días en el cargo", "mins": 18 },
+          { "title": "Cómo funciona la tutoría y la biblioteca de certificaciones", "mins": 20 }
+        ]
+      }
+    ]
+  },
   "AI for Everyone": {
     "source": "Temario de referencia: AI for Everyone · Andrew Ng · DeepLearning.AI",
     "url": "https://www.coursera.org/learn/ai-for-everyone",
