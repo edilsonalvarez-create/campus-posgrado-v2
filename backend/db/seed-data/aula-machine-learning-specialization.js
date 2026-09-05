@@ -55,6 +55,10 @@ module.exports = {
             'La función de coste, graficada contra los distintos valores posibles de pendiente e intercepto, tiene para la regresión lineal una forma particular —convexa, con forma de tazón— que garantiza matemáticamente que existe un único mínimo global, sin mínimos locales falsos donde un proceso de optimización pudiera quedarse atascado erróneamente. Esta propiedad, específica de la regresión lineal, no se mantiene automáticamente en modelos más complejos vistos más adelante en el curso, donde sí pueden existir múltiples mínimos locales.',
             'Visualizar esta función de coste como una superficie tridimensional —con la pendiente y el intercepto como los dos ejes horizontales, y el valor del coste como la altura— ofrece una intuición geométrica directa de lo que hace el descenso de gradiente: partir de un punto cualquiera sobre esa superficie y descender repetidamente hacia el punto más bajo, siguiendo la dirección de mayor pendiente descendente en cada paso, hasta llegar cerca del fondo del tazón.',
           ],
+          diagram: {
+            title: 'Regresión lineal: ajustar una recta',
+            mermaid: 'graph LR\n  X["Entrada (tamaño)"] --> F["y = pendiente × x + intercepto"]\n  F --> P["Predicción (precio)"]\n  P --> C["Función de coste\\ncompara con el valor real"]',
+          },
           example: { title: 'Interpretar pendiente e intercepto', text: 'Un modelo de regresión lineal que predice el precio de una casa a partir de su tamaño en metros cuadrados aprende una pendiente de $1,200 e intercepto de $50,000. Esto se interpreta como: una casa de 0 metros cuadrados (hipotéticamente) costaría $50,000, y cada metro cuadrado adicional añade $1,200 al precio predicho. Estos dos números, una vez aprendidos, son directamente interpretables para cualquier persona sin formación técnica.' },
           keys: [
             'La regresión lineal con una variable predice una salida como función lineal de una entrada, con dos parámetros: pendiente e intercepto.',
@@ -129,6 +133,10 @@ module.exports = {
             'La vectorización —reemplazar bucles explícitos por operaciones vectoriales que procesan múltiples valores a la vez— produce, en la práctica, aceleraciones de varios órdenes de magnitud sobre el mismo cálculo matemático, porque aprovecha optimizaciones de hardware y paralelismo que un bucle secuencial escrito a mano no puede explotar de la misma forma. Esta diferencia de velocidad, insignificante en un ejemplo de juguete con pocos datos, se vuelve determinante en conjuntos de datos reales con miles o millones de ejemplos.',
             'El descenso de gradiente para regresión múltiple sigue exactamente el mismo principio visto para una variable, extendido a todos los parámetros simultáneamente: calcular la derivada parcial de la función de coste respecto a cada peso y respecto al intercepto, y actualizar todos a la vez usando sus valores actuales. La vectorización aplica también aquí: calcular todas esas derivadas parciales mediante operaciones vectoriales, no mediante un bucle explícito sobre cada parámetro individual.',
           ],
+          diagram: {
+            title: 'De suma explícita a producto vectorial',
+            mermaid: 'graph LR\n  E["peso1×tamaño + peso2×hab. + peso3×antig. + intercepto"] --> V["Vector de pesos · Vector de características + intercepto"]\n  V --> R["Mismo resultado,\\nmucho más rápido de calcular"]',
+          },
           example: { title: 'De suma explícita a producto vectorial', text: 'Predecir el precio de una casa con tamaño, habitaciones y antigüedad como entradas se escribe explícitamente como "precio = peso1 × tamaño + peso2 × habitaciones + peso3 × antigüedad + intercepto". Representado como vectores, es simplemente el producto escalar entre el vector de pesos [peso1, peso2, peso3] y el vector de características [tamaño, habitaciones, antigüedad], más el intercepto — la misma operación matemática, pero expresada de una forma que las bibliotecas numéricas pueden calcular mucho más rápido.' },
           keys: [
             'La regresión múltiple extiende el modelo a varias características, cada una con su propio peso, sumadas junto con un intercepto compartido.',
@@ -152,6 +160,10 @@ module.exports = {
             'Un detalle práctico importante es que las estadísticas usadas para escalar —el mínimo y máximo para normalización, o la media y desviación estándar para estandarización— deben calcularse únicamente sobre el conjunto de entrenamiento, y esas mismas estadísticas, ya fijadas, se aplican después a cualquier dato nuevo, incluyendo el conjunto de prueba. Recalcular esas estadísticas sobre datos nuevos en vez de reutilizar las del entrenamiento es la misma forma de fuga de datos ya vista en otra aula de este campus sobre pipelines de aprendizaje automático.',
             'Verificar que el descenso de gradiente esté convergiendo correctamente, más allá de la elección de la tasa de aprendizaje ya discutida, exige revisar la curva de coste contra las iteraciones en cada experimento nuevo: no existe un número fijo de iteraciones que garantice convergencia para cualquier problema, y la única forma confiable de saber si ya se alcanzó un buen resultado es observar si el coste dejó de disminuir de forma apreciable entre iteraciones sucesivas.',
           ],
+          diagram: {
+            title: 'Escalado: de superficie alargada a circular',
+            mermaid: 'graph LR\n  A["Características sin escalar\\n(rangos muy distintos)"] --> B["Función de coste alargada\\nconvergencia lenta"]\n  C["Características escaladas\\n(rangos comparables)"] --> D["Función de coste más circular\\nconvergencia rápida"]',
+          },
           keys: [
             'Características con rangos de valores muy distintos entre sí hacen que el descenso de gradiente converja más lento e inestable, por la forma alargada que toma la función de coste.',
             'La normalización y la estandarización llevan las características a escalas comparables, evitando que una domine el entrenamiento solo por tener valores numéricamente más grandes.',
@@ -252,6 +264,10 @@ module.exports = {
             'El parámetro que controla la intensidad de esa penalización —comúnmente llamado lambda— tiene un compromiso directo: un valor de lambda muy alto penaliza tanto los pesos que el modelo se vuelve demasiado simple, cayendo en subajuste; un valor de lambda muy bajo apenas penaliza nada, dejando el modelo vulnerable al mismo sobreajuste que la regularización busca corregir. Encontrar el valor apropiado exige, igual que con la profundidad de un árbol de decisión vista en otra aula, comparación empírica sobre un conjunto de validación, no una fórmula fija universal.',
             'Es importante notar que la regularización no elimina características del modelo por completo —eso sería selección de características, una técnica relacionada pero distinta—: reduce la magnitud de sus pesos, pero todas las características originales siguen presentes en el modelo final, solo que con una influencia moderada y controlada en vez de una influencia potencialmente excesiva y ajustada al ruido específico de los datos de entrenamiento disponibles.',
           ],
+          diagram: {
+            title: 'El compromiso del parámetro lambda',
+            mermaid: 'graph LR\n  A["Lambda muy alto"] --> B["Subajuste\\nmodelo demasiado simple"]\n  C["Lambda apropiado"] --> D["Frontera suave,\\nbuen equilibrio"]\n  E["Lambda muy bajo"] --> F["Sobreajuste\\nno corrige nada"]',
+          },
           example: { title: 'Regularización en acción', text: 'Un modelo de clasificación sin regularización, entrenado con pocos datos y muchas características, dibuja una frontera de decisión que rodea individualmente cada punto de una categoría minoritaria, memorizando el ruido específico de esos pocos ejemplos. Añadiendo regularización con un valor de lambda apropiado, la frontera se suaviza notablemente, capturando el patrón general de separación entre categorías sin memorizar las particularidades de cada punto individual.' },
           keys: [
             'El sobreajuste en clasificación es visible directamente como una frontera de decisión irregular que serpentea alrededor de puntos individuales, no solo detectable en métricas.',
@@ -325,6 +341,10 @@ module.exports = {
             'Una época representa una pasada completa por todo el conjunto de datos de entrenamiento; entrenar durante varias épocas repite ese proceso completo múltiples veces, permitiendo que el descenso de gradiente dé múltiples pasos de ajuste sobre los mismos datos. Determinar el número correcto de épocas comparte el mismo criterio de diagnóstico ya visto en otras lecciones: monitorear el desempeño en un conjunto de validación separado, deteniendo el entrenamiento cuando ese desempeño deja de mejorar, para evitar el sobreajuste que resultaría de continuar entrenando indefinidamente sobre los mismos datos.',
             'La retropropagación (backpropagation) —el algoritmo específico que calcula, de forma eficiente, cómo debería ajustarse cada peso de cada neurona en cada capa para reducir el error final— es, en esencia, una aplicación sistemática y automatizada de la regla de la cadena del cálculo diferencial, propagando la señal de error desde la capa final hacia atrás, capa por capa, hasta la primera. Aunque las bibliotecas modernas calculan esto automáticamente sin que el practicante deba implementarlo a mano, entender que este cálculo ocurre —y que su eficiencia es lo que hace viable entrenar redes con muchas capas— aporta intuición valiosa sobre por qué ciertas arquitecturas entrenan mejor o peor que otras.',
           ],
+          diagram: {
+            title: 'El patrón de tres pasos de entrenamiento',
+            mermaid: 'graph LR\n  A["1. Definir arquitectura\\n(capas, neuronas, activación)"] --> B["2. Compilar\\n(coste, optimizador)"]\n  B --> C["3. Ajustar\\n(entrenar por épocas)"]',
+          },
           example: { title: 'El patrón de tres pasos en la práctica', text: 'Entrenar un clasificador de dígitos escritos a mano sigue el mismo patrón sin importar el problema específico: (1) definir una arquitectura con capas de tamaño decreciente hasta la capa final de diez neuronas, una por dígito posible; (2) compilar especificando la función de coste apropiada para clasificación multiclase y un algoritmo de optimización; (3) ajustar el modelo durante un número de épocas determinado, monitoreando el desempeño en un conjunto de validación separado.' },
           keys: [
             'Entrenar con una biblioteca de alto nivel sigue un patrón de tres pasos: definir la arquitectura, compilar especificando coste y optimizador, y ajustar sobre los datos.',
@@ -348,6 +368,10 @@ module.exports = {
             'La función de activación de la capa final, a diferencia de las capas intermedias, se elige específicamente según el tipo de problema: la sigmoide para clasificación binaria, produciendo una única probabilidad entre 0 y 1; ninguna función de activación (activación lineal) para problemas de regresión, donde la salida puede ser cualquier valor numérico sin restricción; y softmax para clasificación multiclase, produciendo simultáneamente una probabilidad para cada una de las categorías posibles, todas sumando exactamente 1.',
             'Softmax generaliza directamente la idea de la sigmoide binaria a múltiples categorías: en vez de una única probabilidad de pertenecer a la categoría positiva, produce un vector completo de probabilidades, una por cada categoría posible, permitiendo que el modelo exprese no solo cuál es su predicción más probable, sino también cuánta confianza relativa tiene en cada una de las alternativas restantes, información que se pierde por completo si solo se reporta la categoría ganadora sin sus probabilidades asociadas.',
           ],
+          diagram: {
+            title: 'Activación de salida según el problema',
+            mermaid: 'graph TD\n  P["Tipo de problema"] --> B["Clasificación binaria\\n→ sigmoide"]\n  P --> R["Regresión\\n→ sin activación (lineal)"]\n  P --> M["Clasificación multiclase\\n→ softmax"]',
+          },
           example: { title: 'Elegir la activación de salida correcta', text: 'Un modelo que clasifica una imagen entre diez dígitos posibles (0 al 9) usa softmax en su capa final: produce diez probabilidades que suman 1, por ejemplo 85% de confianza en "7", 10% en "1" y el resto distribuido entre las demás categorías. Esto es más informativo que solo reportar "7" como respuesta final, porque revela que el modelo también consideró "1" como una alternativa razonable, información útil si esas dos categorías se confunden con frecuencia en casos ambiguos.' },
           keys: [
             'Sin función de activación no lineal, apilar múltiples capas sería matemáticamente equivalente a una única capa lineal, sin ganancia real de capacidad.',
@@ -422,6 +446,10 @@ module.exports = {
             'Este proceso se repite recursivamente en cada nodo resultante, construyendo el árbol de arriba hacia abajo, hasta alcanzar algún criterio de parada: una profundidad máxima predefinida, un número mínimo de ejemplos por nodo por debajo del cual ya no tiene sentido seguir dividiendo, o impureza ya suficientemente baja como para no justificar más divisiones. Estos criterios de parada son, en esencia, la misma decisión de compromiso entre subajuste y sobreajuste ya vista repetidamente en este curso, aplicada específicamente al crecimiento de un árbol.',
             'Las características categóricas con múltiples valores posibles —no solo binarias— exigen una adaptación del algoritmo: en vez de una única división en dos ramas por cada valor posible, se evalúan agrupaciones de esos valores en dos conjuntos, buscando la agrupación específica que maximiza la reducción de impureza, un espacio de búsqueda considerablemente más amplio que el de una característica binaria simple, pero manejable con las técnicas de optimización adecuadas.',
           ],
+          diagram: {
+            title: 'Cómo el algoritmo elige una división',
+            mermaid: 'graph TD\n  N["Nodo con datos mezclados"] --> A["Probar característica A\\n(reducción de impureza)"]\n  N --> B["Probar característica B\\n(reducción de impureza)"]\n  A --> C{"¿Cuál reduce más\\nla impureza?"}\n  B --> C\n  C --> D["Elegir esa división"]',
+          },
           example: { title: 'Elegir la mejor división', text: 'Al construir un árbol para predecir si un cliente cancelará un servicio, el algoritmo evalúa dividir por "antigüedad menor a 6 meses" frente a "número de quejas mayor a 2". Si dividir por antigüedad produce dos grupos notablemente más puros (uno mayoritariamente de clientes que cancelan, otro mayoritariamente de clientes que no) que dividir por número de quejas, el algoritmo elige la división por antigüedad en ese nodo específico, independientemente de cuál característica parezca intuitivamente más relevante a primera vista.' },
           keys: [
             'En cada división, el algoritmo elige la característica y el punto de corte que maximizan la reducción de impureza entre el nodo original y los dos nodos resultantes.',
@@ -445,6 +473,10 @@ module.exports = {
             'XGBoost, mediante la potenciación de gradiente ya explicada en otra aula, suele superar al bosque aleatorio en precisión sobre datos tabulares bien estructurados, a costa de exigir más cuidado en el ajuste de sus hiperparámetros para evitar sobreajuste, un riesgo mayor en potenciación de gradiente que en el bosque aleatorio, donde el promediado de árboles independientes ofrece cierta protección natural contra ese mismo riesgo incluso sin ajuste cuidadoso.',
             'La elección práctica entre un único árbol interpretable, un bosque aleatorio robusto, y XGBoost de alta precisión depende del criterio que más importe en el contexto específico: cuando la interpretabilidad directa —poder explicar exactamente por qué el modelo tomó una decisión concreta, mostrando el camino exacto de divisiones— es un requisito no negociable, un único árbol bien podado sigue siendo, en muchos contextos regulados, la elección apropiada a pesar de su menor precisión frente a los métodos de conjunto.',
           ],
+          diagram: {
+            title: 'Árbol único, bosque aleatorio y XGBoost',
+            mermaid: 'graph LR\n  A["Árbol único\\ninterpretable, varianza alta"] --> C["Elegir según prioridad"]\n  B["Bosque aleatorio\\nrobusto, menos interpretable"] --> C\n  X["XGBoost\\nmás preciso, más ajuste fino"] --> C',
+          },
           keys: [
             'Un único árbol de decisión tiende a tener varianza alta: pequeños cambios en los datos pueden producir árboles notablemente distintos por decisiones de división temprana en cascada.',
             'El bosque aleatorio reduce esa varianza promediando muchos árboles sobre variaciones de los datos, a costa de perder la interpretabilidad directa de un único árbol.',
@@ -513,6 +545,10 @@ module.exports = {
             'Elegir el umbral de probabilidad por debajo del cual un ejemplo se marca como anómalo tiene el mismo compromiso ya visto para el umbral de clasificación en otra lección de esta unidad: un umbral demasiado permisivo (poco estricto) deja pasar anomalías reales sin detectarlas; un umbral demasiado estricto marca ejemplos normales como falsamente anómalos con demasiada frecuencia, generando fatiga de alertas en quienes deben revisar cada caso marcado, un problema también discutido en otra aula de este campus sobre ciberseguridad.',
             'La detección de anomalías se distingue de la clasificación supervisada de casos raros en un aspecto práctico crucial: cuando los ejemplos anómalos son extremadamente escasos —a veces solo unos pocos casos conocidos entre millones de ejemplos normales—, no hay suficientes ejemplos positivos para entrenar un clasificador supervisado tradicional de forma confiable, mientras que la detección de anomalías solo necesita aprender bien qué es "normal" a partir de la abundancia de ejemplos normales disponibles, sin depender de tener suficientes ejemplos anómalos etiquetados.',
           ],
+          diagram: {
+            title: 'Detección de anomalías por probabilidad',
+            mermaid: 'graph LR\n  D["Datos normales"] --> M["Modelar distribución\\n(ej. gaussiana)"]\n  M --> P{"¿Probabilidad del\\nejemplo nuevo es muy baja?"}\n  P -->|Sí| A["Marcar como anómalo"]\n  P -->|No| N["Normal"]',
+          },
           example: { title: 'Cuándo preferir detección de anomalías sobre clasificación', text: 'Una fábrica tiene datos de un millón de componentes fabricados correctamente y solo 12 casos históricos confirmados de defectos graves. Entrenar un clasificador supervisado con solo 12 ejemplos positivos sería poco confiable. La detección de anomalías, en cambio, aprende bien qué caracteriza a un componente "normal" a partir del millón de ejemplos disponibles, y marca como sospechoso cualquier componente nuevo que se desvíe significativamente de ese patrón normal aprendido, sin depender de tener muchos ejemplos de defectos previos.' },
           keys: [
             'La detección de anomalías identifica ejemplos individuales que se desvían significativamente del comportamiento típico, no grupos naturales como el agrupamiento.',
@@ -536,6 +572,10 @@ module.exports = {
             'Este enfoque tiene una limitación práctica relevante para elementos nuevos sin ninguna valoración todavía: el filtrado colaborativo basado en contenido complementa esta limitación incorporando características explícitas del elemento —el género de una película, la categoría de un producto—, en vez de depender exclusivamente de patrones de valoración ya observados, permitiendo hacer recomendaciones razonables incluso para elementos recién agregados que todavía no acumularon ninguna valoración de ningún usuario.',
             'La evaluación de un sistema de recomendación exige más cuidado que la evaluación de un clasificador convencional: dado que la mayoría de las celdas de la matriz están vacías por diseño —no porque falten datos por error, sino porque nadie ha valorado esos elementos—, el error de predicción se mide únicamente sobre las celdas donde sí existe una valoración real conocida para comparar, típicamente reservando un subconjunto de esas valoraciones conocidas específicamente para validación, de la misma forma que se reservan datos de validación en cualquier otro problema supervisado.',
           ],
+          diagram: {
+            title: 'Factorización de matrices para recomendar',
+            mermaid: 'graph LR\n  U["Vector del usuario"] --> P["Producto escalar"]\n  E["Vector del elemento"] --> P\n  P --> V["Valoración predicha\\n(incluso sin haberla observado antes)"]',
+          },
           keys: [
             'La factorización de matrices aprende un vector de características por usuario y otro por elemento, cuyo producto escalar aproxima la valoración real, incluso para combinaciones nunca observadas.',
             'La mayoría de celdas de la matriz usuario-elemento están vacías por diseño, no por error de datos faltantes.',

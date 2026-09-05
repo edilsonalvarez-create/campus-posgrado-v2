@@ -59,6 +59,10 @@ module.exports = {
             'La exploración de datos busca activamente diferencias entre la distribución real y lo que el equipo asume: desbalance, atípicos, correlaciones espurias, huecos de cobertura.',
             'Explorar los datos ya divididos en entrenamiento/validación/prueba revela si una clase rara quedó mal representada en algún conjunto, algo invisible al mirar solo el conjunto completo.',
           ],
+          diagram: {
+            title: 'De instrucciones ambiguas a datos inconsistentes',
+            mermaid: 'graph LR\n  I["Instrucción ambigua"] --> A1["Anotador 1: positiva"]\n  I --> A2["Anotador 2: negativa"]\n  A1 --> M["Modelo aprende\\nun criterio inconsistente"]\n  A2 --> M',
+          },
           example: { title: 'Instrucciones ambiguas, etiquetas inconsistentes', text: 'Dos anotadores etiquetan reseñas de producto como "positiva" o "negativa". Ante "el envío tardó pero el producto es excelente", uno la marca positiva (por el producto) y otro negativa (por el envío). Sin una instrucción explícita sobre qué pesa más, el modelo aprenderá una mezcla inconsistente de ambos criterios sin que nadie lo haya decidido a propósito.' },
           exercise: { mins: 20, text: 'Escribe las instrucciones de etiquetado para una tarea de clasificación de tu contexto (dos o tres frases). Dáselas a otra persona sin más contexto y pídele que etiquete cinco ejemplos ambiguos. Compara sus etiquetas con las tuyas: donde discrepen, esa es la ambigüedad real de tu instrucción.' },
           quiz: [
@@ -121,6 +125,10 @@ module.exports = {
             'Muchos equipos violan esta separación sin darse cuenta: si el conjunto de prueba se consulta varias veces durante el desarrollo —"solo para ver cómo vamos"— deja de cumplir su función, porque cada consulta es una oportunidad de ajustar decisiones en función de su resultado, exactamente lo que se suponía debía evitarse. El conjunto de prueba pierde su valor la primera vez que influye, aunque sea indirectamente, en una decisión de diseño.',
             'La evaluación rigurosa exige además elegir la métrica correcta para el problema, no la más cómoda de calcular: en un problema con clases muy desbalanceadas, una precisión global del 98% puede significar simplemente que el modelo predice siempre la clase mayoritaria, un resultado inútil que una métrica mal elegida no revela. Antes de optimizar cualquier hiperparámetro, conviene confirmar que la métrica elegida realmente penaliza los errores que le importan al negocio.',
           ],
+          diagram: {
+            title: 'Tres conjuntos, roles que no se intercambian',
+            mermaid: 'graph LR\n  E["Entrenamiento\\najusta parámetros"] --> V["Validación\\najusta hiperparámetros"]\n  V --> P["Prueba\\nse consulta UNA sola vez, al final"]',
+          },
           example: { title: 'El conjunto de prueba que dejó de servir', text: 'Un equipo consulta el conjunto de prueba cada semana "solo para monitorear el progreso" durante tres meses de desarrollo. Al llegar a producción, el modelo rinde notablemente peor que lo estimado. La causa: sin que nadie lo decidiera explícitamente, el equipo había ido ajustando el modelo en función de ese resultado repetido, convirtiendo de facto el conjunto de prueba en un segundo conjunto de validación.' },
           keys: [
             'Ajustar hiperparámetros repetidamente contra el mismo conjunto de validación sobreajusta indirectamente el modelo a ese conjunto.',
@@ -168,6 +176,10 @@ module.exports = {
             'Las pruebas de modelo van más allá de comprobar que la métrica global supera un umbral: incluyen pruebas de invarianza —cambios que no deberían alterar la predicción, como el orden de palabras irrelevantes en un texto— y pruebas de comportamiento dirigido —verificar explícitamente que el modelo responde correctamente ante un conjunto pequeño de casos críticos conocidos, aunque esos casos sean raros en el conjunto de datos general—. Un modelo con una métrica global excelente puede fallar sistemáticamente en exactamente los casos que más importan al negocio, y una métrica agregada nunca lo revelaría por sí sola.',
             'Estas tres categorías de prueba no reemplazan la evaluación estadística rigurosa vista en la lección anterior: la complementan, cubriendo el tipo de fallo que una métrica agregada, por diseño, no puede detectar — un fallo puntual, sistemático, sobre un subconjunto pequeño pero crítico de los casos posibles.',
           ],
+          diagram: {
+            title: 'Tres categorías de prueba, no una',
+            mermaid: 'graph TD\n  P["Proyecto maduro de ML"] --> C["Pruebas de código\\n(funciones correctas)"]\n  P --> D["Pruebas de datos\\n(esquema, rango, distribución)"]\n  P --> M["Pruebas de modelo\\n(invarianza, casos críticos)"]',
+          },
           keys: [
             'Un proyecto maduro necesita tres categorías de prueba: de código, de datos y de modelo — no basta con una sola.',
             'Las pruebas de datos verifican esquema, rango y distribución antes de que los datos entren al pipeline; su ausencia permite corrupción silenciosa durante meses.',
@@ -190,6 +202,10 @@ module.exports = {
             'Un entorno de ejecución también forma parte de lo que hay que versionar, aunque se pase por alto con frecuencia: las versiones exactas de las bibliotecas usadas pueden cambiar sutilmente el comportamiento numérico de un modelo entre una ejecución y otra, incluso con el mismo código y los mismos datos. Fijar esas versiones explícitamente —no depender de "la versión más reciente disponible" en el momento de instalar— es parte de la misma disciplina de reproducibilidad, no un detalle de infraestructura sin relación con la calidad del modelo.',
             'La recompensa de esta disciplina, aunque cueste tiempo de configuración inicial, aparece meses después: cuando un modelo en producción empieza a fallar y hay que auditar exactamente qué combinación de datos, código, configuración y entorno lo produjo, un proyecto sin este versionado completo enfrenta una investigación que puede tomar semanas; uno con la disciplina completa responde esa pregunta en minutos.',
           ],
+          diagram: {
+            title: 'Todo lo que hay que versionar',
+            mermaid: 'graph TD\n  R["Reproducibilidad completa"] --> C["Código"]\n  R --> D["Datos\\n(identificados de forma única)"]\n  R --> H["Configuración de\\nhiperparámetros"]\n  R --> E["Entorno\\n(versiones de bibliotecas)"]',
+          },
           example: { title: 'La pregunta que solo la reproducibilidad completa responde', text: 'Un modelo en producción empieza a fallar en un subgrupo de clientes. El equipo necesita saber: ¿qué versión exacta de los datos, qué configuración de hiperparámetros y qué versión de las bibliotecas produjeron el modelo actualmente desplegado? Sin versionado de datos y entorno, esa pregunta —aparentemente simple— puede tomar semanas de reconstrucción manual.' },
           keys: [
             'La reproducibilidad exige versionar código, datos, configuración de hiperparámetros y, en muchos casos, la semilla aleatoria — no solo el código.',

@@ -52,6 +52,10 @@ module.exports = {
             'Consumir un modelo preentrenado a través de una API de alto nivel —una función que recibe texto y devuelve directamente el resultado de la tarea, sin exponer los detalles de tokenización, ejecución del modelo o decodificación del resultado— es la forma más rápida de empezar a usar modelos existentes, apropiada para prototipar rápidamente o para producción cuando la tarea coincide exactamente con lo que la API expone.',
             'Cuando la necesidad es más específica —ajustar el comportamiento, inspeccionar resultados intermedios, combinar el modelo con lógica personalizada—, trabajar directamente con el tokenizador y el modelo por separado, en vez de la API de alto nivel, da el control necesario a cambio de mayor complejidad de código: el mismo compromiso entre simplicidad y control que aparece repetidamente al elegir el nivel de abstracción correcto para cualquier herramienta técnica.',
           ],
+          diagram: {
+            title: 'Del texto a números y de vuelta',
+            mermaid: 'graph LR\n  T["Texto"] --> TK["Tokenizador\\n(divide en subpalabras)"]\n  TK --> N["Números (IDs)"]\n  N --> M["Modelo procesa"]\n  M --> D["Tokenizador decodifica\\nde vuelta a texto"]',
+          },
           keys: [
             'Un tokenizador convierte texto en números que el modelo puede procesar; está indisolublemente ligado al modelo específico con el que se entrenó.',
             'La tokenización por subpalabras cubre cualquier texto posible, incluso palabras nunca vistas, descomponiéndolas en fragmentos más pequeños si hace falta.',
@@ -126,6 +130,10 @@ module.exports = {
             'La licencia de un modelo determina su uso legal permitido; pasarla por alto durante el prototipado se vuelve crítico antes de cualquier despliegue en producción.',
             'Publicar modelos propios internamente facilita reproducibilidad y colaboración, evitando la inconsistencia de compartir archivos por canales informales.',
           ],
+          diagram: {
+            title: 'Qué revisar antes de usar un modelo del Hub',
+            mermaid: 'graph TD\n  M["Modelo candidato"] --> C["Tarjeta de modelo\\n(datos, tareas, limitaciones)"]\n  M --> L["Licencia\\n(¿uso comercial permitido?)"]\n  C --> D["Decisión de uso"]\n  L --> D',
+          },
           exercise: { mins: 15, text: 'La próxima vez que uses un modelo preentrenado de un repositorio público, revisa explícitamente su tarjeta de modelo antes de usarlo: ¿con qué datos se entrenó, qué limitaciones declara, y bajo qué licencia se publica? Verifica que esa licencia sea compatible con tu caso de uso.' },
           quiz: [
             { q: '¿Qué problema resuelve un repositorio centralizado de modelos preentrenados?', opts: ['Ningún problema real, es solo una conveniencia menor', 'Descubrimiento y procedencia: evita entrenar desde cero o buscar pesos dispersos sin garantías de origen', 'Elimina por completo la necesidad de cualquier ajuste fino', 'Genera automáticamente nuevos modelos sin intervención humana'], a: 1, why: ['Sí resuelve un problema real de descubrimiento y confianza.', 'Correcto.', 'No elimina la necesidad de ajuste fino.', 'No genera modelos automáticamente.'] },
@@ -142,6 +150,10 @@ module.exports = {
             'La reproducibilidad de un conjunto de datos —poder recuperar exactamente la misma versión que se usó para entrenar un modelo específico, incluyendo cualquier filtro o transformación aplicada— es tan importante para diagnosticar problemas posteriores como la reproducibilidad del código y los hiperparámetros, un tema ya tratado en otra aula de este campus: sin ella, "qué datos exactos entrenaron este modelo" no tiene una respuesta verificable.',
             'Mezclar conjuntos de datos de distintas fuentes u orígenes para un mismo entrenamiento —una práctica habitual al construir corpus de entrenamiento para modelos de lenguaje— exige atención explícita a la proporción de cada fuente en la mezcla final: una fuente sobrerrepresentada puede sesgar desproporcionadamente el comportamiento del modelo hacia las características de esa fuente específica, un efecto no siempre intencional ni evidente hasta que se audita explícitamente la composición real del conjunto de entrenamiento resultante.',
           ],
+          diagram: {
+            title: 'Streaming: procesar sin cargar todo en memoria',
+            mermaid: 'graph LR\n  D["Conjunto de datos\\n(varios GB)"] --> S["Streaming:\\nprocesa por partes"]\n  S --> M["Cabe en memoria\\ndisponible"]\n  D -.->|"✗ cargar todo de una vez"| E["Error de memoria"]',
+          },
           keys: [
             'La carga diferida (streaming) procesa datos por partes sin exigir que el conjunto completo quepa en memoria, indispensable en conjuntos de escala real.',
             'Mapear transformaciones sobre un conjunto de datos de forma eficiente exige procesamiento por lotes y paralelismo, no aplicación fila por fila secuencial.',
@@ -164,6 +176,10 @@ module.exports = {
             'Entrenar un tokenizador sobre un corpus específico de un dominio técnico o un idioma poco representado en los corpus genéricos habituales puede mejorar significativamente la eficiencia de representación para ese dominio específico: términos técnicos frecuentes en ese dominio, que un tokenizador genérico fragmentaría en muchos tokens pequeños poco informativos, pueden convertirse en tokens únicos y eficientes si el corpus de entrenamiento del tokenizador incluyó suficientes ejemplos representativos de ese vocabulario técnico específico.',
             'Esta decisión de construir un tokenizador propio, sin embargo, no debería tomarse por defecto: exige entrenar también un modelo compatible con ese tokenizador específico —ya sea desde cero o mediante un proceso de adaptación—, un esfuerzo considerablemente mayor que simplemente usar un tokenizador y modelo ya existentes y probados, y solo se justifica cuando el dominio o idioma específico está genuinamente mal representado en las opciones ya disponibles.',
           ],
+          diagram: {
+            title: 'El compromiso del tamaño del vocabulario',
+            mermaid: 'graph LR\n  G["Vocabulario grande"] --> S1["Secuencias más cortas,\\nmás memoria/cómputo"]\n  P["Vocabulario pequeño"] --> S2["Secuencias más largas,\\nmás económico"]',
+          },
           example: { title: 'Cuándo justifica la pena un tokenizador propio', text: 'Una organización que trabaja con notación química especializada descubre que un tokenizador genérico fragmenta cada fórmula molecular en decenas de tokens pequeños y poco informativos, consumiendo una parte desproporcionada de la longitud máxima de contexto del modelo solo en representar esas fórmulas. Entrenar un tokenizador propio sobre un corpus rico en esa notación específica reduce esa fragmentación drásticamente, a cambio de la inversión de entrenar o adaptar un modelo compatible con ese vocabulario nuevo.' },
           keys: [
             'Un vocabulario más grande produce secuencias de tokens más cortas pero exige más memoria y cómputo; uno más pequeño es más económico pero fragmenta más el texto.',
@@ -206,6 +222,10 @@ module.exports = {
             'El resumen automático, a diferencia de las dos tareas anteriores, sí genera texto nuevo, y por eso hereda los riesgos ya vistos en otra aula sobre generación de texto: un resumen puede ser fluido y convincente sin ser fiel al contenido original, introduciendo afirmaciones que no están respaldadas por el texto fuente —un problema conocido específicamente como alucinación en el contexto de resumen—. Evaluar un sistema de resumen exige, por tanto, no solo medir si el resumen es coherente y legible, sino verificar explícitamente su fidelidad al contenido original.',
             'Elegir entre estas tres tareas —o entre un enfoque extractivo y uno generativo dentro de la misma necesidad— no es solo una decisión técnica: es una decisión de qué garantías necesita el sistema. Un caso de uso donde una respuesta inventada tiene consecuencias serias —resumen de documentos legales o médicos, por ejemplo— debería inclinar la decisión hacia enfoques extractivos o hacia generación con verificación explícita de fidelidad, no hacia la opción generativa más fluida sin ese control adicional.',
           ],
+          diagram: {
+            title: 'Tres tareas, distinta garantía de fundamentación',
+            mermaid: 'graph LR\n  C["Clasificación\\netiqueta predefinida"] --> G1["Fácil de evaluar"]\n  E["Extracción\\nseñala texto existente"] --> G2["No puede inventar"]\n  R["Resumen\\ngenera texto nuevo"] --> G3["Riesgo de alucinación"]',
+          },
           keys: [
             'La clasificación de texto es la tarea más económica y fácil de evaluar, porque la respuesta correcta está definida dentro de un conjunto conocido de opciones.',
             'La extracción señala posiciones dentro del texto de entrada, garantizando que la respuesta está fundamentada en el documento, algo que la generación pura no ofrece por diseño.',
@@ -253,6 +273,10 @@ module.exports = {
             'Diseñar la demostración exige decisiones deliberadas sobre qué mostrar además del resultado final: exponer la confianza o probabilidad asociada a una predicción, en vez de mostrar solo la respuesta con aparente certeza absoluta, ayuda al usuario que prueba la demostración a calibrar correctamente cuánto confiar en el sistema, una práctica de comunicación honesta sobre las limitaciones del modelo que se vuelve aún más importante una vez que el sistema pasa de demostración a producción real.',
             'Una demostración pública, precisamente por ser accesible a cualquiera, también expone el modelo a entradas adversariales o simplemente inesperadas que el equipo de desarrollo nunca habría probado deliberadamente: lejos de ser un riesgo puramente negativo, esta exposición temprana a la variabilidad real de usuarios genuinos es, con frecuencia, la fuente más valiosa de casos nuevos para el conjunto de evaluación del sistema, un tema ya visto en otra aula de este campus sobre evaluación de sistemas con LLM.',
           ],
+          diagram: {
+            title: 'La demostración como puente hacia usuarios reales',
+            mermaid: 'graph LR\n  M["Modelo entrenado"] --> D["Demostración interactiva"]\n  D --> U["Usuarios reales prueban\\ncon sus propios casos"]\n  U --> C["Casos nuevos, inesperados\\npara el conjunto de evaluación"]',
+          },
           example: { title: 'Lo que revela una demostración pública', text: 'Un equipo publica una demostración de un clasificador de sentimiento entrenado únicamente con reseñas en español formal. Usuarios reales prueban la demostración con texto informal, con errores ortográficos deliberados y con sarcasmo — casos que el equipo nunca había considerado explícitamente al diseñar el conjunto de evaluación original, y que ahora se convierten en nuevos casos de prueba valiosos para mejorar el sistema.' },
           keys: [
             'Una demostración interactiva está optimizada para evaluación rápida por personas reales, no para escala ni uso continuo como una aplicación de producción.',
@@ -321,6 +345,10 @@ module.exports = {
             'El costo de esta capacidad es directo y medible: generar una secuencia extendida de razonamiento antes de la respuesta final consume considerablemente más tiempo de cómputo y, por tanto, más costo por consulta, que una respuesta directa. Esto convierte la elección entre un modelo de razonamiento extendido y uno de respuesta directa en una decisión práctica de diseño: apropiada para problemas genuinamente complejos que se benefician de la descomposición en pasos, innecesaria y costosa para consultas simples donde una respuesta directa es igualmente correcta.',
             'Esta distinción conecta directamente con la lección sobre cuándo un flujo simple gana a un agente, vista en otra aula de este campus: de la misma forma que no toda tarea se beneficia de la complejidad adicional de un agente, no toda consulta se beneficia del costo adicional de un razonamiento extendido. La pregunta correcta, en ambos casos, es si la complejidad adicional del problema específico justifica el costo adicional de la técnica más sofisticada, no si esa técnica es posible de aplicar.',
           ],
+          diagram: {
+            title: 'Respuesta directa frente a razonamiento extendido',
+            mermaid: 'graph LR\n  P["Pregunta"] --> D{"¿Requiere varios\\npasos lógicos encadenados?"}\n  D -->|No| R1["Respuesta directa\\nrápida y barata"]\n  D -->|Sí| R2["Razonamiento extendido\\nexplora, verifica, luego responde"]',
+          },
           example: { title: 'Cuándo el razonamiento extendido aporta valor', text: 'Ante "¿cuál es la capital de Francia?", un modelo de razonamiento extendido generando varios párrafos de deliberación antes de responder "París" desperdicia tiempo y costo sin ningún beneficio. Ante "diseña un algoritmo que resuelva este problema de optimización con estas restricciones específicas", el razonamiento extendido —explorando enfoques, descartando los que no cumplen las restricciones, verificando la solución final— produce resultados notablemente mejores que una respuesta directa e inmediata.' },
           keys: [
             'Un modelo de razonamiento genera pasos intermedios extendidos —explorar, considerar alternativas, verificar— antes de comprometerse con una respuesta final.',

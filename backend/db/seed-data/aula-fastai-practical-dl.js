@@ -18,6 +18,10 @@ module.exports = {
             'El aprendizaje por transferencia (transfer learning) es la técnica que hace posible entrenar un clasificador útil en minutos, no días: en vez de entrenar una red neuronal desde cero —que exigiría millones de imágenes y días de cómputo—, se parte de un modelo ya entrenado sobre un conjunto de datos masivo y genérico, y se ajustan solo sus capas finales para la tarea específica nueva. El modelo ya "sabe" reconocer bordes, texturas y formas básicas gracias a su entrenamiento previo; el ajuste fino solo le enseña a combinar ese conocimiento general para la tarea específica.',
             'Esta primera experiencia práctica revela también, de forma visceral, una lección que se repetirá durante todo el curso: un modelo con una precisión de validación aparentemente excelente puede fallar de forma sorprendente y sistemática ante un tipo de imagen que el conjunto de entrenamiento no representaba adecuadamente —una foto tomada de noche, un ángulo inusual—, una limitación que ninguna arquitectura de red, por sofisticada que sea, resuelve por sí sola sin datos de entrenamiento representativos.',
           ],
+          diagram: {
+            title: 'Aprendizaje por transferencia: no partir de cero',
+            mermaid: 'graph LR\n  M["Modelo preentrenado\\n(ya conoce bordes, texturas, formas)"] --> A["Ajustar solo\\nlas capas finales"]\n  A --> C["Clasificador nuevo\\nen minutos, no días"]',
+          },
           example: { title: 'De cero a clasificador funcional', text: 'Con un conjunto de unas pocas cientos de fotos de dos categorías (por ejemplo, dos especies de aves) y un modelo preentrenado ajustado mediante transferencia, es posible obtener un clasificador con más del 95% de precisión en una sola sesión de trabajo, un resultado que hace apenas una década habría exigido semanas de trabajo especializado y muchos más datos.' },
           keys: [
             'El curso enseña de arriba hacia abajo: primero un modelo funcional de principio a fin, la teoría llega después motivada por preguntas concretas.',
