@@ -61,6 +61,13 @@ for (const n of ['iii', 'vi', 'ix', 'x']) {
 }
 const TFM_SPEC = tryRequire('tfm.js');
 
+// Lectura guiada por asignatura (WS-7): lectura-guiada/master-<slug>.js exporta
+// un objeto { <contenidoOficial>: LecturaGuiadaData }. Se inyecta en la lección
+// correspondiente si esta no trae ya su propio `lecturaGuiada`.
+function loadLecturaGuiada(slug) {
+  return tryRequire(`lectura-guiada/${slug}.js`) || null;
+}
+
 // Config de examen por asignatura: apunta al banco de ítems y fija intentos/cooldown.
 function examConfigFor(slug) {
   const bank = ITEM_BANKS.find((b) => b.scopeSlug === slug);
@@ -404,7 +411,11 @@ async function main() {
       const propias = tryRequireLecciones(asig.slug);
       const modules = [];
       if (propias && Array.isArray(propias.lecciones) && propias.lecciones.length) {
-        const woven = weaveLessonResources(propias.lecciones, tm.resources);
+        let woven = weaveLessonResources(propias.lecciones, tm.resources);
+        const lg = loadLecturaGuiada(asig.slug);
+        if (lg) {
+          woven = woven.map((l) => (l.lecturaGuiada || !lg[l.contenidoOficial] ? l : { ...l, lecturaGuiada: lg[l.contenidoOficial] }));
+        }
         const resources = woven.map(leccionAResource);
         const examCfg = examConfigFor(asig.slug);
         if (examCfg || (Array.isArray(propias.examen) && propias.examen.length)) {
