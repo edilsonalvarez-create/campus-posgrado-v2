@@ -84,6 +84,46 @@ function tryRequireLecciones(slug) {
     return null;
   }
 }
+// Tipos de recurso curado (template.json) que se muestran como "video" en la lección;
+// el resto (libro, curso, lectura, docs, norma, tool, dataset, cert) como "libro".
+function curatedToRecurso(r) {
+  const entry = { titulo: r.n, autor: r.s || undefined, canal: r.s || undefined, url: r.u || undefined };
+  return r.t === 'video' ? { kind: 'videos', item: { titulo: entry.titulo, canal: entry.canal, url: entry.url } }
+                         : { kind: 'libros', item: { titulo: entry.titulo, autor: entry.autor, url: entry.url } };
+}
+
+// WS-1: garantiza >=2 recursos reales por lección, repartiendo los recursos
+// curados de la asignatura (template.json) entre sus 6 lecciones y respetando
+// los `recursos` que la lección ya trae. Fuente de datos: ya existente.
+function weaveLessonResources(lecciones, curated) {
+  const pool = (curated || []).filter((r) => r.u).map(curatedToRecurso);
+  if (!pool.length) return lecciones;
+  return lecciones.map((l, idx) => {
+    const have = l.recursos || {};
+    const libros = [...(have.libros || [])];
+    const videos = [...(have.videos || [])];
+    const urls = new Set([...libros, ...videos].map((x) => x.url).filter(Boolean));
+    // asignación principal round-robin + relleno cíclico hasta >=2
+    let k = idx;
+    let guard = 0;
+    while (libros.length + videos.length < 2 && guard < pool.length * 3) {
+      const pick = pool[k % pool.length];
+      k += 1;
+      guard += 1;
+      if (pick.item.url && urls.has(pick.item.url)) continue;
+      if (pick.item.url) urls.add(pick.item.url);
+      (pick.kind === 'videos' ? videos : libros).push(pick.item);
+    }
+    // además: reparto directo del recurso idx-ésimo del pool a esta lección
+    const direct = pool[idx % pool.length];
+    if (direct.item.url && !urls.has(direct.item.url)) {
+      urls.add(direct.item.url);
+      (direct.kind === 'videos' ? videos : libros).push(direct.item);
+    }
+    return { ...l, recursos: { libros, videos } };
+  });
+}
+
 function leccionAResource(l) {
   return {
     title: l.title,
@@ -103,6 +143,7 @@ function leccionAResource(l) {
       criterioFinalizacion: l.criterioFinalizacion || null,
       diagram: l.diagram || null,
       recursos: l.recursos || null,
+      lecturaGuiada: l.lecturaGuiada || null,
     },
   };
 }
@@ -354,7 +395,8 @@ async function main() {
       const propias = tryRequireLecciones(asig.slug);
       const modules = [];
       if (propias && Array.isArray(propias.lecciones) && propias.lecciones.length) {
-        const resources = propias.lecciones.map(leccionAResource);
+        const woven = weaveLessonResources(propias.lecciones, tm.resources);
+        const resources = woven.map(leccionAResource);
         const examCfg = examConfigFor(asig.slug);
         if (examCfg || (Array.isArray(propias.examen) && propias.examen.length)) {
           resources.push({
