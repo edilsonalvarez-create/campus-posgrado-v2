@@ -167,6 +167,83 @@ export const logEvent = (eventType: string, payload?: Record<string, unknown>, r
   api.post('/events', { eventType, payload: payload || {}, resourceId }).catch(() => {});
 };
 
+// ---------- TFM (4 hitos) ----------
+export interface TfmMilestone {
+  slug: string;
+  title: string;
+  description: string;
+  weight: number;
+  requiresVideo: boolean;
+  templateUrl: string | null;
+  rubricSlug: string;
+  submission: {
+    id: string;
+    reviewId: string;
+    content: string;
+    repoUrl: string | null;
+    files: Array<{ label: string; type: string; url: string }>;
+    defenseVideoUrl: string | null;
+    status: 'submitted' | 'changes_requested' | 'approved';
+    directorNote: string | null;
+    grade: number | null;
+    feedback: string | null;
+    rubric: any;
+  } | null;
+}
+export interface TfmState {
+  enrollment: { id: string; title: string | null; status: string; directorName: string | null; directorId: string | null } | null;
+  weightedScore: number;
+  milestones: TfmMilestone[];
+}
+
+export const useTfm = (userId?: string) =>
+  useQuery({
+    queryKey: ['tfm', userId || 'me'],
+    queryFn: async () => (await api.get<TfmState>(`/tfm${userId ? `?userId=${userId}` : ''}`)).data,
+  });
+
+export const useTfmEnroll = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await api.post('/tfm/enroll', {})).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tfm'] }),
+  });
+};
+
+export const useSubmitMilestone = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: {
+      slug: string;
+      content: string;
+      repoUrl?: string;
+      files?: Array<{ label: string; type: string; url: string }>;
+      defenseVideoUrl?: string;
+    }) => (await api.post(`/tfm/milestones/${v.slug}`, v)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tfm'] });
+      qc.invalidateQueries({ queryKey: ['certificates'] });
+    },
+  });
+};
+
+export const useReviewMilestone = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: {
+      reviewId: string;
+      decision: 'approve' | 'changes';
+      criteria?: Array<{ key: string; levelPoints: number; comment?: string }>;
+      feedback?: string;
+      note?: string;
+    }) => (await api.put(`/tfm/milestones/${v.reviewId}/review`, v)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tfm'] });
+      qc.invalidateQueries({ queryKey: ['certificates'] });
+    },
+  });
+};
+
 // ---------- Asistencia de nota por IA (instructor) ----------
 export const useGradeSuggestion = () =>
   useMutation({

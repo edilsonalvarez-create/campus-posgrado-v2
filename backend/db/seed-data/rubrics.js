@@ -665,6 +665,281 @@ const RUBRICS = [
       },
     ],
   },
+
+  // ---------- Rúbricas de los tracks hands-on (Fase 2, asignaturas III/VI/IX/X) ----------
+  ...['iii', 'vi', 'ix', 'x'].map((n) => {
+    const dominio = {
+      iii: {
+        key: 'batch-vs-streaming-medido',
+        title: 'La decisión de motor/patrón se apoya en TU medición',
+        desc: 'La conclusión sobre qué motor usar y en qué punto Spark deja de compensar se justifica con los tiempos y memoria que mediste, no con una regla aprendida.',
+        lv: [
+          'Conclusión sin datos propios o contradicha por la tabla de resultados.',
+          'Menciona los números pero la conclusión no se sigue de ellos.',
+          'Conclusión derivada de la medición, con el punto de corte identificado.',
+          'Además, el análisis de qué se sacrifica al escalar ×10 con evidencia.',
+        ],
+      },
+      vi: {
+        key: 'metrica-y-fuga',
+        title: 'Métrica justificada antes de entrenar + fuga de datos detectada',
+        desc: 'Cada problema declara y justifica su métrica antes de ver resultados, y se identifica un punto concreto de posible fuga de datos y cómo se evitó.',
+        lv: [
+          'Métrica por defecto sin justificar; sin análisis de fuga.',
+          'Justifica la métrica en un caso; fuga mencionada en abstracto.',
+          'Métrica justificada en los tres problemas y un punto de fuga concreto evitado.',
+          'Además, el orden correcto de split/transform y cómo se auditaría la fuga.',
+        ],
+      },
+      ix: {
+        key: 'recuperacion-vs-generacion',
+        title: 'Métricas de recuperación separadas de las de generación + diagnóstico de fallo',
+        desc: 'El panel mide recuperación y generación por separado, hay tasa de alucinación sobre casos conocidos, y ante un fallo se diagnostica la etapa antes de tocar el prompt.',
+        lv: [
+          'Métrica única agregada; sin diagnóstico de fallo.',
+          'Separa recuperación de generación pero sin alucinación ni coste.',
+          'Recuperación, generación, alucinación y coste, más un fallo diagnosticado.',
+          'Además, varios fallos por etapa con la señal que los distingue.',
+        ],
+      },
+      x: {
+        key: 'coste-y-palanca',
+        title: 'Coste mensual conocido + palanca de reducción + justificación no-precio',
+        desc: 'Se conoce el coste mensual (real o proyectado con supuestos), la palanca que se bajaría primero para reducirlo a la mitad, y la elección de proveedor se justifica por un factor que no es el precio de lista.',
+        lv: [
+          'La entrega termina en el despliegue; sin coste ni palanca.',
+          'Coste mencionado sin desglose ni palanca.',
+          'Coste desglosado, palanca principal y justificación no-precio del proveedor.',
+          'Además, el trade-off aceptado y la condición que cambiaría la decisión.',
+        ],
+      },
+    }[n];
+    return {
+      slug: `rubric-handson-master-${n}`,
+      title: `Rúbrica — Práctica computacional (Asignatura ${n.toUpperCase()})`,
+      scope: 'asignatura',
+      passThreshold: 70,
+      criteria: [
+        {
+          key: 'codigo-ejecutable-reproducible',
+          title: 'Código ejecutable y reproducible',
+          description:
+            'El repositorio o notebook se ejecuta de principio a fin siguiendo el README, con dependencias declaradas y datos obtenibles; otra persona puede reproducir los resultados.',
+          levels: niveles(35, [
+            'No ejecuta, faltan dependencias/datos, o no hay repositorio.',
+            'Ejecuta con retoques manuales no documentados.',
+            'Ejecuta siguiendo el README; dependencias y datos resueltos.',
+            'Reproducible sin fricción, con semillas fijadas y resultados verificables.',
+          ]),
+        },
+        {
+          key: 'resultados-con-numeros',
+          title: 'Resultados medidos con números',
+          description: 'Hay una tabla/panel de resultados con las magnitudes que pide la práctica, sobre una base honesta (no cherry-picking).',
+          levels: niveles(25, [
+            'Sin mediciones, o solo capturas sin contexto.',
+            'Algunas cifras sueltas sin condiciones de medición.',
+            'Tabla completa con las magnitudes pedidas y condiciones claras.',
+            'Además, varianza/repeticiones y análisis de por qué salen esos números.',
+          ]),
+        },
+        {
+          key: dominio.key,
+          title: dominio.title,
+          description: dominio.desc,
+          levels: niveles(25, dominio.lv),
+        },
+        {
+          key: 'comunicacion-del-informe',
+          title: 'Claridad del informe',
+          description: 'El informe conecta el objetivo, el método, los resultados y la conclusión de forma que un revisor entiende qué se hizo y por qué en una lectura.',
+          levels: niveles(15, [
+            'Difícil de seguir; falta el hilo objetivo→método→resultado→conclusión.',
+            'Se entiende con esfuerzo; saltos entre secciones.',
+            'Hilo claro y conclusión que se sigue de los resultados.',
+            'Claro, conciso y con las limitaciones del trabajo reconocidas.',
+          ]),
+        },
+      ],
+    };
+  }),
+
+  // ---------- Rúbricas de los 4 hitos del TFM (Fase 2) ----------
+  {
+    slug: 'rubric-tfm-propuesta',
+    title: 'Rúbrica — TFM Hito 1: Propuesta',
+    scope: 'tfm-milestone',
+    passThreshold: 70,
+    criteria: [
+      {
+        key: 'problema-y-pregunta',
+        title: 'Problema real dimensionado y pregunta concreta',
+        description: 'El problema es real y actual, con una cifra que lo dimensiona, y la pregunta de investigación es concreta y respondible en 8 semanas.',
+        levels: niveles(35, [
+          'Problema vago o aspiracional; pregunta difusa.',
+          'Problema real pero sin magnitud, o pregunta demasiado amplia.',
+          'Problema dimensionado y pregunta concreta y acotada.',
+          'Además, por qué esta pregunta importa a la organización o al campo.',
+        ]),
+      },
+      {
+        key: 'alcance-y-viabilidad',
+        title: 'Alcance (qué sí / qué no) y viabilidad',
+        description: 'El alcance está delimitado y el plan de 8 semanas es realista dados los datos y recursos disponibles.',
+        levels: niveles(35, [
+          'Sin delimitación de alcance; plan irrealista o ausente.',
+          'Alcance parcial; plan optimista sin holguras.',
+          'Alcance claro (qué sí y qué no) y plan de 8 semanas con hitos.',
+          'Además, los riesgos del plan y qué se recortaría si el tiempo aprieta.',
+        ]),
+      },
+      {
+        key: 'datos',
+        title: 'Datos: qué se necesita y si está disponible',
+        description: 'Identifica los datos necesarios, su cantidad y calidad, y confirma su disponibilidad o el plan para obtenerlos.',
+        levels: niveles(30, [
+          'No aborda los datos.',
+          'Lista datos sin cantidad ni disponibilidad.',
+          'Datos, cantidad aproximada y disponibilidad confirmada.',
+          'Además, el plan B si los datos resultan insuficientes.',
+        ]),
+      },
+    ],
+  },
+  {
+    slug: 'rubric-tfm-estado-arte',
+    title: 'Rúbrica — TFM Hito 2: Estado del arte',
+    scope: 'tfm-milestone',
+    passThreshold: 70,
+    criteria: [
+      {
+        key: 'cobertura-y-relevancia',
+        title: 'Cobertura y relevancia de las fuentes',
+        description: '4–8 fuentes realmente relevantes al problema (no de relleno), con las alternativas y sistemas comparables principales.',
+        levels: niveles(30, [
+          'Fuentes escasas o irrelevantes.',
+          'Fuentes relevantes pero falta alguna alternativa principal.',
+          'Cobertura adecuada de las alternativas y comparables.',
+          'Cobertura completa, incluyendo trabajo reciente.',
+        ]),
+      },
+      {
+        key: 'sintesis-en-matriz',
+        title: 'Síntesis en matriz (método, métricas, limitación)',
+        description: 'Cada fuente se resume en qué resuelve, con qué método, qué métricas reporta y qué limita, en formato comparable.',
+        levels: niveles(35, [
+          'Resúmenes sueltos sin estructura comparable.',
+          'Matriz incompleta (faltan métricas o limitaciones).',
+          'Matriz completa y comparable entre fuentes.',
+          'Además, patrones transversales identificados entre las fuentes.',
+        ]),
+      },
+      {
+        key: 'vacio-identificado',
+        title: 'El vacío que cubre el TFM',
+        description: 'Del estado del arte se deriva con claridad el vacío concreto que el TFM aborda y por qué su enfoque frente a las alternativas.',
+        levels: niveles(35, [
+          'No se identifica un vacío, o es genérico ("hacer algo mejor").',
+          'Vacío mencionado pero no se sigue del análisis.',
+          'Vacío concreto derivado del estado del arte.',
+          'Vacío concreto y justificación del enfoque propio frente a cada alternativa.',
+        ]),
+      },
+    ],
+  },
+  {
+    slug: 'rubric-tfm-revision-intermedia',
+    title: 'Rúbrica — TFM Hito 3: Revisión intermedia',
+    scope: 'tfm-milestone',
+    passThreshold: 70,
+    criteria: [
+      {
+        key: 'avance-funcional',
+        title: 'Avance funcional con un primer resultado medible',
+        description: 'El repositorio muestra el sistema a medio construir produciendo ya un resultado que se puede medir.',
+        levels: niveles(35, [
+          'Sin avance verificable o solo planificación.',
+          'Código que aún no produce ningún resultado.',
+          'Primer resultado medible reproducible.',
+          'Resultado medible y comparado con la línea base preliminar.',
+        ]),
+      },
+      {
+        key: 'metodologia-de-evaluacion',
+        title: 'Metodología de evaluación definida',
+        description: 'Conjunto de prueba honesto, línea base y métricas están definidos antes del resultado final.',
+        levels: niveles(35, [
+          'Sin metodología de evaluación.',
+          'Métricas sin conjunto de prueba claro o sin línea base.',
+          'Conjunto de prueba honesto, línea base y métricas definidos.',
+          'Además, cómo se evitará la fuga de datos y el sobreajuste al conjunto de prueba.',
+        ]),
+      },
+      {
+        key: 'gestion-de-cambios-y-riesgos',
+        title: 'Registro de riesgos y cambios respecto al plan',
+        description: 'Documenta qué ha cambiado respecto a la propuesta, por qué, y qué riesgos del proyecto están activos.',
+        levels: niveles(30, [
+          'No reconoce cambios ni riesgos.',
+          'Menciona cambios sin causa ni impacto.',
+          'Cambios con causa e impacto, y riesgos activos identificados.',
+          'Además, la mitigación de cada riesgo y el criterio para pivotar si hace falta.',
+        ]),
+      },
+    ],
+  },
+  {
+    slug: 'rubric-tfm-final',
+    title: 'Rúbrica — TFM Hito 4: Memoria final y defensa',
+    scope: 'tfm-milestone',
+    passThreshold: 70,
+    criteria: [
+      {
+        key: 'evaluacion-cuantitativa',
+        title: 'Evaluación con números',
+        description: 'Métricas apropiadas sobre un conjunto de prueba honesto, con línea base y con varianza/intervalo, más análisis de errores.',
+        levels: niveles(30, [
+          'Solo demostración cualitativa.',
+          'Una métrica sin línea base ni conjunto de prueba claro.',
+          'Métricas apropiadas, conjunto de prueba honesto y línea base.',
+          'Además, varianza/intervalo y análisis de errores por categoría.',
+        ]),
+      },
+      {
+        key: 'coste-real',
+        title: 'Coste real a 12 meses',
+        description: 'Coste de operar el sistema (infraestructura, inferencia, mantenimiento) proyectado a 12 meses, con la palanca principal.',
+        levels: niveles(25, [
+          'No aborda el coste.',
+          'Coste sin desglose.',
+          'Coste desglosado a 12 meses con supuestos explícitos.',
+          'Además, la palanca principal y el margen de error de la estimación.',
+        ]),
+      },
+      {
+        key: 'memoria-y-reproducibilidad',
+        title: 'Memoria completa y repositorio reproducible',
+        description: 'La memoria sigue el orden problema→estado del arte→método→implementación→evaluación→riesgos→coste→conclusiones, con repositorio público reproducible.',
+        levels: niveles(25, [
+          'Memoria incompleta o repositorio ausente/no reproducible.',
+          'Memoria con el orden pero secciones flojas; repositorio parcial.',
+          'Memoria completa y coherente; repositorio reproducible.',
+          'Además, límites del trabajo reconocidos y trabajo futuro concreto.',
+        ]),
+      },
+      {
+        key: 'defensa',
+        title: 'Defensa grabada de 10 minutos',
+        description: 'El vídeo de defensa argumenta las decisiones de diseño y responde a la objeción más fuerte, no solo resume la memoria.',
+        levels: niveles(20, [
+          'Sin vídeo, o solo lee la memoria.',
+          'Resume la memoria sin argumentar las decisiones.',
+          'Argumenta las decisiones de diseño con solvencia.',
+          'Además, responde bien a la objeción más fuerte contra el trabajo.',
+        ]),
+      },
+    ],
+  },
 ];
 
 module.exports = RUBRICS;

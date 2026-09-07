@@ -31,9 +31,12 @@ module.exports = {
     mastery: 'El apartado que casi todo el mundo omite es escribir una retrospectiva honesta, con al menos un fallo real reconocido, en vez de una lista genérica de "todo salió bien": una retrospectiva sin nada que mejorar no es una retrospectiva, es una felicitación.',
   },
   'master-v': {
-    deliverable: 'Evaluación de riesgo y cumplimiento de un sistema de IA real o hipotético: nivel de riesgo asignado con justificación, punto exacto donde se exige supervisión humana significativa, y una brecha de gobernanza concreta que el sistema tiene hoy frente al modelo de gobernanza visto en la asignatura.',
-    practice: 'Opción 1 (recomendada): un sistema de IA que ya opera en tu organización (aunque sea informal, como un modelo de scoring o un chatbot de soporte). Opción 2: un caso público conocido de un sistema de IA que haya generado controversia regulatoria o ética, evaluado con el marco de la asignatura en vez de con la cobertura de prensa.',
-    mastery: 'El apartado que casi todo el mundo omite es señalar el punto exacto del flujo donde debería intervenir un humano, no solo afirmar que "debe haber supervisión humana" en abstracto: sin ese punto exacto, la recomendación no es accionable.',
+    deliverable:
+      'Anexo de gobernanza de IA integrable a un SGSI ISO/IEC 27001, de 6 a 10 páginas, con tres partes: (1) política de uso aceptable de IA para la organización; (2) registro de riesgos de IA con al menos 8 riesgos específicos (probabilidad × impacto, dueño, tratamiento); (3) tabla de correspondencia entre al menos 10 controles de ISO/IEC 42001 y controles del Anexo A de ISO/IEC 27001, señalando equivalencia, vacío o solape, con al menos 3 brechas identificadas y una remediación concreta por brecha. Debe incluir el nivel de riesgo del sistema evaluado con justificación y el punto exacto del flujo donde interviene un humano con capacidad de veto.',
+    practice:
+      'Opción 1 (recomendada): un sistema de IA que ya opera en tu organización (aunque sea informal: un modelo de scoring, un chatbot de soporte, una regla de priorización). El anexo es un documento que la organización necesitará de todos modos en cuanto despliegue el primer modelo; hazlo con calidad de producción. Opción 2: el escenario de referencia — un modelo de cribado de currículos en un proceso de selección.',
+    mastery:
+      'El apartado que casi todo el mundo omite es la tabla de correspondencia ISO 42001 ↔ Anexo A con brechas concretas: afirmar "hay que gobernar la IA" es fácil; el criterio que se evalúa es si sabes decir qué control de 42001 no tiene equivalente en tu SGSI actual y qué hay que añadir para cubrir ese vacío.',
   },
   'master-vi': {
     deliverable: 'Documento de flujo de trabajo de Machine Learning aplicado a un dataset real o provisto (puede ser de Kaggle, de tu organización, o cualquier fuente pública): encuadre del problema como entrada→salida, elección justificada de la métrica de evaluación, y un diagnóstico honesto de sesgo o varianza esperado antes de entrenar nada.',

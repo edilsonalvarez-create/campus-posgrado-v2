@@ -250,6 +250,9 @@ function submissionRow(r) {
     studentId: r.user_id,
     studentName: r.student_name,
     content: r.content,
+    kind: r.kind || 'text',
+    repoUrl: r.repo_url || undefined,
+    files: Array.isArray(r.files) ? r.files : [],
     status: r.status,
     submittedAt: r.submitted_at,
     grade: r.score != null ? Number(r.score) : undefined,
@@ -260,6 +263,18 @@ function submissionRow(r) {
     gradedAt: r.graded_at || undefined,
     gradedBy: r.graded_by || undefined,
   };
+}
+
+const URL_RE = /^https?:\/\/[^\s]+$/i;
+function cleanFiles(files) {
+  return (Array.isArray(files) ? files : [])
+    .filter((f) => f && typeof f.url === 'string' && URL_RE.test(f.url.trim()))
+    .slice(0, 12)
+    .map((f) => ({
+      label: String(f.label || 'Archivo').slice(0, 120),
+      file_type: String(f.type || f.file_type || 'link').slice(0, 20),
+      url: f.url.trim().slice(0, 2000),
+    }));
 }
 
 // ---------- lógica de certificación ----------
@@ -273,6 +288,10 @@ async function evaluateCourseCompletion(userId, courseId) {
   if (!userId || !courseId) return;
   const c = (await pool.query('SELECT id, slug, title, meta FROM courses WHERE id = $1', [courseId])).rows[0];
   if (!c) return;
+
+  // El TFM tiene su propio proceso de 4 hitos con rúbrica (no un examen ni un
+  // proyecto de textarea): su compleción la decide evaluateTfmCompletion.
+  if (c.slug === 'master-tfm') return evaluateTfmCompletion(userId, c);
 
   const totalLessons = (
     await pool.query(
@@ -418,6 +437,51 @@ async function evaluateTrackAndProgramme(userId, programSlug, track) {
         [userId, 'Has completado las 11 asignaturas y el TFM del Máster IEP.'],
       );
     }
+  }
+}
+
+// Nota ponderada del TFM a partir de los 4 hitos aprobados y calificados.
+async function tfmWeightedScore(tfmId) {
+  const rows = (
+    await pool.query(
+      `SELECT tms.milestone_slug, tms.status, m.weight, g.score
+         FROM tfm_milestone_submissions tms
+         JOIN tfm_milestones m ON m.slug = tms.milestone_slug
+         LEFT JOIN grades g ON g.submission_id = tms.submission_id
+        WHERE tms.tfm_id = $1`,
+      [tfmId],
+    )
+  ).rows;
+  const total = (await pool.query('SELECT count(*)::int n, sum(weight) w FROM tfm_milestones')).rows[0];
+  const approved = rows.filter((r) => r.status === 'approved' && r.score != null);
+  const allApproved = approved.length === total.n;
+  const weighted = approved.reduce((acc, r) => acc + (Number(r.score) * Number(r.weight)) / Number(total.w), 0);
+  return { allApproved, weighted: Math.round(weighted), milestones: rows.length };
+}
+
+async function evaluateTfmCompletion(userId, tfmCourse) {
+  const tfm = (await pool.query('SELECT id FROM tfm_enrollments WHERE user_id = $1', [userId])).rows[0];
+  if (!tfm) return;
+  const { allApproved, weighted } = await tfmWeightedScore(tfm.id);
+  if (!allApproved || weighted < 70) return;
+  await pool.query(
+    `UPDATE tfm_enrollments SET status = 'passed', updated_at = now() WHERE id = $1 AND status <> 'passed'`,
+    [tfm.id],
+  );
+  const ins = await pool.query(
+    `INSERT INTO certificates (user_id, course_id, course_name, kind, requirements)
+     VALUES ($1, $2, $3, 'asignatura', $4)
+     ON CONFLICT (user_id, course_id, kind) DO NOTHING RETURNING id`,
+    [userId, tfmCourse.id, tfmCourse.title, JSON.stringify({ tfm: `${weighted}/100`, hitos: '4/4 aprobados' })],
+  );
+  if (ins.rowCount) {
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, title, message)
+       VALUES ($1, 'certificate', 'TFM aprobado', $2)`,
+      [userId, `Aprobaste el Proyecto Fin de Programa con ${weighted}/100.`],
+    );
+    const meta = tfmCourse.meta || {};
+    await evaluateTrackAndProgramme(userId, meta.programSlug, meta.track).catch(() => {});
   }
 }
 
@@ -690,7 +754,8 @@ route('GET', '/api/courses/:id/submissions', async ({ res, user, params }) => {
   const ownOnly = user.role === 'student';
   const { rows } = await pool.query(
     `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.rubric, g.rubric_slug, g.llm_suggestion, g.graded_at, g.graded_by,
-              rr.content_json->>'rubricSlug' AS resource_rubric_slug
+              rr.content_json->>'rubricSlug' AS resource_rubric_slug,
+              (SELECT coalesce(json_agg(json_build_object('label',sf.label,'type',sf.file_type,'url',sf.url) ORDER BY sf.created_at), '[]'::json) FROM submission_files sf WHERE sf.submission_id = s.id) AS files
        FROM submissions s
        JOIN users u ON u.id = s.user_id
        LEFT JOIN grades g ON g.submission_id = s.id
@@ -1235,6 +1300,202 @@ route('GET', '/api/rubrics/:slug', async ({ res, user, params }) => {
   sendJSON(res, 200, rub);
 });
 
+// --- TFM: proceso de 4 hitos con director ---
+function tfmRole(user) {
+  return user && (user.role === 'director_tfm' || user.role === 'instructor' || user.role === 'admin');
+}
+
+route('GET', '/api/tfm', async ({ res, user, query }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const targetUserId = query.userId && tfmRole(user) && isUuid(query.userId) ? query.userId : user.id;
+  const milestones = (await pool.query('SELECT * FROM tfm_milestones ORDER BY order_index')).rows;
+  const enr = (
+    await pool.query(
+      `SELECT te.*, d.name AS director_name FROM tfm_enrollments te
+         LEFT JOIN users d ON d.id = te.director_id WHERE te.user_id = $1`,
+      [targetUserId],
+    )
+  ).rows[0];
+  let subs = [];
+  if (enr) {
+    subs = (
+      await pool.query(
+        `SELECT tms.*, s.content, s.repo_url, s.status AS sub_status, g.score, g.feedback, g.rubric,
+                (SELECT coalesce(json_agg(json_build_object('label',sf.label,'type',sf.file_type,'url',sf.url)), '[]'::json)
+                   FROM submission_files sf WHERE sf.submission_id = s.id) AS files
+           FROM tfm_milestone_submissions tms
+           JOIN submissions s ON s.id = tms.submission_id
+           LEFT JOIN grades g ON g.submission_id = s.id
+          WHERE tms.tfm_id = $1`,
+        [enr.id],
+      )
+    ).rows;
+  }
+  const bySlug = Object.fromEntries(subs.map((s) => [s.milestone_slug, s]));
+  const score = enr ? await tfmWeightedScore(enr.id) : { allApproved: false, weighted: 0 };
+  sendJSON(res, 200, {
+    enrollment: enr
+      ? { id: enr.id, title: enr.title, status: enr.status, directorName: enr.director_name || null, directorId: enr.director_id }
+      : null,
+    weightedScore: score.weighted,
+    milestones: milestones.map((m) => {
+      const s = bySlug[m.slug];
+      return {
+        slug: m.slug,
+        title: m.title,
+        description: m.description,
+        weight: Number(m.weight),
+        requiresVideo: m.requires_video,
+        templateUrl: m.template_url,
+        rubricSlug: m.rubric_slug,
+        submission: s
+          ? {
+              id: s.submission_id,
+              reviewId: s.id,
+              content: s.content,
+              repoUrl: s.repo_url || null,
+              files: s.files || [],
+              defenseVideoUrl: s.defense_video_url || null,
+              status: s.status,
+              directorNote: s.director_note || null,
+              grade: s.score != null ? Number(s.score) : null,
+              feedback: s.feedback || null,
+              rubric: s.rubric || null,
+            }
+          : null,
+      };
+    }),
+  });
+});
+
+route('POST', '/api/tfm/enroll', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  await pool.query(
+    `INSERT INTO tfm_enrollments (user_id, status) VALUES ($1, 'in_progress')
+     ON CONFLICT (user_id) DO UPDATE SET status = 'in_progress', updated_at = now()`,
+    [user.id],
+  );
+  sendJSON(res, 200, { ok: true });
+});
+
+route('POST', '/api/tfm/milestones/:slug', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const ms = (await pool.query('SELECT * FROM tfm_milestones WHERE slug = $1', [params.slug])).rows[0];
+  if (!ms) return sendJSON(res, 404, { message: 'Hito no encontrado' });
+  const enr = (
+    await pool.query(
+      `INSERT INTO tfm_enrollments (user_id, status) VALUES ($1, 'in_progress')
+       ON CONFLICT (user_id) DO UPDATE SET updated_at = now() RETURNING *`,
+      [user.id],
+    )
+  ).rows[0];
+  const content = String(body.content || '').trim();
+  const files = cleanFiles(body.files);
+  const repoUrl = body.repoUrl && URL_RE.test(String(body.repoUrl).trim()) ? String(body.repoUrl).trim() : null;
+  const videoUrl = body.defenseVideoUrl && URL_RE.test(String(body.defenseVideoUrl).trim()) ? String(body.defenseVideoUrl).trim() : null;
+  if (content.length < 30 && !files.length && !repoUrl) {
+    return sendJSON(res, 400, { message: 'Aporta el documento del hito (texto y/o enlaces).' });
+  }
+  if (ms.requires_video && !videoUrl) return sendJSON(res, 400, { message: 'Este hito requiere el enlace al vídeo de defensa.' });
+
+  const tfmCourse = await findCourseRow('master-tfm');
+  const sub = (
+    await pool.query(
+      `INSERT INTO submissions (user_id, resource_id, course_id, content, kind, repo_url, status)
+       VALUES ($1, NULL, $2, $3, 'tfm', $4, 'submitted') RETURNING id`,
+      [user.id, tfmCourse ? tfmCourse.id : null, content, repoUrl],
+    )
+  ).rows[0];
+  for (const f of files) {
+    await pool.query(`INSERT INTO submission_files (submission_id, label, file_type, url) VALUES ($1,$2,$3,$4)`, [
+      sub.id, f.label, f.file_type, f.url,
+    ]);
+  }
+  await pool.query(
+    `INSERT INTO tfm_milestone_submissions (tfm_id, milestone_slug, submission_id, defense_video_url, status)
+     VALUES ($1, $2, $3, $4, 'submitted')
+     ON CONFLICT (tfm_id, milestone_slug) DO UPDATE SET
+       submission_id = EXCLUDED.submission_id, defense_video_url = EXCLUDED.defense_video_url,
+       status = 'submitted', updated_at = now()`,
+    [enr.id, ms.slug, sub.id, videoUrl],
+  );
+  // Notifica al director si hay uno asignado.
+  if (enr.director_id) {
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, title, message) VALUES ($1, 'grade', 'Hito de TFM para revisar', $2)`,
+      [enr.director_id, `${user.name} entregó "${ms.title}".`],
+    );
+  }
+  sendJSON(res, 200, { ok: true });
+});
+
+route('PUT', '/api/tfm/:tfmId/director', async ({ res, user, params, body }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.tfmId) || !isUuid(body.directorId)) return sendJSON(res, 400, { message: 'Datos inválidos' });
+  const d = (await pool.query(`SELECT role FROM users WHERE id = $1`, [body.directorId])).rows[0];
+  if (!d || !['director_tfm', 'instructor', 'admin'].includes(d.role)) {
+    return sendJSON(res, 400, { message: 'El director debe tener rol director_tfm o instructor.' });
+  }
+  await pool.query(`UPDATE tfm_enrollments SET director_id = $2, updated_at = now() WHERE id = $1`, [params.tfmId, body.directorId]);
+  sendJSON(res, 200, { ok: true });
+});
+
+route('PUT', '/api/tfm/milestones/:subId/review', async ({ res, user, params, body }) => {
+  if (!tfmRole(user)) return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.subId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const row = (
+    await pool.query(
+      `SELECT tms.*, m.rubric_slug, te.user_id AS student_id
+         FROM tfm_milestone_submissions tms
+         JOIN tfm_milestones m ON m.slug = tms.milestone_slug
+         JOIN tfm_enrollments te ON te.id = tms.tfm_id
+        WHERE tms.id = $1`,
+      [params.subId],
+    )
+  ).rows[0];
+  if (!row) return sendJSON(res, 404, { message: 'Entrega de hito no encontrada' });
+  const decision = body.decision === 'approve' ? 'approved' : body.decision === 'changes' ? 'changes_requested' : null;
+  if (!decision) return sendJSON(res, 400, { message: 'decision debe ser "approve" o "changes"' });
+
+  if (decision === 'approved') {
+    const rub = await rubricBySlug(row.rubric_slug);
+    if (!rub || !Array.isArray(body.criteria)) return sendJSON(res, 400, { message: 'Aprobar exige calificar por rúbrica.' });
+    const byKey = new Map(rub.criteria.map((c) => [c.key, c]));
+    let sum = 0;
+    const snap = [];
+    for (const c of body.criteria) {
+      const def = byKey.get(c.key);
+      if (!def) return sendJSON(res, 400, { message: `Criterio desconocido: ${c.key}` });
+      const pts = Number(c.levelPoints);
+      const maxPts = Math.max(...def.levels.map((l) => l.points));
+      if (Number.isNaN(pts) || pts < 0 || pts > maxPts) return sendJSON(res, 400, { message: `Puntos fuera de rango: ${c.key}` });
+      const lvl = def.levels.find((l) => l.points === pts);
+      sum += pts;
+      snap.push({ key: c.key, levelPoints: pts, levelLabel: lvl ? lvl.label : null, comment: c.comment || '' });
+    }
+    const score = Math.round((sum / rub.totalPoints) * 100);
+    await pool.query(
+      `INSERT INTO grades (submission_id, graded_by, score, feedback, rubric, rubric_slug)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (submission_id) DO UPDATE SET score = EXCLUDED.score, feedback = EXCLUDED.feedback,
+         graded_by = EXCLUDED.graded_by, rubric = EXCLUDED.rubric, rubric_slug = EXCLUDED.rubric_slug, graded_at = now()`,
+      [row.submission_id, user.id, score, body.feedback || '', JSON.stringify({ rubricSlug: row.rubric_slug, criteria: snap, computedScore: score }), row.rubric_slug],
+    );
+    await pool.query(`UPDATE submissions SET status = 'graded' WHERE id = $1`, [row.submission_id]);
+  }
+  await pool.query(
+    `UPDATE tfm_milestone_submissions SET status = $2, director_note = $3, updated_at = now() WHERE id = $1`,
+    [params.subId, decision, body.note || null],
+  );
+  await pool.query(
+    `INSERT INTO notifications (user_id, type, title, message) VALUES ($1, 'grade', 'Revisión de hito de TFM', $2)`,
+    [row.student_id, decision === 'approved' ? 'Un hito de tu TFM fue aprobado.' : 'Un hito de tu TFM necesita cambios.'],
+  );
+  const tfmCourse = await findCourseRow('master-tfm');
+  if (tfmCourse) await evaluateTfmCompletion(row.student_id, tfmCourse).catch(() => {});
+  sendJSON(res, 200, { ok: true });
+});
+
 // --- reanudar donde quedó ---
 route('GET', '/api/courses/:id/resume', async ({ res, user, params }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
@@ -1301,15 +1562,36 @@ route('POST', '/api/enrollments', async ({ res, user, body }) => {
 // --- submissions / grades ---
 route('POST', '/api/submissions', async ({ res, user, body }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
-  const { resourceId, courseId, content } = body;
-  if (!content || !content.trim()) return sendJSON(res, 400, { message: 'El contenido es obligatorio' });
+  const { resourceId, courseId, content, repoUrl } = body;
+  const kind = ['text', 'handson', 'tfm'].includes(body.kind) ? body.kind : 'text';
+  const files = cleanFiles(body.files);
+  if ((!content || !content.trim()) && kind === 'text') {
+    return sendJSON(res, 400, { message: 'El contenido es obligatorio' });
+  }
+  if (kind === 'handson' && !files.length && !(repoUrl && URL_RE.test(String(repoUrl).trim()))) {
+    return sendJSON(res, 400, { message: 'Adjunta al menos un enlace (repositorio o artefacto).' });
+  }
   const course = courseId ? await findCourseRow(courseId) : null;
   const { rows } = await pool.query(
-    `INSERT INTO submissions (user_id, resource_id, course_id, content, status)
-     VALUES ($1, $2, $3, $4, 'submitted') RETURNING *`,
-    [user.id, isUuid(resourceId) ? resourceId : null, course ? course.id : null, content],
+    `INSERT INTO submissions (user_id, resource_id, course_id, content, kind, repo_url, status)
+     VALUES ($1, $2, $3, $4, $5, $6, 'submitted') RETURNING *`,
+    [
+      user.id,
+      isUuid(resourceId) ? resourceId : null,
+      course ? course.id : null,
+      (content || '').trim(),
+      kind,
+      repoUrl && URL_RE.test(String(repoUrl).trim()) ? String(repoUrl).trim().slice(0, 2000) : null,
+    ],
   );
-  sendJSON(res, 201, submissionRow({ ...rows[0], student_name: user.name }));
+  const sub = rows[0];
+  for (const f of files) {
+    await pool.query(
+      `INSERT INTO submission_files (submission_id, label, file_type, url) VALUES ($1, $2, $3, $4)`,
+      [sub.id, f.label, f.file_type, f.url],
+    );
+  }
+  sendJSON(res, 201, submissionRow({ ...sub, student_name: user.name, files }));
 });
 
 route('GET', '/api/submissions', async ({ res, user, query }) => {
@@ -1331,7 +1613,8 @@ route('GET', '/api/submissions', async ({ res, user, query }) => {
   const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
   const { rows } = await pool.query(
     `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.rubric, g.rubric_slug, g.llm_suggestion, g.graded_at, g.graded_by,
-            rr.content_json->>'rubricSlug' AS resource_rubric_slug
+            rr.content_json->>'rubricSlug' AS resource_rubric_slug,
+            (SELECT coalesce(json_agg(json_build_object('label',sf.label,'type',sf.file_type,'url',sf.url) ORDER BY sf.created_at), '[]'::json) FROM submission_files sf WHERE sf.submission_id = s.id) AS files
        FROM submissions s JOIN users u ON u.id = s.user_id
        LEFT JOIN grades g ON g.submission_id = s.id
        LEFT JOIN resources rr ON rr.id = s.resource_id

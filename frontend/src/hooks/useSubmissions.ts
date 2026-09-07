@@ -9,6 +9,12 @@ export interface RubricSnapshot {
   gradedBy: string;
 }
 
+export interface SubmissionFile {
+  label: string;
+  type: string;
+  url: string;
+}
+
 export interface Submission {
   id: string;
   resourceId: string;
@@ -16,6 +22,9 @@ export interface Submission {
   studentId: string;
   studentName: string;
   content: string;
+  kind?: 'text' | 'handson' | 'tfm';
+  repoUrl?: string;
+  files?: SubmissionFile[];
   status: 'draft' | 'submitted' | 'graded';
   submittedAt: string;
   grade?: number;
@@ -50,16 +59,26 @@ export const useCourseSubmissions = (courseId: string) => {
   });
 };
 
+export interface CreateSubmissionInput {
+  resourceId: string;
+  courseId: string;
+  content?: string;
+  kind?: 'text' | 'handson' | 'tfm';
+  repoUrl?: string;
+  files?: Array<{ label: string; type: string; url: string }>;
+}
+
 export const useCreateSubmission = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { resourceId: string; courseId: string; content: string }) => {
+    mutationFn: async (data: CreateSubmissionInput) => {
       const response = await api.post('/submissions', data);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['submissions'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ['course'] });
+    },
   });
 };
 

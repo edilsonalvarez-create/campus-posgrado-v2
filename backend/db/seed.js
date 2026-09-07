@@ -52,6 +52,15 @@ function loadItemBanks() {
 const ITEM_BANKS = loadItemBanks();
 const REVISIONS = tryRequire('revisions.json') || {};
 
+// Tracks hands-on (Fase 2): sustituyen el entregable de las asignaturas técnicas
+// por una práctica computacional real. handson/master-{iii,vi,ix,x}.js
+const HANDSON = {};
+for (const n of ['iii', 'vi', 'ix', 'x']) {
+  const h = tryRequire(`handson/master-${n}.js`);
+  if (h) HANDSON[h.scopeSlug] = h;
+}
+const TFM_SPEC = tryRequire('tfm.js');
+
 // Config de examen por asignatura: apunta al banco de ítems y fija intentos/cooldown.
 function examConfigFor(slug) {
   const bank = ITEM_BANKS.find((b) => b.scopeSlug === slug);
@@ -418,18 +427,34 @@ async function main() {
       }
       const proyecto = asig.slug === 'master-tfm' ? tm : PROYECTOS_PRACTICOS[asig.slug];
       if (proyecto) {
+        const hs = HANDSON[asig.slug]; // track hands-on (III/VI/IX/X)
         modules.push({
-          title: asig.slug === 'master-tfm' ? 'Entrega del TFM' : 'Proyecto práctico',
-          subtitle: 'Sube tu entrega para evaluación del instructor',
+          title: asig.slug === 'master-tfm' ? 'Entrega del TFM' : hs ? 'Práctica computacional' : 'Proyecto práctico',
+          subtitle: hs
+            ? 'Práctica hands-on alineada a la ruta oficial. Entrega repositorio/notebook + artefactos.'
+            : 'Sube tu entrega para evaluación del instructor',
           resources: [{
-            title: asig.slug === 'master-tfm' ? 'Entrega: Proyecto Fin de Programa' : 'Entrega: proyecto práctico de la asignatura',
+            title:
+              asig.slug === 'master-tfm'
+                ? 'Entrega: Proyecto Fin de Programa'
+                : hs
+                  ? `Entrega: ${hs.title}`
+                  : 'Entrega: proyecto práctico de la asignatura',
             type: 'project',
             content_json: {
               contenidos: asig.contenidos,
-              deliverable: proyecto.deliverable || null,
+              deliverable: (hs && hs.deliverable) || proyecto.deliverable || null,
               practice: proyecto.practice || null,
               mastery: proyecto.mastery || null,
-              rubricSlug: projectRubricSlug(asig.slug),
+              rubricSlug: hs ? hs.rubricSlug : projectRubricSlug(asig.slug),
+              track: hs ? 'handson' : undefined,
+              handson: hs
+                ? {
+                    referencePractice: hs.referencePractice,
+                    requiredArtifacts: hs.requiredArtifacts || [],
+                    notebookTemplateUrl: hs.notebookTemplateUrl || null,
+                  }
+                : undefined,
             },
           }],
         });
@@ -663,6 +688,21 @@ async function main() {
             JSON.stringify(q.explanations || []), q.difficulty || 'media', q.skillTag || null,
             q.cognitive || 'aplicacion', q.source || 'authored',
           ],
+        );
+      }
+    }
+
+    // ---- 6b. Hitos del TFM (Fase 2) ----
+    if (TFM_SPEC && Array.isArray(TFM_SPEC.milestones)) {
+      for (const ms of TFM_SPEC.milestones) {
+        await client.query(
+          `INSERT INTO tfm_milestones (slug, order_index, title, description, rubric_slug, weight, requires_video, template_url)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (slug) DO UPDATE SET
+             order_index = EXCLUDED.order_index, title = EXCLUDED.title, description = EXCLUDED.description,
+             rubric_slug = EXCLUDED.rubric_slug, weight = EXCLUDED.weight,
+             requires_video = EXCLUDED.requires_video, template_url = EXCLUDED.template_url`,
+          [ms.slug, ms.orderIndex, ms.title, ms.description || '', ms.rubricSlug, ms.weight, !!ms.requiresVideo, ms.templateUrl || null],
         );
       }
     }

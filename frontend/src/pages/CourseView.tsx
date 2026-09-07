@@ -8,6 +8,8 @@ import { Markdown } from '../components/Markdown'
 import { QuizView } from '../components/QuizView'
 import { ExamRunner } from '../components/ExamRunner'
 import { RubricView } from '../components/RubricView'
+import { HandsOnSubmission } from '../components/HandsOnSubmission'
+import { TfmMilestones } from '../components/TfmMilestones'
 import { LessonFormative } from '../components/LessonFormative'
 import { SubmissionForm } from '../components/SubmissionForm'
 import { DiagramView } from '../components/DiagramView'
@@ -56,10 +58,45 @@ const SUBMISSION_STATUS_LABEL: Record<string, string> = {
   draft: 'Borrador',
 }
 
-function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId: string }) {
+function ProjectDelivery({ resource, courseId, courseSlug }: { resource: Resource; courseId: string; courseSlug?: string }) {
   const cj = resource.contentJson || {}
   const { data: submissions = [] } = useSubmissions({ courseId })
   const mine = submissions.filter((s) => s.resourceId === resource.id)
+
+  // TFM: proceso de 4 hitos con director, no un textarea.
+  if (courseSlug === 'master-tfm') {
+    return (
+      <div>
+        {cj.deliverable && (
+          <div className="mb-5 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-r text-sm text-gray-700 dark:text-gray-300">
+            {cj.deliverable}
+          </div>
+        )}
+        <TfmMilestones />
+      </div>
+    )
+  }
+
+  // Tracks hands-on (III/VI/IX/X): entrega de repositorio + artefactos.
+  if (cj.track === 'handson' && cj.handson) {
+    return (
+      <div>
+        {cj.deliverable && (
+          <div className="mb-5 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-r">
+            <p className="font-semibold text-gray-900 dark:text-white mb-1">Qué debes entregar</p>
+            <p className="text-gray-700 dark:text-gray-300 text-sm">{cj.deliverable}</p>
+          </div>
+        )}
+        {cj.mastery && (
+          <div className="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded text-sm text-gray-700 dark:text-gray-300">
+            <span className="font-semibold text-gray-900 dark:text-white">Criterio de dominio. </span>
+            {cj.mastery}
+          </div>
+        )}
+        <HandsOnSubmission resource={resource} courseId={courseId} spec={cj.handson} rubricSlug={cj.rubricSlug} />
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -136,7 +173,7 @@ function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId:
   )
 }
 
-function ResourceBody({ resource, courseId }: { resource: Resource; courseId: string }) {
+function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; courseId: string; courseSlug?: string }) {
   const cj = resource.contentJson || {}
 
   if (resource.type === 'exam') {
@@ -155,7 +192,7 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
   }
 
   if (resource.type === 'project') {
-    return <ProjectDelivery resource={resource} courseId={courseId} />
+    return <ProjectDelivery resource={resource} courseId={courseId} courseSlug={courseSlug} />
   }
 
   if (resource.type === 'lesson' && Array.isArray(cj.body) && cj.body.length) {
@@ -469,7 +506,7 @@ export default function CourseView() {
                 </a>
               )}
 
-              <ResourceBody resource={selected} courseId={course.id} />
+              <ResourceBody resource={selected} courseId={course.id} courseSlug={course.slug} />
 
               <div className="mt-8 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4">
                 <button
