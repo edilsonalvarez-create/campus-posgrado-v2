@@ -46,8 +46,8 @@ function App() {
               <Route path="/master-iep" element={<Suspense fallback={<LoadingSpinner />}><MasterIEPPage /></Suspense>} />
               <Route path="/native-courses" element={<Suspense fallback={<LoadingSpinner />}><NativeCoursesPage /></Suspense>} />
               <Route path="/native-courses/:courseId" element={<Suspense fallback={<LoadingSpinner />}><NativeCoursesPage /></Suspense>} />
-              <Route path="/courses/:courseId" element={<Suspense fallback={<LoadingSpinner />}><CourseView /></Suspense>} />
               <Route path="/courses/:courseId/submissions/:resourceId?" element={<Suspense fallback={<LoadingSpinner />}><SubmissionsPage /></Suspense>} />
+              <Route path="/courses/:courseId/:resourceId?" element={<Suspense fallback={<LoadingSpinner />}><CourseView /></Suspense>} />
               <Route path="/instructor" element={<Suspense fallback={<LoadingSpinner />}><InstructorDashboard /></Suspense>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>

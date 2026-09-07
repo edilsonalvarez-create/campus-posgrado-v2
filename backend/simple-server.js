@@ -5,6 +5,7 @@ const url = require('url');
 const crypto = require('crypto');
 const pool = require('./db/pool');
 const runMigrations = require('./db/migrate');
+const llm = require('./lib/llm');
 
 const PORT = Number(process.env.PORT) || 3001;
 let dbReady = false;
@@ -172,6 +173,7 @@ async function loadCourseDetail(courseRow, userId, role) {
     const resRows = (
       await pool.query(
         `SELECT r.id, r.module_id, r.title, r.type, r.url, r.source, r.note, r.content, r.content_json, r.order_index,
+                r.revised_at, r.revision_note,
                 (p.resource_id IS NOT NULL) AS completed
            FROM resources r
            JOIN modules m ON m.id = r.module_id
@@ -192,6 +194,8 @@ async function loadCourseDetail(courseRow, userId, role) {
         content: r.content || undefined,
         contentJson: sanitizeResourceContent(r.type, r.content_json, role) || undefined,
         completed: r.completed,
+        revisedAt: r.revised_at || undefined,
+        revisionNote: r.revision_note || undefined,
         order: r.order_index,
       });
     }
@@ -250,6 +254,9 @@ function submissionRow(r) {
     submittedAt: r.submitted_at,
     grade: r.score != null ? Number(r.score) : undefined,
     feedback: r.feedback || undefined,
+    rubric: r.rubric || undefined,
+    rubricSlug: r.rubric_slug || r.resource_rubric_slug || undefined,
+    llmSuggestion: r.llm_suggestion || undefined,
     gradedAt: r.graded_at || undefined,
     gradedBy: r.graded_by || undefined,
   };
@@ -314,12 +321,17 @@ async function evaluateCourseCompletion(userId, courseId) {
     ).rowCount > 0;
   let examOk = false;
   if (hasExam) {
-    // Fase 0: se comprueba contra quiz_responses. Fase 1 lo reemplaza por exam_attempts.
+    // Aprobado por el motor de intentos (Fase 1) O por el registro legado.
     const passed = (
       await pool.query(
-        `SELECT bool_or(qr.passed) AS ok FROM quiz_responses qr
-           JOIN resources r ON r.id = qr.resource_id JOIN modules m ON m.id = r.module_id
-          WHERE qr.user_id = $1 AND m.course_id = $2 AND r.type = 'exam'`,
+        `SELECT
+           bool_or(ea.passed) FILTER (WHERE ea.id IS NOT NULL)
+           OR bool_or(qr.passed) FILTER (WHERE qr.id IS NOT NULL) AS ok
+         FROM resources r
+         JOIN modules m ON m.id = r.module_id
+         LEFT JOIN exam_attempts ea ON ea.resource_id = r.id AND ea.user_id = $1 AND ea.status = 'submitted'
+         LEFT JOIN quiz_responses qr ON qr.resource_id = r.id AND qr.user_id = $1
+        WHERE m.course_id = $2 AND r.type = 'exam'`,
         [userId, courseId],
       )
     ).rows[0];
@@ -407,6 +419,116 @@ async function evaluateTrackAndProgramme(userId, programSlug, track) {
       );
     }
   }
+}
+
+// ---------- evaluación: quiz formativo, actividad, motor de exámenes ----------
+const EXAM_DEFAULTS = {
+  maxAttempts: 3,
+  cooldownHours: 24,
+  drawSize: 15,
+  durationMinutes: 40,
+  passThreshold: 70,
+};
+function getExamConfig(cj) {
+  return { ...EXAM_DEFAULTS, ...((cj && cj.examConfig) || {}) };
+}
+
+// Completado real de lección: actividad entregada AND quiz formativo aprobado.
+async function recomputeLessonProgress(userId, resourceId) {
+  const r = (
+    await pool.query(`SELECT content_json FROM resources WHERE id = $1 AND type = 'lesson'`, [resourceId])
+  ).rows[0];
+  if (!r) return;
+  const cj = r.content_json || {};
+  const hasQuiz = Array.isArray(cj.quiz) && cj.quiz.length > 0;
+  const threshold = typeof cj.formativeThreshold === 'number' ? cj.formativeThreshold : 0.6;
+  const act = await pool.query(
+    `SELECT 1 FROM activity_submissions WHERE user_id = $1 AND resource_id = $2`,
+    [userId, resourceId],
+  );
+  const hasActivity = !!(cj.exercise && cj.exercise.text);
+  const fr = (
+    await pool.query(
+      `SELECT score, max_score FROM formative_responses WHERE user_id = $1 AND resource_id = $2`,
+      [userId, resourceId],
+    )
+  ).rows[0];
+  const activityOk = !hasActivity || act.rowCount > 0;
+  const quizOk = !hasQuiz || (fr && fr.max_score > 0 && fr.score / fr.max_score >= threshold);
+  if (activityOk && quizOk) {
+    await pool.query(
+      `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
+       ON CONFLICT (user_id, resource_id) DO UPDATE SET completed = true, completed_at = now()`,
+      [userId, resourceId],
+    );
+    const cid = (
+      await pool.query(`SELECT m.course_id FROM resources r JOIN modules m ON m.id = r.module_id WHERE r.id = $1`, [resourceId])
+    ).rows[0];
+    if (cid) await evaluateCourseCompletion(userId, cid.course_id).catch(() => {});
+  } else {
+    await pool.query(`DELETE FROM progress WHERE user_id = $1 AND resource_id = $2`, [userId, resourceId]);
+  }
+}
+
+// Sorteo de preguntas para un intento de examen: round-robin por skill_tag para
+// cubrir todos los contenidos oficiales, con relleno aleatorio hasta drawSize.
+async function drawExamQuestions(bankId, drawSize) {
+  const all = (
+    await pool.query(
+      `SELECT id, skill_tag FROM item_bank_questions WHERE bank_id = $1 AND active ORDER BY random()`,
+      [bankId],
+    )
+  ).rows;
+  if (!all.length) return [];
+  const byTag = new Map();
+  for (const q of all) {
+    const t = q.skill_tag || '_';
+    if (!byTag.has(t)) byTag.set(t, []);
+    byTag.get(t).push(q.id);
+  }
+  const picked = [];
+  const tags = [...byTag.keys()];
+  let i = 0;
+  while (picked.length < Math.min(drawSize, all.length)) {
+    const bucket = byTag.get(tags[i % tags.length]);
+    if (bucket && bucket.length) picked.push(bucket.shift());
+    i += 1;
+    if (i > drawSize * tags.length + all.length) break;
+  }
+  return picked.slice(0, drawSize);
+}
+
+async function rubricBySlug(slug) {
+  const rub = (await pool.query('SELECT * FROM rubrics WHERE slug = $1', [slug])).rows[0];
+  if (!rub) return null;
+  const crit = (
+    await pool.query('SELECT * FROM rubric_criteria WHERE rubric_id = $1 ORDER BY order_index', [rub.id])
+  ).rows;
+  const levels = crit.length
+    ? (
+        await pool.query(
+          `SELECT * FROM rubric_levels WHERE criterion_id = ANY($1) ORDER BY order_index`,
+          [crit.map((c) => c.id)],
+        )
+      ).rows
+    : [];
+  return {
+    slug: rub.slug,
+    version: rub.version,
+    title: rub.title,
+    scope: rub.scope,
+    passThreshold: Number(rub.pass_threshold),
+    totalPoints: Number(rub.total_points),
+    criteria: crit.map((c) => ({
+      key: c.key,
+      title: c.title,
+      description: c.description,
+      weight: Number(c.weight),
+      levels: levels
+        .filter((l) => l.criterion_id === c.id)
+        .map((l) => ({ label: l.label, points: Number(l.points), descriptor: l.descriptor })),
+    })),
+  };
 }
 
 // ---------- rutas ----------
@@ -567,10 +689,12 @@ route('GET', '/api/courses/:id/submissions', async ({ res, user, params }) => {
   if (!course) return sendJSON(res, 404, { message: 'Course not found' });
   const ownOnly = user.role === 'student';
   const { rows } = await pool.query(
-    `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.graded_at, g.graded_by
+    `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.rubric, g.rubric_slug, g.llm_suggestion, g.graded_at, g.graded_by,
+              rr.content_json->>'rubricSlug' AS resource_rubric_slug
        FROM submissions s
        JOIN users u ON u.id = s.user_id
        LEFT JOIN grades g ON g.submission_id = s.id
+       LEFT JOIN resources rr ON rr.id = s.resource_id
       WHERE s.course_id = $1 ${ownOnly ? 'AND s.user_id = $2' : ''}
       ORDER BY s.submitted_at DESC`,
     ownOnly ? [course.id, user.id] : [course.id],
@@ -729,19 +853,426 @@ route('GET', '/api/progress', async ({ res, user }) => {
   });
 });
 
+// Tipos de recurso que el estudiante SÍ puede marcar/desmarcar a mano.
+// Las lecciones se completan entregando la actividad y aprobando el quiz
+// (recomputeLessonProgress); los exámenes y proyectos, al aprobarlos.
+const MANUAL_PROGRESS_TYPES = new Set(['reading', 'video', 'book', 'docs', 'norma', 'dataset', 'tool', 'cert', 'lecture', 'exercise']);
+
 route('POST', '/api/progress', async ({ res, user, body }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
   const { resourceId, completed = true } = body;
   if (!isUuid(resourceId)) return sendJSON(res, 400, { message: 'resourceId inválido' });
+  const rr = (
+    await pool.query(
+      `SELECT r.type, r.content_json, m.course_id, c.meta FROM resources r
+         JOIN modules m ON m.id = r.module_id
+         JOIN courses c ON c.id = m.course_id
+        WHERE r.id = $1`,
+      [resourceId],
+    )
+  ).rows[0];
+  if (!rr) return sendJSON(res, 404, { message: 'Recurso no encontrado' });
+  const cjr = rr.content_json || {};
+  const lessonHasFormative =
+    rr.type === 'lesson' && ((Array.isArray(cjr.quiz) && cjr.quiz.length > 0) || (cjr.exercise && cjr.exercise.text));
+  if (!MANUAL_PROGRESS_TYPES.has(rr.type) && !(rr.type === 'lesson' && !lessonHasFormative)) {
+    return sendJSON(res, 409, {
+      message:
+        rr.type === 'lesson'
+          ? 'La lección se completa entregando la actividad y aprobando el quiz de comprensión.'
+          : 'Este recurso se completa al aprobarlo, no manualmente.',
+    });
+  }
+  // Gate de prerrequisito: si el curso tiene asignatura previa sin terminar, no se avanza.
+  const prereq = rr.meta && rr.meta.prerequisiteSlug;
+  if (prereq) {
+    const pct = (
+      await pool.query(
+        `SELECT
+           (SELECT count(*) FROM resources r JOIN modules m ON m.id = r.module_id WHERE m.course_id = c.id) AS total,
+           (SELECT count(*) FROM progress p JOIN resources r ON r.id = p.resource_id JOIN modules m ON m.id = r.module_id
+              WHERE m.course_id = c.id AND p.user_id = $2 AND p.completed) AS done
+         FROM courses c WHERE c.slug = $1`,
+        [prereq, user.id],
+      )
+    ).rows[0];
+    if (pct && Number(pct.total) > 0 && Number(pct.done) < Number(pct.total)) {
+      return sendJSON(res, 403, { message: `Completa "${prereq}" para avanzar en esta asignatura.` });
+    }
+  }
   if (completed) {
     await pool.query(
       `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
        ON CONFLICT (user_id, resource_id) DO UPDATE SET completed = true, completed_at = now()`,
       [user.id, resourceId],
     );
+    await evaluateCourseCompletion(user.id, rr.course_id).catch(() => {});
   } else {
     await pool.query('DELETE FROM progress WHERE user_id = $1 AND resource_id = $2', [user.id, resourceId]);
   }
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- quiz formativo (por lección) + entrega de actividad ---
+route('GET', '/api/formative/:resourceId', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.resourceId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const fr = (
+    await pool.query(
+      `SELECT answers, score, max_score, passed, attempts FROM formative_responses
+        WHERE user_id = $1 AND resource_id = $2`,
+      [user.id, params.resourceId],
+    )
+  ).rows[0];
+  const act = (
+    await pool.query(
+      `SELECT content, updated_at FROM activity_submissions WHERE user_id = $1 AND resource_id = $2`,
+      [user.id, params.resourceId],
+    )
+  ).rows[0];
+  sendJSON(res, 200, {
+    formative: fr
+      ? {
+          answers: fr.answers,
+          score: Number(fr.score),
+          maxScore: Number(fr.max_score),
+          passed: fr.passed,
+          attempts: fr.attempts,
+        }
+      : null,
+    activity: act ? { content: act.content, updatedAt: act.updated_at } : null,
+  });
+});
+
+route('POST', '/api/formative/:resourceId', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.resourceId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const r = (
+    await pool.query(`SELECT content_json FROM resources WHERE id = $1 AND type = 'lesson'`, [params.resourceId])
+  ).rows[0];
+  if (!r) return sendJSON(res, 404, { message: 'Lección no encontrada' });
+  const quiz = Array.isArray((r.content_json || {}).quiz) ? r.content_json.quiz : [];
+  if (!quiz.length) return sendJSON(res, 400, { message: 'La lección no tiene quiz' });
+  const answers = Array.isArray(body.answers) ? body.answers : [];
+  let correct = 0;
+  const detail = quiz.map((q, i) => {
+    const given = answers.find((a) => String(a.i) === String(i));
+    const choice = given ? Number(given.choice) : null;
+    const ok = choice === Number(q.a);
+    if (ok) correct += 1;
+    return { i, choice, correct: ok, correctIndex: Number(q.a), why: Array.isArray(q.why) ? q.why : [] };
+  });
+  const maxScore = quiz.length;
+  const threshold =
+    typeof (r.content_json || {}).formativeThreshold === 'number' ? r.content_json.formativeThreshold : 0.6;
+  const passed = maxScore > 0 && correct / maxScore >= threshold;
+  await pool.query(
+    `INSERT INTO formative_responses (user_id, resource_id, answers, score, max_score, passed, attempts)
+     VALUES ($1, $2, $3, $4, $5, $6, 1)
+     ON CONFLICT (user_id, resource_id) DO UPDATE SET
+       answers = EXCLUDED.answers, score = EXCLUDED.score, max_score = EXCLUDED.max_score,
+       passed = EXCLUDED.passed, attempts = formative_responses.attempts + 1, updated_at = now()`,
+    [user.id, params.resourceId, JSON.stringify(answers), correct, maxScore, passed],
+  );
+  await recomputeLessonProgress(user.id, params.resourceId);
+  sendJSON(res, 200, { score: correct, maxScore, passed, detail });
+});
+
+route('POST', '/api/activity/:resourceId', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.resourceId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const content = String(body.content || '').trim();
+  if (content.length < 20) return sendJSON(res, 400, { message: 'Escribe tu respuesta a la actividad (mín. 20 caracteres).' });
+  const r = await pool.query(`SELECT 1 FROM resources WHERE id = $1 AND type = 'lesson'`, [params.resourceId]);
+  if (!r.rowCount) return sendJSON(res, 404, { message: 'Lección no encontrada' });
+  await pool.query(
+    `INSERT INTO activity_submissions (user_id, resource_id, content) VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, resource_id) DO UPDATE SET content = EXCLUDED.content, updated_at = now()`,
+    [user.id, params.resourceId, content],
+  );
+  await recomputeLessonProgress(user.id, params.resourceId);
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- motor de exámenes (banco de ítems, intentos limitados, cooldown) ---
+route('GET', '/api/exams/:resourceId/status', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.resourceId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const r = (
+    await pool.query(
+      `SELECT r.content_json, m.course_id FROM resources r JOIN modules m ON m.id = r.module_id
+        WHERE r.id = $1 AND r.type = 'exam'`,
+      [params.resourceId],
+    )
+  ).rows[0];
+  if (!r) return sendJSON(res, 404, { message: 'Examen no encontrado' });
+  const cfg = getExamConfig(r.content_json);
+  const attempts = (
+    await pool.query(
+      `SELECT attempt_no, score, passed, status, submitted_at, expires_at
+         FROM exam_attempts WHERE user_id = $1 AND resource_id = $2 ORDER BY attempt_no`,
+      [user.id, params.resourceId],
+    )
+  ).rows;
+  const submitted = attempts.filter((a) => a.status === 'submitted');
+  const inProgress = attempts.find((a) => a.status === 'in_progress' && new Date(a.expires_at) > new Date());
+  const last = submitted[submitted.length - 1];
+  let cooldownUntil = null;
+  if (last && !submitted.some((a) => a.passed)) {
+    const until = new Date(new Date(last.submitted_at).getTime() + cfg.cooldownHours * 3600 * 1000);
+    if (until > new Date()) cooldownUntil = until.toISOString();
+  }
+  const passed = submitted.some((a) => a.passed);
+  let reviewItems = [];
+  if (last && !passed) reviewItems = await weakSkillLessons(user.id, r.course_id, params.resourceId);
+  sendJSON(res, 200, {
+    hasBank: !!(r.content_json && r.content_json.examConfig && r.content_json.examConfig.bankSlug),
+    attemptsUsed: submitted.length,
+    maxAttempts: cfg.maxAttempts,
+    passThreshold: cfg.passThreshold,
+    drawSize: cfg.drawSize,
+    durationMinutes: cfg.durationMinutes,
+    lastScore: last ? Number(last.score) : null,
+    passed,
+    cooldownUntil,
+    inProgressAttemptId: inProgress ? undefined : undefined, // no exponemos id; se reanuda en POST
+    canStart: !passed && submitted.length < cfg.maxAttempts && !cooldownUntil,
+    reviewItems,
+  });
+});
+
+async function weakSkillLessons(userId, courseId, examResourceId) {
+  const rows = (
+    await pool.query(
+      `SELECT skill_tag, correct, total FROM skill_mastery
+        WHERE user_id = $1 AND course_id = $2 AND total > 0
+        ORDER BY (correct::float / total) ASC LIMIT 3`,
+      [userId, courseId],
+    )
+  ).rows;
+  if (!rows.length) return [];
+  const tags = rows.map((x) => x.skill_tag);
+  const lessons = (
+    await pool.query(
+      `SELECT r.id, r.title, r.content_json->>'contenidoOficial' AS skill
+         FROM resources r JOIN modules m ON m.id = r.module_id
+        WHERE m.course_id = $1 AND r.type = 'lesson' AND r.content_json->>'contenidoOficial' = ANY($2)`,
+      [courseId, tags],
+    )
+  ).rows;
+  return lessons.map((l) => ({ resourceId: l.id, title: l.title, skillTag: l.skill }));
+}
+
+route('POST', '/api/exams/:resourceId/attempts', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.resourceId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const r = (
+    await pool.query(
+      `SELECT r.content_json, r.title, m.course_id FROM resources r JOIN modules m ON m.id = r.module_id
+        WHERE r.id = $1 AND r.type = 'exam'`,
+      [params.resourceId],
+    )
+  ).rows[0];
+  if (!r) return sendJSON(res, 404, { message: 'Examen no encontrado' });
+  const cfg = getExamConfig(r.content_json);
+  const bankSlug = r.content_json && r.content_json.examConfig && r.content_json.examConfig.bankSlug;
+  if (!bankSlug) return sendJSON(res, 409, { code: 'NO_BANK', message: 'Este examen aún no tiene banco de ítems configurado.' });
+  const bank = (await pool.query('SELECT id FROM item_banks WHERE slug = $1', [bankSlug])).rows[0];
+  if (!bank) return sendJSON(res, 409, { code: 'NO_BANK', message: 'Banco de ítems no encontrado.' });
+
+  const attempts = (
+    await pool.query(
+      `SELECT * FROM exam_attempts WHERE user_id = $1 AND resource_id = $2 ORDER BY attempt_no`,
+      [user.id, params.resourceId],
+    )
+  ).rows;
+  const inProgress = attempts.find((a) => a.status === 'in_progress');
+  if (inProgress) {
+    if (new Date(inProgress.expires_at) > new Date()) {
+      const qs = await loadAttemptQuestions(inProgress.question_ids);
+      return sendJSON(res, 200, {
+        attemptId: inProgress.id,
+        attemptNo: inProgress.attempt_no,
+        expiresAt: inProgress.expires_at,
+        durationMinutes: cfg.durationMinutes,
+        questions: qs,
+        resumed: true,
+      });
+    }
+    await pool.query(`UPDATE exam_attempts SET status = 'expired' WHERE id = $1`, [inProgress.id]);
+  }
+  const submitted = attempts.filter((a) => a.status === 'submitted');
+  if (submitted.some((a) => a.passed)) return sendJSON(res, 409, { code: 'ALREADY_PASSED', message: 'Ya aprobaste este examen.' });
+  if (submitted.length >= cfg.maxAttempts) return sendJSON(res, 403, { code: 'MAX_ATTEMPTS', message: 'Agotaste los intentos.' });
+  const last = submitted[submitted.length - 1];
+  if (last) {
+    const until = new Date(new Date(last.submitted_at).getTime() + cfg.cooldownHours * 3600 * 1000);
+    if (until > new Date()) {
+      return sendJSON(res, 429, { code: 'COOLDOWN', cooldownUntil: until.toISOString(), message: 'Debes esperar antes de reintentar.' });
+    }
+  }
+  const qids = await drawExamQuestions(bank.id, cfg.drawSize);
+  if (!qids.length) return sendJSON(res, 409, { code: 'EMPTY_BANK', message: 'El banco de ítems está vacío.' });
+  const attemptNo = (attempts.length ? Math.max(...attempts.map((a) => a.attempt_no)) : 0) + 1;
+  const expiresAt = new Date(Date.now() + cfg.durationMinutes * 60 * 1000).toISOString();
+  const ins = await pool.query(
+    `INSERT INTO exam_attempts (user_id, resource_id, attempt_no, question_ids, expires_at)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [user.id, params.resourceId, attemptNo, JSON.stringify(qids), expiresAt],
+  );
+  await pool.query(
+    `INSERT INTO learning_events (user_id, course_id, resource_id, event_type, payload)
+     VALUES ($1, $2, $3, 'exam_start', $4)`,
+    [user.id, r.course_id, params.resourceId, JSON.stringify({ attemptNo })],
+  ).catch(() => {});
+  sendJSON(res, 200, {
+    attemptId: ins.rows[0].id,
+    attemptNo,
+    expiresAt,
+    durationMinutes: cfg.durationMinutes,
+    questions: await loadAttemptQuestions(qids),
+    resumed: false,
+  });
+});
+
+async function loadAttemptQuestions(qids) {
+  const ids = Array.isArray(qids) ? qids : [];
+  if (!ids.length) return [];
+  const rows = (
+    await pool.query(
+      `SELECT id, stem, options FROM item_bank_questions WHERE id = ANY($1)`,
+      [ids],
+    )
+  ).rows;
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids.filter((id) => byId.has(id)).map((id) => {
+    const q = byId.get(id);
+    return { id: q.id, stem: q.stem, options: q.options };
+  });
+}
+
+route('POST', '/api/exams/attempts/:attemptId', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.attemptId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const at = (
+    await pool.query(`SELECT * FROM exam_attempts WHERE id = $1 AND user_id = $2`, [params.attemptId, user.id])
+  ).rows[0];
+  if (!at) return sendJSON(res, 404, { message: 'Intento no encontrado' });
+  if (at.status !== 'in_progress') return sendJSON(res, 409, { code: 'NOT_IN_PROGRESS', message: 'Este intento ya se cerró.' });
+  const expired = new Date(at.expires_at) <= new Date();
+
+  const rmeta = (
+    await pool.query(
+      `SELECT r.content_json, m.course_id FROM resources r JOIN modules m ON m.id = r.module_id WHERE r.id = $1`,
+      [at.resource_id],
+    )
+  ).rows[0];
+  const cfg = getExamConfig(rmeta && rmeta.content_json);
+  const qids = Array.isArray(at.question_ids) ? at.question_ids : [];
+  const qrows = (
+    await pool.query(
+      `SELECT id, correct_index, skill_tag FROM item_bank_questions WHERE id = ANY($1)`,
+      [qids.length ? qids : ['00000000-0000-0000-0000-000000000000']],
+    )
+  ).rows;
+  const keyById = new Map(qrows.map((q) => [q.id, q]));
+  const answers = Array.isArray(body.answers) ? body.answers : [];
+  let correct = 0;
+  const perSkill = new Map();
+  for (const qid of qids) {
+    const k = keyById.get(qid);
+    if (!k) continue;
+    const given = answers.find((a) => String(a.questionId) === String(qid));
+    const choice = given ? Number(given.choice) : null;
+    const ok = !expired && choice === Number(k.correct_index);
+    if (ok) correct += 1;
+    const tag = k.skill_tag || '_';
+    const s = perSkill.get(tag) || { correct: 0, total: 0 };
+    s.total += 1;
+    if (ok) s.correct += 1;
+    perSkill.set(tag, s);
+  }
+  const score = qids.length ? Math.round((correct / qids.length) * 100) : 0;
+  const passed = !expired && score >= cfg.passThreshold;
+  await pool.query(
+    `UPDATE exam_attempts SET answers = $2, score = $3, passed = $4,
+       status = $5, submitted_at = now() WHERE id = $1`,
+    [at.id, JSON.stringify(answers), score, passed, expired ? 'expired' : 'submitted'],
+  );
+  for (const [tag, s] of perSkill) {
+    if (tag === '_') continue;
+    await pool.query(
+      `INSERT INTO skill_mastery (user_id, course_id, skill_tag, correct, total)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, course_id, skill_tag) DO UPDATE SET
+         correct = skill_mastery.correct + EXCLUDED.correct,
+         total = skill_mastery.total + EXCLUDED.total, last_seen = now()`,
+      [user.id, rmeta.course_id, tag, s.correct, s.total],
+    );
+  }
+  await pool.query(
+    `INSERT INTO learning_events (user_id, course_id, resource_id, event_type, payload)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [user.id, rmeta.course_id, at.resource_id, passed ? 'exam_submit' : 'exam_fail', JSON.stringify({ score })],
+  ).catch(() => {});
+  if (passed) {
+    await pool.query(
+      `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
+       ON CONFLICT (user_id, resource_id) DO UPDATE SET completed = true, completed_at = now()`,
+      [user.id, at.resource_id],
+    );
+    await evaluateCourseCompletion(user.id, rmeta.course_id).catch(() => {});
+  }
+  const reviewItems = passed ? [] : await weakSkillLessons(user.id, rmeta.course_id, at.resource_id);
+  sendJSON(res, 200, { score, passed, correct, total: qids.length, expired, reviewItems });
+});
+
+// --- rúbricas ---
+route('GET', '/api/rubrics/:slug', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const rub = await rubricBySlug(params.slug);
+  if (!rub) return sendJSON(res, 404, { message: 'Rúbrica no encontrada' });
+  sendJSON(res, 200, rub);
+});
+
+// --- reanudar donde quedó ---
+route('GET', '/api/courses/:id/resume', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const course = await findCourseRow(params.id);
+  if (!course) return sendJSON(res, 404, { message: 'Course not found' });
+  const rp = (
+    await pool.query(
+      `SELECT resource_id FROM resume_positions WHERE user_id = $1 AND course_id = $2`,
+      [user.id, course.id],
+    )
+  ).rows[0];
+  sendJSON(res, 200, { resourceId: rp ? rp.resource_id : null });
+});
+
+route('PUT', '/api/courses/:id/resume', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const course = await findCourseRow(params.id);
+  if (!course || !isUuid(body.resourceId)) return sendJSON(res, 400, { message: 'Datos inválidos' });
+  await pool.query(
+    `INSERT INTO resume_positions (user_id, course_id, resource_id) VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, course_id) DO UPDATE SET resource_id = EXCLUDED.resource_id, updated_at = now()`,
+    [user.id, course.id, body.resourceId],
+  );
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- eventos de aprendizaje (fire-and-forget; base de la analítica de Fase 3) ---
+route('POST', '/api/events', async ({ res, user, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const type = String(body.eventType || '').slice(0, 40);
+  if (!type) return sendJSON(res, 400, { message: 'eventType requerido' });
+  await pool
+    .query(
+      `INSERT INTO learning_events (user_id, resource_id, event_type, payload)
+       VALUES ($1, $2, $3, $4)`,
+      [user.id, isUuid(body.resourceId) ? body.resourceId : null, type, JSON.stringify(body.payload || {})],
+    )
+    .catch(() => {});
   sendJSON(res, 200, { ok: true });
 });
 
@@ -799,9 +1330,11 @@ route('GET', '/api/submissions', async ({ res, user, query }) => {
   }
   const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
   const { rows } = await pool.query(
-    `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.graded_at, g.graded_by
+    `SELECT s.*, u.name AS student_name, g.score, g.feedback, g.rubric, g.rubric_slug, g.llm_suggestion, g.graded_at, g.graded_by,
+            rr.content_json->>'rubricSlug' AS resource_rubric_slug
        FROM submissions s JOIN users u ON u.id = s.user_id
        LEFT JOIN grades g ON g.submission_id = s.id
+       LEFT JOIN resources rr ON rr.id = s.resource_id
        ${where}
        ORDER BY s.submitted_at DESC`,
     params,
@@ -812,16 +1345,50 @@ route('GET', '/api/submissions', async ({ res, user, query }) => {
 route('PUT', '/api/submissions/:id/grade', async ({ res, user, params, body }) => {
   if (!user || user.role === 'student') return sendJSON(res, 403, { message: 'Forbidden' });
   if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
-  const grade = Number(body.grade);
-  if (Number.isNaN(grade) || grade < 0 || grade > 100) {
-    return sendJSON(res, 400, { message: 'La calificación debe estar entre 0 y 100' });
-  }
   const sub = await pool.query('SELECT * FROM submissions WHERE id = $1', [params.id]);
   if (!sub.rowCount) return sendJSON(res, 404, { message: 'Entrega no encontrada' });
+
+  // Nueva vía: calificación por rúbrica { rubricSlug, criteria:[{key, levelPoints, comment}], feedback }
+  // Vía retro-compatible: { grade: 0-100, feedback } (se conserva una release).
+  let grade;
+  let rubricSnapshot = null;
+  let rubricSlug = body.rubricSlug || null;
+  if (rubricSlug && Array.isArray(body.criteria)) {
+    const rub = await rubricBySlug(rubricSlug);
+    if (!rub) return sendJSON(res, 400, { message: 'Rúbrica no encontrada' });
+    const byKey = new Map(rub.criteria.map((c) => [c.key, c]));
+    let sum = 0;
+    const snap = [];
+    for (const c of body.criteria) {
+      const def = byKey.get(c.key);
+      if (!def) return sendJSON(res, 400, { message: `Criterio desconocido: ${c.key}` });
+      const pts = Number(c.levelPoints);
+      const maxPts = Math.max(...def.levels.map((l) => l.points));
+      if (Number.isNaN(pts) || pts < 0 || pts > maxPts) {
+        return sendJSON(res, 400, { message: `Puntos fuera de rango en ${c.key}` });
+      }
+      if (pts < maxPts && !(c.comment && c.comment.trim())) {
+        return sendJSON(res, 400, { message: `Comenta el criterio "${def.title}" si no está en el nivel máximo.` });
+      }
+      const lvl = def.levels.find((l) => l.points === pts);
+      sum += pts;
+      snap.push({ key: c.key, levelPoints: pts, levelLabel: lvl ? lvl.label : null, comment: c.comment || '' });
+    }
+    grade = Math.round((sum / rub.totalPoints) * 100);
+    rubricSnapshot = { rubricSlug, rubricVersion: rub.version, criteria: snap, computedScore: grade, gradedBy: user.id };
+  } else {
+    grade = Number(body.grade);
+    if (Number.isNaN(grade) || grade < 0 || grade > 100) {
+      return sendJSON(res, 400, { message: 'La calificación debe estar entre 0 y 100' });
+    }
+  }
+
   await pool.query(
-    `INSERT INTO grades (submission_id, graded_by, score, feedback) VALUES ($1, $2, $3, $4)
-     ON CONFLICT (submission_id) DO UPDATE SET score = EXCLUDED.score, feedback = EXCLUDED.feedback, graded_by = EXCLUDED.graded_by, graded_at = now()`,
-    [params.id, user.id, grade, body.feedback || ''],
+    `INSERT INTO grades (submission_id, graded_by, score, feedback, rubric, rubric_slug)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (submission_id) DO UPDATE SET score = EXCLUDED.score, feedback = EXCLUDED.feedback,
+       graded_by = EXCLUDED.graded_by, rubric = EXCLUDED.rubric, rubric_slug = EXCLUDED.rubric_slug, graded_at = now()`,
+    [params.id, user.id, grade, body.feedback || '', rubricSnapshot ? JSON.stringify(rubricSnapshot) : null, rubricSlug],
   );
   await pool.query(`UPDATE submissions SET status = 'graded', updated_at = now() WHERE id = $1`, [params.id]);
   await pool.query(
@@ -851,6 +1418,32 @@ route('PUT', '/api/submissions/:id/grade', async ({ res, user, params, body }) =
     }
   }
   sendJSON(res, 200, { ok: true });
+});
+
+// Asistencia de calificación por LLM: PROPONE, nunca decide. La propuesta se
+// guarda en grades.llm_suggestion; el instructor la revisa y envía la nota real
+// por PUT /grade. Sin ANTHROPIC_API_KEY devuelve 501.
+route('POST', '/api/submissions/:id/grade-suggestion', async ({ res, user, params, body }) => {
+  if (!user || user.role === 'student') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  if (!llm.enabled()) return sendJSON(res, 501, { code: 'LLM_DISABLED', message: 'Asistencia de IA no configurada.' });
+  const sub = (await pool.query('SELECT content FROM submissions WHERE id = $1', [params.id])).rows[0];
+  if (!sub) return sendJSON(res, 404, { message: 'Entrega no encontrada' });
+  const rub = await rubricBySlug(body.rubricSlug || '');
+  if (!rub) return sendJSON(res, 400, { message: 'rubricSlug requerido y válido' });
+  let suggestion = null;
+  try {
+    suggestion = await llm.gradeSuggestion({ rubric: rub, submissionText: sub.content });
+  } catch (e) {
+    return sendJSON(res, 502, { message: 'El modelo no respondió: ' + e.message });
+  }
+  // Solo se persiste si ya existe una fila de calificación (no se crea una fila
+  // fantasma con nota 0). Si no existe, el frontend guarda la propuesta en
+  // estado y la muestra al calificar.
+  await pool
+    .query(`UPDATE grades SET llm_suggestion = $2 WHERE submission_id = $1`, [params.id, JSON.stringify(suggestion)])
+    .catch(() => {});
+  sendJSON(res, 200, { suggestion });
 });
 
 // --- quizzes ---

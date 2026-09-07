@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCourse } from '../hooks/useCourses'
 import { useMarkResource } from '../hooks/useProgress'
 import { useSubmissions } from '../hooks/useSubmissions'
+import { useResume, useSaveResume, logEvent } from '../hooks/useEvaluation'
 import { Markdown } from '../components/Markdown'
 import { QuizView } from '../components/QuizView'
+import { ExamRunner } from '../components/ExamRunner'
+import { RubricView } from '../components/RubricView'
+import { LessonFormative } from '../components/LessonFormative'
 import { SubmissionForm } from '../components/SubmissionForm'
 import { DiagramView } from '../components/DiagramView'
 import { LecturaGuiada } from '../components/LecturaGuiada'
@@ -19,6 +23,7 @@ interface Resource {
   content?: string
   contentJson?: any
   completed?: boolean
+  revisedAt?: string
 }
 interface Module {
   id: string
@@ -43,54 +48,6 @@ const TYPE_LABEL: Record<string, string> = {
   dataset: 'Dataset',
   cert: 'Certificación',
   norma: 'Norma',
-}
-
-function LessonQuiz({ quiz }: { quiz: any[] }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({})
-  return (
-    <div className="mt-6 space-y-5">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Comprueba tu comprensión</h3>
-      {quiz.map((q, i) => {
-        const chosen = answers[i]
-        return (
-          <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <p className="font-medium text-gray-900 dark:text-white mb-3">
-              {i + 1}. {q.q}
-            </p>
-            <div className="space-y-2">
-              {(q.opts || []).map((opt: string, j: number) => {
-                const isChosen = chosen === j
-                const isCorrect = j === q.a
-                const show = chosen !== undefined
-                return (
-                  <button
-                    key={j}
-                    onClick={() => setAnswers((a) => ({ ...a, [i]: j }))}
-                    disabled={show}
-                    className={`block w-full text-left px-3 py-2 rounded border text-sm transition-colors ${
-                      show && isCorrect
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        : show && isChosen
-                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                          : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                )
-              })}
-            </div>
-            {chosen !== undefined && q.why && (
-              <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                {chosen === q.a ? '✅ ' : '❌ '}
-                {q.why[chosen]}
-              </p>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
 }
 
 const SUBMISSION_STATUS_LABEL: Record<string, string> = {
@@ -134,6 +91,14 @@ function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId:
         </div>
       )}
 
+      {cj.rubricSlug && (
+        <div className="mb-6">
+          <p className="font-semibold text-gray-900 dark:text-white mb-1">Rúbrica de evaluación</p>
+          <p className="text-sm text-gray-500 mb-2">Así se calificará tu entrega. El primer criterio es el que más pesa.</p>
+          <RubricView slug={cj.rubricSlug} />
+        </div>
+      )}
+
       {mine.length > 0 && (
         <div className="mb-6">
           <p className="font-semibold text-gray-900 dark:text-white mb-2">Tus entregas</p>
@@ -149,6 +114,11 @@ function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId:
                   )}
                 </div>
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{s.content}</p>
+                {s.rubric && cj.rubricSlug && (
+                  <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-2">
+                    <RubricView slug={cj.rubricSlug} snapshot={s.rubric} />
+                  </div>
+                )}
                 {s.feedback && (
                   <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2">
                     <span className="font-semibold">Retroalimentación: </span>
@@ -170,11 +140,14 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
   const cj = resource.contentJson || {}
 
   if (resource.type === 'exam') {
+    // Máster: motor de intentos con banco de ítems. Aulas legadas: quiz simple.
+    if (cj.examConfig) {
+      return <ExamRunner resourceId={resource.id} />
+    }
     return (
       <div>
         <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Examen de {Array.isArray(cj.questions) ? cj.questions.length : 10} preguntas. Necesitas 70% para aprobar y
-          obtener el certificado.
+          Examen de {Array.isArray(cj.questions) ? cj.questions.length : 10} preguntas. Necesitas 70% para aprobar.
         </p>
         <QuizView quizId={resource.id} />
       </div>
@@ -233,14 +206,6 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
           </div>
         )}
         {cj.lecturaGuiada && <LecturaGuiada data={cj.lecturaGuiada} />}
-        {cj.exercise && (
-          <div className="my-5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded">
-            <p className="font-semibold text-gray-900 dark:text-white mb-1">
-              Ejercicio {cj.exercise.mins ? `(${cj.exercise.mins} min)` : ''}
-            </p>
-            <p className="text-gray-700 dark:text-gray-300">{cj.exercise.text}</p>
-          </div>
-        )}
         {(cj.recursos?.libros?.length > 0 || cj.recursos?.videos?.length > 0) && (
           <div className="my-5 grid grid-cols-1 md:grid-cols-2 gap-4">
             {cj.recursos.libros?.length > 0 && (
@@ -285,10 +250,15 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
             <p className="text-gray-700 dark:text-gray-300">{cj.preguntaReflexion}</p>
           </div>
         )}
-        {Array.isArray(cj.quiz) && cj.quiz.length > 0 && <LessonQuiz quiz={cj.quiz} />}
+        {((Array.isArray(cj.quiz) && cj.quiz.length > 0) || cj.exercise?.text) && (
+          <LessonFormative resourceId={resource.id} quiz={cj.quiz || []} exercise={cj.exercise} />
+        )}
+        {resource.revisedAt && (
+          <p className="mt-4 text-xs text-gray-400">Contenido revisado: {resource.revisedAt}</p>
+        )}
         {cj.criterioFinalizacion && (
           <p className="mt-6 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 pt-3">
-            <span className="font-semibold">Criterio de finalización: </span>
+            <span className="font-semibold">Para completar la lección: </span>
             {cj.criterioFinalizacion}
           </p>
         )}
@@ -326,32 +296,48 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
 }
 
 export default function CourseView() {
-  const { courseId } = useParams()
+  const { courseId, resourceId } = useParams()
   const navigate = useNavigate()
   const { data: course, isLoading, isError } = useCourse(courseId || '')
   const mark = useMarkResource()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { data: resume } = useResume(course?.id)
+  const saveResume = useSaveResume()
+  const [selectedId, setSelectedId] = useState<string | null>(resourceId || null)
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({})
+  const initedRef = useRef<string | null>(null)
 
   const modules: Module[] = course?.modules || []
   const flatResources = useMemo(() => modules.flatMap((m) => m.resources), [modules])
 
-  // Navegar de un curso a otro (p. ej. desde el botón "Ver este curso completo
-  // aquí" de un recurso curado) reutiliza esta misma instancia del componente,
-  // así que hay que olvidar la selección del curso anterior explícitamente —
-  // si no, selectedId sigue apuntando a un id que no existe en flatResources
-  // del curso nuevo y la vista se queda mostrando "sin contenido".
+  // Al cambiar de curso, olvidar la selección anterior (esta instancia del
+  // componente se reutiliza al navegar entre cursos).
   useEffect(() => {
-    setSelectedId(null)
     setOpenModules({})
-  }, [courseId])
+    initedRef.current = null
+    if (!resourceId) setSelectedId(null)
+  }, [courseId, resourceId])
 
+  // Selección inicial: 1) resourceId de la URL, 2) posición guardada,
+  // 3) primer recurso sin completar, 4) primero.
   useEffect(() => {
-    if (!selectedId && flatResources.length) {
-      setSelectedId(flatResources[0].id)
-      if (modules[0]) setOpenModules({ [modules[0].id]: true })
-    }
-  }, [flatResources, selectedId, modules])
+    if (!flatResources.length || initedRef.current === courseId) return
+    let target = resourceId && flatResources.find((r) => r.id === resourceId)?.id
+    if (!target && resume?.resourceId && flatResources.some((r) => r.id === resume.resourceId)) target = resume.resourceId
+    if (!target) target = (flatResources.find((r) => !r.completed) || flatResources[0]).id
+    initedRef.current = courseId || null
+    setSelectedId(target)
+    const mod = modules.find((m) => m.resources.some((r) => r.id === target))
+    if (mod) setOpenModules({ [mod.id]: true })
+  }, [flatResources, courseId, resourceId, resume, modules])
+
+  // Guardar posición + sincronizar URL + evento.
+  useEffect(() => {
+    if (!selectedId || !course?.id) return
+    if (resourceId !== selectedId) navigate(`/courses/${courseId}/${selectedId}`, { replace: true })
+    saveResume.mutate({ courseId: course.id, resourceId: selectedId })
+    logEvent('lesson_view', {}, selectedId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, course?.id])
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center text-gray-500">Cargando curso...</div>
@@ -493,19 +479,37 @@ export default function CourseView() {
                 >
                   ← Anterior
                 </button>
-                {selected.type !== 'exam' && selected.type !== 'project' && (
-                  <button
-                    onClick={() => mark.mutate({ resourceId: selected.id, completed: !selected.completed })}
-                    disabled={mark.isPending}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      selected.completed
-                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    {selected.completed ? '✅ Completada — desmarcar' : 'Marcar como completada'}
-                  </button>
-                )}
+                {(() => {
+                  const cjs = selected.contentJson || {}
+                  const lessonHasFormative =
+                    selected.type === 'lesson' &&
+                    ((Array.isArray(cjs.quiz) && cjs.quiz.length > 0) || !!cjs.exercise?.text)
+                  const canManual =
+                    selected.type !== 'exam' && selected.type !== 'project' && !lessonHasFormative
+                  if (lessonHasFormative) {
+                    return (
+                      <span className="text-xs text-gray-400">
+                        {selected.completed
+                          ? '✅ Lección completada'
+                          : 'Entrega la actividad y aprueba el quiz para completar'}
+                      </span>
+                    )
+                  }
+                  if (!canManual) return <span />
+                  return (
+                    <button
+                      onClick={() => mark.mutate({ resourceId: selected.id, completed: !selected.completed })}
+                      disabled={mark.isPending}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                        selected.completed
+                          ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
+                    >
+                      {selected.completed ? '✅ Completada — desmarcar' : 'Marcar como completada'}
+                    </button>
+                  )
+                })()}
                 <button
                   onClick={() => go(1)}
                   disabled={selIndex >= flatResources.length - 1}

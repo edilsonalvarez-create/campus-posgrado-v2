@@ -37,7 +37,12 @@ function AsignaturaCard({
       onClick={onOpen}
       className="text-left bg-white dark:bg-gray-800 rounded-lg border-l-4 border-red-600 shadow-md hover:shadow-lg transition p-5 flex flex-col"
     >
-      <h3 className="font-bold text-gray-900 dark:text-white mb-2">{asignatura.title}</h3>
+      <h3 className="font-bold text-gray-900 dark:text-white mb-1">{asignatura.title}</h3>
+      {asignatura.officialCode && (
+        <p className="text-[11px] text-gray-400 mb-2 font-mono">
+          {asignatura.officialCode.startsWith('IEP-') ? 'Código interno' : 'Código oficial'}: {asignatura.officialCode}
+        </p>
+      )}
       {asignatura.contenidos.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {asignatura.contenidos.slice(0, 3).map((c, i) => (

@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 
+export interface RubricSnapshot {
+  rubricSlug: string;
+  rubricVersion: number;
+  criteria: Array<{ key: string; levelPoints: number; levelLabel: string | null; comment: string }>;
+  computedScore: number;
+  gradedBy: string;
+}
+
 export interface Submission {
   id: string;
   resourceId: string;
@@ -12,6 +20,9 @@ export interface Submission {
   submittedAt: string;
   grade?: number;
   feedback?: string;
+  rubric?: RubricSnapshot;
+  rubricSlug?: string;
+  llmSuggestion?: any;
   gradedAt?: string;
   gradedBy?: string;
 }
@@ -52,15 +63,25 @@ export const useCreateSubmission = () => {
   });
 };
 
+export interface GradePayload {
+  submissionId: string;
+  feedback: string;
+  grade?: number;
+  rubricSlug?: string;
+  criteria?: Array<{ key: string; levelPoints: number; comment?: string }>;
+}
+
 export const useGradeSubmission = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ submissionId, grade, feedback }: { submissionId: string; grade: number; feedback: string }) => {
-      const response = await api.put(`/submissions/${submissionId}/grade`, { grade, feedback });
+    mutationFn: async ({ submissionId, ...body }: GradePayload) => {
+      const response = await api.put(`/submissions/${submissionId}/grade`, body);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['submissions'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
+    },
   });
 };

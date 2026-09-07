@@ -30,6 +30,48 @@ const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 // que ya usa el TFM, reutilizando sin cambios su mecanismo de entrega/calificación.
 const PROYECTOS_PRACTICOS = require(path.join(DATA, 'proyectos-practicos.js'));
 
+// Rúbricas (Fase 1). Array de { slug, title, scope, passThreshold, totalPoints?, criteria: [...] }.
+function tryRequire(rel) {
+  try {
+    return require(path.join(DATA, rel));
+  } catch (err) {
+    if (err.code !== 'MODULE_NOT_FOUND') console.warn(`[seed] ${rel}:`, err.message);
+    return null;
+  }
+}
+const RUBRICS = tryRequire('rubrics.js') || [];
+// Bancos de ítems por asignatura: item-banks/master-{i..xi}.js -> { slug, title, scopeSlug, questions:[...] }
+function loadItemBanks() {
+  const banks = [];
+  for (const n of ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi']) {
+    const b = tryRequire(`item-banks/master-${n}.js`);
+    if (b && Array.isArray(b.questions) && b.questions.length) banks.push(b);
+  }
+  return banks;
+}
+const ITEM_BANKS = loadItemBanks();
+const REVISIONS = tryRequire('revisions.json') || {};
+
+// Config de examen por asignatura: apunta al banco de ítems y fija intentos/cooldown.
+function examConfigFor(slug) {
+  const bank = ITEM_BANKS.find((b) => b.scopeSlug === slug);
+  if (!bank) return null;
+  const drawSize = Math.min(12, Math.max(8, Math.floor((bank.questions.length * 2) / 3)));
+  return {
+    maxAttempts: 3,
+    cooldownHours: Number(process.env.EXAM_COOLDOWN_HOURS) || 24,
+    drawSize,
+    durationMinutes: 40,
+    passThreshold: 70,
+    bankSlug: bank.slug,
+  };
+}
+// Rúbrica del proyecto por asignatura (convención de slug).
+function projectRubricSlug(slug) {
+  const want = `rubric-${slug}`;
+  return RUBRICS.some((r) => r.slug === want) ? want : null;
+}
+
 // Lecciones propias por asignatura (FASE 3 en adelante): un módulo .js opcional por
 // slug, con { lecciones: [...], examen: [...] } siguiendo el modelo estándar de
 // lección del plan. Si no existe el archivo, la asignatura sigue solo con su lista
@@ -281,7 +323,7 @@ async function main() {
         officialCode: '2702799205392',
         contenidos: ['Principios y fundamentos de la agilidad', 'Comparativa de marcos ágiles (Scrum, Kanban, Lean)', 'Roles y eventos en Scrum', 'Prácticas de planificación y seguimiento en Scrum', 'Ciclos iterativos para la mejora de productos y procesos', 'Evaluación y ajuste continuo en proyectos ágiles'] },
       { numeral: 'V', slug: 'master-v', title: 'V. Ética y regulaciones en el Uso de la IA', track: 'PROadvance',
-        officialCode: null,
+        officialCode: process.env.OFFICIAL_CODE_V || 'IEP-V-INTERNO',
         contenidos: ['Introducción a la Inteligencia Artificial', 'Regulación jurídica de la IA', 'Consideraciones éticas en el uso de la IA', 'Principales Retos y desafíos en el uso de IA', 'Inteligencia Artificial aplicada para la detección y prevención de riesgos', 'Modelo de Gobernanza de la IA. Big Data, Blockchain y otras tecnologías disruptivas'] },
       { numeral: 'VI', slug: 'master-vi', title: 'VI. Machine Learning', track: 'PROadvance',
         officialCode: '2702799208864',
@@ -290,7 +332,7 @@ async function main() {
         officialCode: '2702799209304',
         contenidos: ['Integración de texto, imagen y sonido', 'Aplicaciones en arte digital y transmedia', 'Desafíos en entornos multimodales', 'Adaptación de Prompts a Diferentes audiencias', 'Creación de Prompts para interfaces inteligentes', 'Evaluación de la usabilidad'] },
       { numeral: 'VIII', slug: 'master-viii', title: 'VIII. Metodologías para el desarrollo de productos tecnológicos innovadores', track: 'PROadvance',
-        officialCode: null,
+        officialCode: process.env.OFFICIAL_CODE_VIII || 'IEP-VIII-INTERNO',
         contenidos: ['Fundamentos de Design Thinking', 'Fases de empatía y definición de problemas', 'Técnicas de ideación para soluciones innovadoras', 'Prototipado rápido y validación inicial', 'Iteración y mejoras continuas del prototipo', 'Pruebas con usuarios y retroalimentación'] },
       { numeral: 'IX', slug: 'master-ix', title: 'IX. Uso e Implementación de Modelos de Inteligencia Artificial Generativa en la Industria 4.0', track: 'PROadvance',
         officialCode: '2702799209220',
@@ -302,7 +344,7 @@ async function main() {
         officialCode: '2702799179257',
         contenidos: ['Introducción a la Inteligencia Artificial y aprendizaje automático', 'Principios y aplicaciones Big Data en la ciberseguridad', 'Manejo y procesamiento de datos', 'Modelos predictivos en ciberseguridad', 'Introducción a los modelos generativos en Inteligencia Artificial', 'Retos y oportunidades de la Inteligencia Artificial en el contexto de la ciberseguridad'] },
       { numeral: 'TFM', slug: 'master-tfm', title: 'Proyecto Fin de Programa (TFM)', track: 'TFM',
-        officialCode: null,
+        officialCode: process.env.OFFICIAL_CODE_TFM || 'IEP-TFM-INTERNO',
         contenidos: ['Trabajo académico de cierre que aplica competencias generales del programa'] },
     ];
 
@@ -313,11 +355,17 @@ async function main() {
       const modules = [];
       if (propias && Array.isArray(propias.lecciones) && propias.lecciones.length) {
         const resources = propias.lecciones.map(leccionAResource);
-        if (Array.isArray(propias.examen) && propias.examen.length) {
+        const examCfg = examConfigFor(asig.slug);
+        if (examCfg || (Array.isArray(propias.examen) && propias.examen.length)) {
           resources.push({
             title: 'Examen de la asignatura',
             type: 'exam',
-            content_json: { questions: propias.examen },
+            content_json: {
+              // Las preguntas legadas se conservan como respaldo, pero el motor de
+              // intentos usa el banco de ítems si hay examConfig.bankSlug.
+              questions: Array.isArray(propias.examen) ? propias.examen : [],
+              examConfig: examCfg || undefined,
+            },
           });
         }
         modules.push({
@@ -339,6 +387,7 @@ async function main() {
               deliverable: proyecto.deliverable || null,
               practice: proyecto.practice || null,
               mastery: proyecto.mastery || null,
+              rubricSlug: projectRubricSlug(asig.slug),
             },
           }],
         });
@@ -503,6 +552,92 @@ async function main() {
           };
         }),
       });
+    }
+
+    // ---- 5. Rúbricas (upsert por slug) ----
+    for (const rub of RUBRICS) {
+      const totalPoints =
+        rub.totalPoints ||
+        (rub.criteria || []).reduce(
+          (n, c) => n + Math.max(0, ...(c.levels || []).map((l) => l.points)),
+          0,
+        ) ||
+        100;
+      const rr = await client.query(
+        `INSERT INTO rubrics (slug, title, scope, pass_threshold, total_points, meta)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, scope = EXCLUDED.scope,
+           pass_threshold = EXCLUDED.pass_threshold, total_points = EXCLUDED.total_points,
+           meta = EXCLUDED.meta, updated_at = now()
+         RETURNING id`,
+        [rub.slug, rub.title, rub.scope || 'asignatura', rub.passThreshold || 70, totalPoints, JSON.stringify(rub.meta || {})],
+      );
+      const rubId = rr.rows[0].id;
+      let ci = 0;
+      for (const c of rub.criteria || []) {
+        ci += 1;
+        const cr = await client.query(
+          `INSERT INTO rubric_criteria (rubric_id, order_index, key, title, description, weight)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (rubric_id, key) DO UPDATE SET order_index = EXCLUDED.order_index,
+             title = EXCLUDED.title, description = EXCLUDED.description, weight = EXCLUDED.weight
+           RETURNING id`,
+          [rubId, ci, c.key, c.title, c.description || '', Math.max(0, ...(c.levels || []).map((l) => l.points))],
+        );
+        const critId = cr.rows[0].id;
+        await client.query('DELETE FROM rubric_levels WHERE criterion_id = $1', [critId]);
+        let li = 0;
+        for (const l of c.levels || []) {
+          li += 1;
+          await client.query(
+            `INSERT INTO rubric_levels (criterion_id, order_index, label, points, descriptor)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [critId, li, l.label, l.points, l.descriptor || ''],
+          );
+        }
+      }
+    }
+
+    // ---- 6. Bancos de ítems (upsert por slug + ext_key) ----
+    for (const bank of ITEM_BANKS) {
+      const br = await client.query(
+        `INSERT INTO item_banks (slug, title, scope_slug) VALUES ($1, $2, $3)
+         ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, scope_slug = EXCLUDED.scope_slug, updated_at = now()
+         RETURNING id`,
+        [bank.slug, bank.title, bank.scopeSlug],
+      );
+      const bankId = br.rows[0].id;
+      for (const q of bank.questions || []) {
+        await client.query(
+          `INSERT INTO item_bank_questions
+             (bank_id, ext_key, stem, options, correct_index, explanations, difficulty, skill_tag, cognitive, source, active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
+           ON CONFLICT (bank_id, ext_key) DO UPDATE SET
+             stem = EXCLUDED.stem, options = EXCLUDED.options, correct_index = EXCLUDED.correct_index,
+             explanations = EXCLUDED.explanations, difficulty = EXCLUDED.difficulty, skill_tag = EXCLUDED.skill_tag,
+             cognitive = EXCLUDED.cognitive, source = EXCLUDED.source, active = true`,
+          [
+            bankId, q.extKey, q.stem, JSON.stringify(q.options), q.correctIndex,
+            JSON.stringify(q.explanations || []), q.difficulty || 'media', q.skillTag || null,
+            q.cognitive || 'aplicacion', q.source || 'authored',
+          ],
+        );
+      }
+    }
+
+    // ---- 7. Fechas de revisión de contenido ----
+    for (const [slug, entries] of Object.entries(REVISIONS)) {
+      const cid = bySlug[slug];
+      if (!cid) continue;
+      for (const e of entries) {
+        await client.query(
+          `UPDATE resources SET revised_at = $3, revision_note = $4
+             FROM modules m
+            WHERE resources.module_id = m.id AND m.course_id = $1
+              AND resources.content_json->>'contenidoOficial' = $2`,
+          [cid, e.contenidoOficial, e.revisedAt, e.note || null],
+        );
+      }
     }
 
     // ---- datos de demostración (solo con SEED_DEMO_DATA=true) ----
