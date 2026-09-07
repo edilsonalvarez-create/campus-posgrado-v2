@@ -29,7 +29,29 @@ function checkRateLimit(ip) {
   return true;
 }
 
-const hashPassword = (p) => crypto.createHash('sha256').update(String(p)).digest('hex');
+// Hash legado (SHA-256 sin sal). Se mantiene solo para verificar contraseñas
+// antiguas; en el primer login exitoso se re-hashea a scrypt (ver verifyPassword).
+const legacyHash = (p) => crypto.createHash('sha256').update(String(p)).digest('hex');
+const hashPassword = legacyHash; // compat: usado por el seed de usuarios de servicio
+
+function scryptHash(password, salt) {
+  return crypto.scryptSync(String(password), salt, 64).toString('hex');
+}
+function newPasswordHash(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  return { algo: 'scrypt', salt, hash: scryptHash(password, salt) };
+}
+// Verifica contra el algoritmo almacenado. Devuelve { ok, needsUpgrade }.
+function verifyPassword(user, password) {
+  if (user.password_algo === 'scrypt' && user.password_salt) {
+    const expected = Buffer.from(user.password_hash, 'hex');
+    const actual = Buffer.from(scryptHash(password, user.password_salt), 'hex');
+    const ok = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+    return { ok, needsUpgrade: false };
+  }
+  return { ok: user.password_hash === legacyHash(password), needsUpgrade: true };
+}
+
 const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || '') && e.length <= 254;
 const isValidPassword = (p) => typeof p === 'string' && p.length >= 8 && p.length <= 128;
 const isUuid = (s) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s || '');
@@ -113,7 +135,31 @@ function courseSummary(row) {
   };
 }
 
-async function loadCourseDetail(courseRow, userId) {
+// Quita las claves de calificación del contenido antes de que llegue a un
+// estudiante. Instructores/dirección/admin reciben el objeto completo.
+//   - lección: el quiz formativo conserva enunciado y opciones, pierde `a` y `why`
+//   - examen:  las preguntas NO se sirven nunca desde content_json (van por el
+//              motor de intentos con banco de ítems). Se elimina el array entero.
+function sanitizeResourceContent(type, cj, role) {
+  if (!cj) return cj;
+  if (role && role !== 'student') return cj;
+  let clone;
+  try {
+    clone = JSON.parse(JSON.stringify(cj));
+  } catch {
+    return cj;
+  }
+  if (Array.isArray(clone.quiz)) {
+    clone.quiz = clone.quiz.map((q) => ({ q: q.q, opts: q.opts || [] }));
+  }
+  if (type === 'exam') {
+    delete clone.questions;
+    delete clone.quiz;
+  }
+  return clone;
+}
+
+async function loadCourseDetail(courseRow, userId, role) {
   const summary = courseSummary(courseRow);
   const mods = (
     await pool.query(
@@ -144,7 +190,7 @@ async function loadCourseDetail(courseRow, userId) {
         source: r.source || undefined,
         note: r.note || undefined,
         content: r.content || undefined,
-        contentJson: r.content_json || undefined,
+        contentJson: sanitizeResourceContent(r.type, r.content_json, role) || undefined,
         completed: r.completed,
         order: r.order_index,
       });
@@ -209,6 +255,160 @@ function submissionRow(r) {
   };
 }
 
+// ---------- lógica de certificación ----------
+// Un certificado de asignatura se emite SOLO cuando se cumplen, a la vez:
+//   - todas las lecciones completadas (si la asignatura tiene lecciones)
+//   - proyecto calificado >= 70 (si la asignatura tiene proyecto)
+//   - examen aprobado (si la asignatura tiene examen)
+//   - y existe al menos un proyecto o un examen
+// Ya no basta con aprobar un único examen de opción múltiple.
+async function evaluateCourseCompletion(userId, courseId) {
+  if (!userId || !courseId) return;
+  const c = (await pool.query('SELECT id, slug, title, meta FROM courses WHERE id = $1', [courseId])).rows[0];
+  if (!c) return;
+
+  const totalLessons = (
+    await pool.query(
+      `SELECT count(*)::int AS n FROM resources r JOIN modules m ON m.id = r.module_id
+        WHERE m.course_id = $1 AND r.type = 'lesson'`,
+      [courseId],
+    )
+  ).rows[0].n;
+  const doneLessons = (
+    await pool.query(
+      `SELECT count(*)::int AS n FROM progress p
+         JOIN resources r ON r.id = p.resource_id
+         JOIN modules m ON m.id = r.module_id
+        WHERE m.course_id = $1 AND p.user_id = $2 AND p.completed AND r.type = 'lesson'`,
+      [courseId, userId],
+    )
+  ).rows[0].n;
+  const lessonsOk = totalLessons === 0 || doneLessons === totalLessons;
+
+  const hasProject =
+    (
+      await pool.query(
+        `SELECT 1 FROM resources r JOIN modules m ON m.id = r.module_id
+          WHERE m.course_id = $1 AND r.type IN ('project', 'assignment') LIMIT 1`,
+        [courseId],
+      )
+    ).rowCount > 0;
+  const projRow = (
+    await pool.query(
+      `SELECT g.score FROM submissions s JOIN grades g ON g.submission_id = s.id
+         JOIN resources r ON r.id = s.resource_id JOIN modules m ON m.id = r.module_id
+        WHERE s.user_id = $1 AND m.course_id = $2 AND r.type IN ('project', 'assignment')
+        ORDER BY g.graded_at DESC LIMIT 1`,
+      [userId, courseId],
+    )
+  ).rows[0];
+  const projectOk = !!(projRow && Number(projRow.score) >= 70);
+
+  const hasExam =
+    (
+      await pool.query(
+        `SELECT 1 FROM resources r JOIN modules m ON m.id = r.module_id
+          WHERE m.course_id = $1 AND r.type = 'exam' LIMIT 1`,
+        [courseId],
+      )
+    ).rowCount > 0;
+  let examOk = false;
+  if (hasExam) {
+    // Fase 0: se comprueba contra quiz_responses. Fase 1 lo reemplaza por exam_attempts.
+    const passed = (
+      await pool.query(
+        `SELECT bool_or(qr.passed) AS ok FROM quiz_responses qr
+           JOIN resources r ON r.id = qr.resource_id JOIN modules m ON m.id = r.module_id
+          WHERE qr.user_id = $1 AND m.course_id = $2 AND r.type = 'exam'`,
+        [userId, courseId],
+      )
+    ).rows[0];
+    examOk = !!(passed && passed.ok);
+  }
+
+  const ok = lessonsOk && (!hasProject || projectOk) && (!hasExam || examOk) && (hasProject || hasExam);
+  if (!ok) return;
+
+  const requirements = {
+    lessons: `${doneLessons}/${totalLessons}`,
+    project: projRow ? Number(projRow.score) : null,
+    exam: hasExam ? examOk : null,
+  };
+  const ins = await pool.query(
+    `INSERT INTO certificates (user_id, course_id, course_name, kind, requirements)
+     VALUES ($1, $2, $3, 'asignatura', $4)
+     ON CONFLICT (user_id, course_id, kind) DO NOTHING RETURNING id`,
+    [userId, courseId, c.title, JSON.stringify(requirements)],
+  );
+  if (ins.rowCount) {
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, title, message)
+       VALUES ($1, 'certificate', 'Nuevo certificado', $2)`,
+      [userId, `Completaste la asignatura ${c.title} (lecciones, proyecto y examen).`],
+    );
+    const meta = c.meta || {};
+    await evaluateTrackAndProgramme(userId, meta.programSlug, meta.track).catch((e) =>
+      console.error('[cert] tramo/programa:', e.message),
+    );
+  }
+}
+
+async function evaluateTrackAndProgramme(userId, programSlug, track) {
+  if (!userId || !programSlug) return;
+  const container = (await pool.query('SELECT id FROM courses WHERE slug = $1', [programSlug])).rows[0];
+  if (!container) return;
+  const asigs = (
+    await pool.query(
+      `SELECT id, title, meta->>'track' AS track FROM courses WHERE meta->>'programSlug' = $1`,
+      [programSlug],
+    )
+  ).rows;
+  if (!asigs.length) return;
+  const certd = new Set(
+    (
+      await pool.query(
+        `SELECT course_id FROM certificates WHERE user_id = $1 AND kind = 'asignatura'`,
+        [userId],
+      )
+    ).rows.map((r) => r.course_id),
+  );
+
+  if (track) {
+    const inTrack = asigs.filter((a) => a.track === track);
+    if (inTrack.length && inTrack.every((a) => certd.has(a.id))) {
+      const r = await pool.query(
+        `INSERT INTO certificates (user_id, course_id, course_name, kind, requirements)
+         VALUES ($1, $2, $3, 'tramo', $4)
+         ON CONFLICT (user_id, course_id, kind) DO NOTHING RETURNING id`,
+        [userId, container.id, `Certificado de tramo — ${track}`, JSON.stringify({ track, asignaturas: inTrack.map((a) => a.title) })],
+      );
+      if (r.rowCount) {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, title, message)
+           VALUES ($1, 'certificate', 'Certificado de tramo', $2)`,
+          [userId, `Completaste el tramo ${track} del Máster.`],
+        );
+      }
+    }
+  }
+
+  if (asigs.every((a) => certd.has(a.id))) {
+    const r = await pool.query(
+      `INSERT INTO certificates (user_id, course_id, course_name, kind, requirements)
+       VALUES ($1, $2, $3, 'programa', $4)
+       ON CONFLICT (user_id, course_id, kind) DO NOTHING RETURNING id`,
+      [userId, container.id, 'Máster IEP — Programa completo', JSON.stringify({ asignaturas: asigs.length })],
+    );
+    if (r.rowCount) {
+      await pool.query(
+        `INSERT INTO notifications (user_id, type, title, message)
+         VALUES ($1, 'certificate', '¡Máster completado!', $2)`,
+        [userId, 'Has completado las 11 asignaturas y el TFM del Máster IEP.'],
+      );
+    }
+  }
+}
+
 // ---------- rutas ----------
 // Cada ruta: { method, pattern (RegExp con grupos nombrados), handler(ctx) }
 const routes = [];
@@ -230,10 +430,12 @@ route('POST', '/api/auth/register', async ({ res, body }) => {
   }
   const exists = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
   if (exists.rowCount) return sendJSON(res, 409, { message: 'El email ya está registrado' });
+  const pw = newPasswordHash(password);
   const { rows } = await pool.query(
-    `INSERT INTO users (email, name, password_hash, role) VALUES ($1, $2, $3, 'student')
+    `INSERT INTO users (email, name, password_hash, password_salt, password_algo, role)
+     VALUES ($1, $2, $3, $4, $5, 'student')
      RETURNING id, email, name, role`,
-    [email, name, hashPassword(password)],
+    [email, name, pw.hash, pw.salt, pw.algo],
   );
   const user = rows[0];
   const accessToken = await newSession(user.id, 'access', TOKEN_TTL_MS);
@@ -244,12 +446,22 @@ route('POST', '/api/auth/register', async ({ res, body }) => {
 route('POST', '/api/auth/login', async ({ res, body }) => {
   const { email, password } = body;
   const { rows } = await pool.query(
-    'SELECT id, email, name, role, password_hash FROM users WHERE email = $1',
+    'SELECT id, email, name, role, password_hash, password_salt, password_algo FROM users WHERE email = $1',
     [email || ''],
   );
   const user = rows[0];
-  if (!user || user.password_hash !== hashPassword(password)) {
+  const check = user ? verifyPassword(user, password) : { ok: false };
+  if (!user || !check.ok) {
     return sendJSON(res, 401, { message: 'Credenciales inválidas' });
+  }
+  if (check.needsUpgrade) {
+    const pw = newPasswordHash(password);
+    await pool
+      .query(
+        `UPDATE users SET password_hash = $2, password_salt = $3, password_algo = $4 WHERE id = $1`,
+        [user.id, pw.hash, pw.salt, pw.algo],
+      )
+      .catch((e) => console.error('[login] fallo re-hash:', e.message));
   }
   const accessToken = await newSession(user.id, 'access', TOKEN_TTL_MS);
   const refreshToken = await newSession(user.id, 'refresh', REFRESH_TTL_MS);
@@ -384,7 +596,7 @@ route('GET', '/api/courses/:id', async ({ res, user, params }) => {
         )).rows[0].count,
       )
     : 0;
-  sendJSON(res, 200, await loadCourseDetail({ ...course, total, completed }, user && user.id));
+  sendJSON(res, 200, await loadCourseDetail({ ...course, total, completed }, user && user.id, user && user.role));
 });
 
 route('PUT', '/api/courses/:id', async ({ res, user, params, body }) => {
@@ -403,14 +615,14 @@ route('PUT', '/api/courses/:id', async ({ res, user, params, body }) => {
 route('GET', '/api/master-courses', async ({ res, user }) => {
   const row = await findCourseRow('master-iep');
   if (!row) return sendJSON(res, 200, []);
-  const detail = await loadCourseDetail({ ...row, total: 0, completed: 0 }, user && user.id);
+  const detail = await loadCourseDetail({ ...row, total: 0, completed: 0 }, user && user.id, user && user.role);
   sendJSON(res, 200, detail);
 });
 
 route('GET', '/api/native-courses/:id', async ({ res, user, params }) => {
   const row = await findCourseRow(params.id);
   if (!row || row.kind !== 'native') return sendJSON(res, 404, { message: 'Not found' });
-  sendJSON(res, 200, await loadCourseDetail({ ...row, total: 0, completed: 0 }, user && user.id));
+  sendJSON(res, 200, await loadCourseDetail({ ...row, total: 0, completed: 0 }, user && user.id, user && user.role));
 });
 
 route('GET', '/api/native-courses', async ({ res, user }) => {
@@ -617,14 +829,14 @@ route('PUT', '/api/submissions/:id/grade', async ({ res, user, params, body }) =
      VALUES ($1, 'grade', 'Entrega calificada', $2)`,
     [sub.rows[0].user_id, `Tu entrega recibió ${grade}/100`],
   );
-  // Una entrega de tipo "project" (p. ej. el TFM) que aprueba cuenta como
-  // recurso completado y certifica el curso, igual que un examen aprobado.
+  // Una entrega de tipo "project" calificada >= 70 marca ese recurso como
+  // completado. La emisión del certificado ya NO ocurre aquí: la decide
+  // evaluateCourseCompletion, que exige lecciones + proyecto + examen.
   if (grade >= 70 && sub.rows[0].resource_id) {
     const resRow = (
       await pool.query(
-        `SELECT r.id, m.course_id, c.title AS course_title FROM resources r
+        `SELECT r.id, m.course_id FROM resources r
            JOIN modules m ON m.id = r.module_id
-           JOIN courses c ON c.id = m.course_id
           WHERE r.id = $1 AND r.type IN ('project', 'assignment')`,
         [sub.rows[0].resource_id],
       )
@@ -635,23 +847,17 @@ route('PUT', '/api/submissions/:id/grade', async ({ res, user, params, body }) =
          ON CONFLICT (user_id, resource_id) DO UPDATE SET completed = true, completed_at = now()`,
         [sub.rows[0].user_id, resRow.id],
       );
-      await pool.query(
-        `INSERT INTO certificates (user_id, course_id, course_name) VALUES ($1, $2, $3)
-         ON CONFLICT (user_id, course_id) DO NOTHING`,
-        [sub.rows[0].user_id, resRow.course_id, resRow.course_title],
-      );
-      await pool.query(
-        `INSERT INTO notifications (user_id, type, title, message)
-         VALUES ($1, 'certificate', 'Nuevo certificado', $2)`,
-        [sub.rows[0].user_id, `Aprobaste la entrega de ${resRow.course_title}`],
-      );
+      await evaluateCourseCompletion(sub.rows[0].user_id, resRow.course_id);
     }
   }
   sendJSON(res, 200, { ok: true });
 });
 
 // --- quizzes ---
-route('GET', '/api/quizzes/:id', async ({ res, params }) => {
+// El payload NUNCA incluye la respuesta correcta. La calificación es solo de
+// servidor (POST /api/quiz-responses en Fase 0; motor de intentos en Fase 1).
+route('GET', '/api/quizzes/:id', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
   if (!isUuid(params.id)) return sendJSON(res, 404, { message: 'Quiz no encontrado' });
   const { rows } = await pool.query(
     `SELECT r.id, r.title, r.content_json, m.course_id
@@ -667,7 +873,6 @@ route('GET', '/api/quizzes/:id', async ({ res, params }) => {
     text: q.q,
     type: 'multiple-choice',
     options: (q.opts || []).map((o, j) => ({ id: String(j), text: o })),
-    correctAnswer: String(q.a),
   }));
   sendJSON(res, 200, {
     id: rows[0].id,
@@ -700,27 +905,16 @@ route('POST', '/api/quiz-responses', async ({ res, user, body }) => {
     `INSERT INTO quiz_responses (user_id, resource_id, answers, score, passed) VALUES ($1, $2, $3, $4, $5)`,
     [user.id, quizId, JSON.stringify(answers), score, passed],
   );
-  await pool.query(
-    `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
-     ON CONFLICT (user_id, resource_id) DO NOTHING`,
-    [user.id, quizId],
-  );
+  // El progreso del recurso solo se acredita si se APRUEBA (un examen suspenso
+  // ya no infla el porcentaje del curso ni abre el gate de la siguiente asignatura).
   if (passed) {
-    const course = (
-      await pool.query('SELECT id, title FROM courses WHERE id = $1', [rows[0].course_id])
-    ).rows[0];
-    if (course) {
-      await pool.query(
-        `INSERT INTO certificates (user_id, course_id, course_name) VALUES ($1, $2, $3)
-         ON CONFLICT (user_id, course_id) DO NOTHING`,
-        [user.id, course.id, course.title],
-      );
-      await pool.query(
-        `INSERT INTO notifications (user_id, type, title, message)
-         VALUES ($1, 'certificate', 'Nuevo certificado', $2)`,
-        [user.id, `Aprobaste una evaluación de ${course.title}`],
-      );
-    }
+    await pool.query(
+      `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
+       ON CONFLICT (user_id, resource_id) DO NOTHING`,
+      [user.id, quizId],
+    );
+    // La certificación la decide evaluateCourseCompletion (lecciones + proyecto + examen).
+    await evaluateCourseCompletion(user.id, rows[0].course_id);
   }
   sendJSON(res, 200, { score, passed, correct, total: raw.length });
 });
@@ -729,7 +923,8 @@ route('POST', '/api/quiz-responses', async ({ res, user, body }) => {
 route('GET', '/api/certificates', async ({ res, user }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
   const { rows } = await pool.query(
-    `SELECT id, user_id, course_id, course_name, issued_at FROM certificates WHERE user_id = $1 ORDER BY issued_at DESC`,
+    `SELECT id, user_id, course_id, course_name, kind, requirements, issued_at
+       FROM certificates WHERE user_id = $1 ORDER BY issued_at DESC`,
     [user.id],
   );
   sendJSON(
@@ -740,6 +935,8 @@ route('GET', '/api/certificates', async ({ res, user }) => {
       userId: r.user_id,
       courseId: r.course_id,
       courseName: r.course_name,
+      kind: r.kind || 'asignatura',
+      requirements: r.requirements || {},
       issuedAt: r.issued_at,
       expiresAt: null,
     })),
@@ -774,13 +971,14 @@ route('PUT', '/api/notifications/:id/read', async ({ res, user, params }) => {
   sendJSON(res, 200, { ok: true });
 });
 
-// --- admin: re-sembrar el catálogo bajo demanda (mismo TRUNCATE+insert que el arranque
-// con catálogo vacío, pero disparable sin reiniciar el servicio) ---
+// --- admin: sincronizar el catálogo bajo demanda (upsert NO destructivo) ---
+// Solo admin. El seed ya no hace TRUNCATE: hace upsert por clave estable, así
+// que ninguna entrega, nota, progreso ni certificado de estudiante se pierde.
 route('POST', '/api/admin/reseed', async ({ res, user }) => {
-  if (!user || user.role !== 'instructor') return sendJSON(res, 403, { message: 'Forbidden' });
-  console.log(`[admin] reseed disparado por ${user.email}`);
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  console.log(`[admin] sync de catálogo disparado por ${user.email}`);
   await require('./db/seed')();
-  sendJSON(res, 200, { ok: true, message: 'Catálogo re-sembrado.' });
+  sendJSON(res, 200, { ok: true, message: 'Catálogo sincronizado (upsert no destructivo).' });
 });
 
 // ---------- servidor ----------
@@ -823,10 +1021,17 @@ const server = http.createServer(async (req, res) => {
 
 async function prepareDatabase() {
   await runMigrations();
-  if (process.env.AUTO_SEED !== 'false') {
-    const { rows } = await pool.query('SELECT count(*)::int AS n FROM courses');
-    if (rows[0].n === 0) {
-      console.log('[start] catálogo vacío → ejecutando seed inicial...');
+  // AUTO_SEED:
+  //   'false' -> nunca sembrar
+  //   'sync'  -> sincronizar el catálogo en cada arranque (upsert idempotente)
+  //   (resto) -> solo sembrar si el catálogo está "vacío" (<=1: solo el contenedor)
+  const mode = process.env.AUTO_SEED || 'auto';
+  if (mode !== 'false') {
+    const { rows } = await pool.query(
+      `SELECT count(*)::int AS n FROM courses WHERE COALESCE(meta->>'isProgramContainer','') <> 'true'`,
+    );
+    if (mode === 'sync' || rows[0].n === 0) {
+      console.log(`[start] seed (${mode === 'sync' ? 'sync' : 'catálogo vacío'})...`);
       await require('./db/seed')();
     }
   }

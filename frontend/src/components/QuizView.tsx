@@ -65,8 +65,8 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
         </p>
         <p className={`mb-6 ${passed ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
           {passed
-            ? 'Obtuviste un certificado por completar este cuestionario'
-            : 'Necesitas al menos 70% para pasar. Intenta nuevamente'}
+            ? 'Aprobaste el examen. El certificado de la asignatura se emite al completar además todas las lecciones y el proyecto práctico.'
+            : 'Necesitas al menos 70% para aprobar. Intenta nuevamente.'}
         </p>
         <button
           onClick={() => {

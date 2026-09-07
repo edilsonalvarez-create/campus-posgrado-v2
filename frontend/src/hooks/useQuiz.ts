@@ -6,7 +6,6 @@ export interface QuizQuestion {
   text: string;
   type: 'multiple-choice';
   options: Array<{ id: string; text: string }>;
-  correctAnswer?: string;
 }
 
 export interface Quiz {
@@ -22,8 +21,10 @@ export interface Certificate {
   userId: string;
   courseId: string;
   courseName: string;
+  kind: 'asignatura' | 'tramo' | 'programa';
+  requirements: Record<string, unknown>;
   issuedAt: string;
-  expiresAt: string;
+  expiresAt: string | null;
 }
 
 export const useQuiz = (quizId: string) => {
@@ -47,6 +48,11 @@ export const useSubmitQuiz = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['certificates'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      // El examen puede completar recursos y mover el progreso del curso/programa.
+      queryClient.invalidateQueries({ queryKey: ['course'] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['progress'] });
+      queryClient.invalidateQueries({ queryKey: ['program'] });
     }
   });
 };

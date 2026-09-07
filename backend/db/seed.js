@@ -7,8 +7,15 @@
 // tramo tomados del documento oficial del programa (fuente de verdad); el
 // contenido/recursos curados de cada una vienen del artefacto legado (TEMPLATE).
 //
-// Idempotente: TRUNCATE del catálogo y re-inserción. Los usuarios se conservan
-// (upsert). El progreso del usuario se re-siembra en un estado inicial realista.
+// Idempotente y NO destructivo: hace upsert del catálogo por clave estable
+//   courses   -> slug
+//   modules   -> (course_id, stable_key)   [stable_key = 'm' + posición]
+//   resources -> (module_id, stable_key)   [stable_key = 'r' + posición]
+// Nunca borra filas: los UUID de courses/resources se conservan, así que el
+// progreso, las entregas, las notas y los certificados de los estudiantes
+// siguen siendo válidos tras cada sincronización. Los datos de demostración
+// (matrículas y progreso del usuario de prueba) solo se siembran con
+// SEED_DEMO_DATA=true.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -141,12 +148,16 @@ function bookMarkdown(b) {
   return parts.join('\n\n');
 }
 
+const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA === 'true';
+
 async function main() {
   const client = await pool.connect();
+  let orphanModules = 0;
+  let orphanResources = 0;
   try {
     await client.query('BEGIN');
 
-    // ---- usuarios (upsert) ----
+    // ---- usuarios de servicio (no se resetea la contraseña si ya existen) ----
     const users = [
       ['test@example.com', 'Test User', sha256('Password123'), 'student'],
       ['instructor@example.com', 'Instructor Demo', sha256('Password123'), 'instructor'],
@@ -154,62 +165,93 @@ async function main() {
     for (const [email, name, hash, role] of users) {
       await client.query(
         `INSERT INTO users (email, name, password_hash, role) VALUES ($1, $2, $3, $4)
-         ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role`,
+         ON CONFLICT (email) DO NOTHING`,
         [email, name, hash, role],
       );
     }
     const instructorId = (
-      await client.query(`SELECT id FROM users WHERE email = 'instructor@example.com'`)
+      await client.query(
+        `SELECT id FROM users WHERE role IN ('instructor','admin') ORDER BY created_at LIMIT 1`,
+      )
     ).rows[0].id;
-    const testId = (
-      await client.query(`SELECT id FROM users WHERE email = 'test@example.com'`)
-    ).rows[0].id;
+    const testRow = await client.query(`SELECT id FROM users WHERE email = 'test@example.com'`);
+    const testId = testRow.rows[0] ? testRow.rows[0].id : null;
 
-    // ---- limpiar catálogo ----
-    await client.query('TRUNCATE courses RESTART IDENTITY CASCADE');
-
+    // ---- catálogo: upsert NO destructivo por clave estable ----
     let courseOrder = 0;
     const bySlug = {};
 
-    async function insertCourse(c) {
+    async function upsertCourse(c) {
       courseOrder += 1;
       const meta = c.meta || {};
       const { rows } = await client.query(
         `INSERT INTO courses (slug, kind, title, description, image_url, instructor_id, published, source, url, note, meta, order_index)
-         VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8, $9, $10, $11) RETURNING id`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         ON CONFLICT (slug) DO UPDATE SET
+           kind = EXCLUDED.kind, title = EXCLUDED.title, description = EXCLUDED.description,
+           image_url = EXCLUDED.image_url, instructor_id = EXCLUDED.instructor_id,
+           published = EXCLUDED.published, source = EXCLUDED.source, url = EXCLUDED.url,
+           note = EXCLUDED.note, meta = EXCLUDED.meta, order_index = EXCLUDED.order_index,
+           updated_at = now()
+         RETURNING id`,
         [
           c.slug, c.kind, c.title, c.description || '', c.image_url || null,
-          instructorId, c.source || null, c.url || null, c.note || null,
-          JSON.stringify(meta), courseOrder,
+          instructorId, c.published === false ? false : true, c.source || null,
+          c.url || null, c.note || null, JSON.stringify(meta), courseOrder,
         ],
       );
       const id = rows[0].id;
       bySlug[c.slug] = id;
+      const seenModules = [];
       let mi = 0;
       for (const m of c.modules || []) {
         mi += 1;
+        const mKey = m.stableKey || 'm' + mi;
+        seenModules.push(mKey);
         const mres = await client.query(
-          `INSERT INTO modules (course_id, title, numeral, subtitle, meta, order_index)
-           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-          [id, m.title, m.numeral || null, m.subtitle || null, JSON.stringify(m.meta || {}), mi],
+          `INSERT INTO modules (course_id, title, numeral, subtitle, meta, order_index, stable_key)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (course_id, stable_key) WHERE stable_key IS NOT NULL DO UPDATE SET
+             title = EXCLUDED.title, numeral = EXCLUDED.numeral, subtitle = EXCLUDED.subtitle,
+             meta = EXCLUDED.meta, order_index = EXCLUDED.order_index
+           RETURNING id`,
+          [id, m.title, m.numeral || null, m.subtitle || null, JSON.stringify(m.meta || {}), mi, mKey],
         );
         const moduleId = mres.rows[0].id;
+        const seenRes = [];
         let ri = 0;
         for (const r of m.resources || []) {
           ri += 1;
+          const rKey = r.stableKey || 'r' + ri;
+          seenRes.push(rKey);
           await client.query(
-            `INSERT INTO resources (module_id, title, type, url, source, note, content, content_json, order_index)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            `INSERT INTO resources (module_id, title, type, url, source, note, content, content_json, order_index, stable_key)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             ON CONFLICT (module_id, stable_key) WHERE stable_key IS NOT NULL DO UPDATE SET
+               title = EXCLUDED.title, type = EXCLUDED.type, url = EXCLUDED.url,
+               source = EXCLUDED.source, note = EXCLUDED.note, content = EXCLUDED.content,
+               content_json = EXCLUDED.content_json, order_index = EXCLUDED.order_index`,
             [
               moduleId, r.title, r.type || 'lecture', r.url || null, r.source || null,
               r.note || null, r.content || null,
-              r.content_json ? JSON.stringify(r.content_json) : null, ri,
+              r.content_json ? JSON.stringify(r.content_json) : null, ri, rKey,
             ],
           );
         }
+        const orphR = await client.query(
+          `SELECT count(*)::int AS c FROM resources WHERE module_id = $1 AND NOT (stable_key = ANY($2))`,
+          [moduleId, seenRes.length ? seenRes : ['__none__']],
+        );
+        orphanResources += orphR.rows[0].c;
       }
+      const orphM = await client.query(
+        `SELECT count(*)::int AS c FROM modules WHERE course_id = $1 AND NOT (stable_key = ANY($2))`,
+        [id, seenModules.length ? seenModules : ['__none__']],
+      );
+      orphanModules += orphM.rows[0].c;
       return id;
     }
+    const insertCourse = upsertCourse; // alias retro-compatible dentro de este archivo
 
     // ---- 1. Máster IEP: 11 asignaturas oficiales + TFM (cada una = un curso propio) ----
     // Fuente de verdad de títulos/tramos: el documento oficial del programa
@@ -463,56 +505,66 @@ async function main() {
       });
     }
 
-    // ---- matrículas + progreso inicial del usuario de prueba ----
-    const enrollSlugs = [
-      ...MASTER_ASIGNATURAS.map((a) => a.slug),
-      'biblioteca-master',
-      'aula-ai-for-everyone',
-      'aula-elements-of-ai',
-      'native-ai-101',
-    ];
-    for (const slug of enrollSlugs) {
-      const courseId = bySlug[slug];
-      if (!courseId) continue;
-      await client.query(
-        `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'student')
-         ON CONFLICT (user_id, course_id) DO NOTHING`,
-        [testId, courseId],
-      );
-      await client.query(
-        `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'instructor')
-         ON CONFLICT (user_id, course_id) DO NOTHING`,
-        [instructorId, courseId],
-      );
-    }
-
-    // marcar como completadas las 3 primeras lecciones de "AI for Everyone"
-    const aiForEveryone = bySlug['aula-ai-for-everyone'];
-    if (aiForEveryone) {
-      const { rows } = await client.query(
-        `SELECT r.id FROM resources r
-         JOIN modules m ON m.id = r.module_id
-         WHERE m.course_id = $1 AND r.type = 'lesson'
-         ORDER BY m.order_index, r.order_index
-         LIMIT 3`,
-        [aiForEveryone],
-      );
-      for (const r of rows) {
+    // ---- datos de demostración (solo con SEED_DEMO_DATA=true) ----
+    // Matrícula automática + progreso inicial del usuario de prueba. En producción
+    // los estudiantes reales se matriculan por su cuenta (POST /api/enrollments);
+    // no se auto-matricula ninguna cuenta demo ni se toca el progreso de nadie.
+    if (SEED_DEMO_DATA && testId) {
+      const enrollSlugs = [
+        ...MASTER_ASIGNATURAS.map((a) => a.slug),
+        'biblioteca-master',
+        'aula-ai-for-everyone',
+        'aula-elements-of-ai',
+        'native-ai-101',
+      ];
+      for (const slug of enrollSlugs) {
+        const courseId = bySlug[slug];
+        if (!courseId) continue;
         await client.query(
-          `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
-           ON CONFLICT (user_id, resource_id) DO NOTHING`,
-          [testId, r.id],
+          `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'student')
+           ON CONFLICT (user_id, course_id) DO NOTHING`,
+          [testId, courseId],
+        );
+        await client.query(
+          `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'instructor')
+           ON CONFLICT (user_id, course_id) DO NOTHING`,
+          [instructorId, courseId],
         );
       }
+
+      const aiForEveryone = bySlug['aula-ai-for-everyone'];
+      if (aiForEveryone) {
+        const { rows } = await client.query(
+          `SELECT r.id FROM resources r
+           JOIN modules m ON m.id = r.module_id
+           WHERE m.course_id = $1 AND r.type = 'lesson'
+           ORDER BY m.order_index, r.order_index
+           LIMIT 3`,
+          [aiForEveryone],
+        );
+        for (const r of rows) {
+          await client.query(
+            `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
+             ON CONFLICT (user_id, resource_id) DO NOTHING`,
+            [testId, r.id],
+          );
+        }
+      }
+
+      await client.query(
+        `INSERT INTO notifications (user_id, type, title, message)
+         SELECT $1, 'course', 'Bienvenido al Campus', 'Tu catálogo está listo: programa, aulas, biblioteca, Máster IEP y cursos nativos.'
+         WHERE NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = $1 AND title = 'Bienvenido al Campus')`,
+        [testId],
+      );
     }
 
-    // ---- notificación de bienvenida ----
-    await client.query(
-      `INSERT INTO notifications (user_id, type, title, message)
-       SELECT $1, 'course', 'Bienvenido al Campus', 'Tu catálogo está listo: programa, aulas, biblioteca, Máster IEP y cursos nativos.'
-       WHERE NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = $1 AND title = 'Bienvenido al Campus')`,
-      [testId],
-    );
+    if (orphanModules || orphanResources) {
+      console.warn(
+        `[seed] AVISO: ${orphanModules} módulo(s) y ${orphanResources} recurso(s) en la BD ya no están en seed-data ` +
+          `(contenido retirado o reordenado). No se eliminan; revísalos manualmente si procede.`,
+      );
+    }
 
     await client.query('COMMIT');
 
