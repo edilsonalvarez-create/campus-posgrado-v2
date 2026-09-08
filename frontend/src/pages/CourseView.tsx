@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useCourse } from '../hooks/useCourses'
 import { useMarkResource } from '../hooks/useProgress'
 import { useSubmissions } from '../hooks/useSubmissions'
@@ -362,6 +362,8 @@ function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; 
 export default function CourseView() {
   const { courseId, resourceId } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const preview = searchParams.get('preview') === '1'
   const { data: course, isLoading, isError } = useCourse(courseId || '')
   const mark = useMarkResource()
   const { data: resume } = useResume(course?.id)
@@ -458,6 +460,13 @@ export default function CourseView() {
               </>
             )}
           </nav>
+          {preview && (
+            <p className="mt-2 text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
+              👁️ <strong>Modo consulta.</strong> Esta asignatura aún está bloqueada:
+              puedes leer todo el material, pero para hacer el examen, entregar el
+              proyecto o registrar progreso primero debes completar la asignatura anterior.
+            </p>
+          )}
           <div className="flex items-start justify-between gap-3 mt-1">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{course.title}</h1>
             <div className="flex gap-1 shrink-0">

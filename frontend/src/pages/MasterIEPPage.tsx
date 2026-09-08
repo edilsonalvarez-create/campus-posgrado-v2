@@ -12,22 +12,30 @@ function AsignaturaCard({
   asignatura,
   prereqTitle,
   onOpen,
+  onPreview,
 }: {
   asignatura: ProgramAsignatura
   prereqTitle: string | null
   onOpen: () => void
+  onPreview: () => void
 }) {
   const pct = asignatura.progress.percentage
 
   if (asignatura.locked) {
     return (
-      <div className="bg-gray-100 dark:bg-gray-800/60 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-5 opacity-70">
+      <div className="bg-gray-100 dark:bg-gray-800/60 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-5 opacity-80">
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-bold text-gray-500 dark:text-gray-400 flex-1">🔒 {asignatura.title}</h3>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {prereqTitle ? `Completa "${prereqTitle}" para desbloquear.` : 'Bloqueada.'}
         </p>
+        <button
+          onClick={onPreview}
+          className="mt-3 text-sm font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+        >
+          👁️ Ver en modo consulta →
+        </button>
       </div>
     )
   }
@@ -151,6 +159,7 @@ export function MasterIEPPage() {
                   asignatura={a}
                   prereqTitle={a.prerequisiteSlug ? titleBySlug[a.prerequisiteSlug] || null : null}
                   onOpen={() => navigate(`/courses/${a.slug}`)}
+                  onPreview={() => navigate(`/courses/${a.slug}?preview=1`)}
                 />
               ))}
             </div>
