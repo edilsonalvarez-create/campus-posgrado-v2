@@ -64,13 +64,34 @@ VITE_API_URL = https://campus-posgrado-v2-api.railway.app/api
 4. Seleccionar: `campus-posgrado-v2`
 5. **Deploy**
 
-Railway detectará automáticamente el Dockerfile
+Railway detectará automáticamente el Dockerfile (raíz).
 
-### Configurar Variables:
+### Configurar Variables del servicio backend:
 ```
+# Base de datos: Railway la inyecta al añadir el plugin PostgreSQL (DATABASE_URL).
 PORT=3001
-NODE_ENV=production
+NODE_ENV=production          # (ya lo fija el Dockerfile)
+
+# Arranque
+AUTO_SEED=sync               # migraciones + seed no destructivo en cada arranque
+SEED_DEMO_DATA=false
+
+# Motor de exámenes (opcional)
+EXAM_COOLDOWN_HOURS=24
+
+# LLM — tutor y asistencia de nota (opcional; sin key el tutor cae a FAQ y
+# /grade-suggestion devuelve 501)
+LLM_PROVIDER=anthropic
+LLM_MODEL=claude-sonnet-5
+LLM_MODEL_HEAVY=claude-opus-5
+ANTHROPIC_API_KEY=<secreto — pégalo solo en el panel de Railway>
+
+# Referencia de catálogo por asignatura (opcional; si el IEP facilita las claves)
+# OFFICIAL_CODE_V=... OFFICIAL_CODE_VIII=... OFFICIAL_CODE_TFM=...
 ```
+
+> ⚠️ Toma un backup de la base antes del primer deploy con las migraciones
+> nuevas: `004_certificates_kind.sql` cambia una constraint de `certificates`.
 
 **Tu URL será:** `https://campus-posgrado-v2-api.railway.app`
 

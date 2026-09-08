@@ -52,34 +52,21 @@ git push -u origin main
 
 ### PASO 3: Deploy Backend a Railway
 
-1. Ir a https://railway.app/new
-2. Crear proyecto vacío
-3. Agregar servicio: **Dockerfile**
-4. Crear `backend/Dockerfile`:
+El repo ya trae `Dockerfile` (raíz) y `railway.toml`. No hay que escribir nada.
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY backend/package*.json ./
-RUN npm install --legacy-peer-deps
-COPY backend .
-EXPOSE 3001
-CMD ["node", "simple-server.js"]
-```
+1. Ir a https://railway.app/new → **Deploy from GitHub** → `campus-posgrado-v2`, rama `main`.
+2. Añadir el plugin **PostgreSQL** (inyecta `DATABASE_URL`).
+3. **Backup de la base** antes del primer deploy con las migraciones nuevas
+   (`004_certificates_kind.sql` cambia una constraint de `certificates`).
+4. Configurar las variables del servicio — ver la lista completa en
+   `DEPLOYMENT_QUICK_START.md` (PASO 4). Mínimo operativo:
+   `PORT=3001`, `AUTO_SEED=sync`, `SEED_DEMO_DATA=false`. Para el tutor IA:
+   `LLM_PROVIDER=anthropic`, `LLM_MODEL=claude-sonnet-5`,
+   `LLM_MODEL_HEAVY=claude-opus-5`, `ANTHROPIC_API_KEY=<secreto>`.
+5. Las migraciones corren solas al arrancar; con `AUTO_SEED=sync` el seed
+   (no destructivo) también.
 
-5. Hacer push:
-```bash
-git push -u origin main
-```
-
-6. En Railway:
-   - Conectar repositorio GitHub
-   - Rama: `main`
-   - Directorio raíz: `.`
-   - Build command: (dejar vacío)
-   - Start command: `node backend/simple-server.js`
-
-✅ Obtendrás: `https://campus-backend-xxxx.railway.app`
+✅ Obtendrás: `https://campus-posgrado-v2-production.up.railway.app`
 
 ---
 

@@ -63,9 +63,18 @@ https://campus-posgrado-v2.vercel.app
 
 Railway detectará automáticamente `Dockerfile`
 
+6. Añadir el plugin **PostgreSQL** y hacer **backup de la base** antes del
+   primer deploy (la migración `004_certificates_kind.sql` cambia una
+   constraint).
+7. Configurar variables del servicio (lista completa en
+   `DEPLOYMENT_QUICK_START.md`): `PORT=3001`, `AUTO_SEED=sync`,
+   `SEED_DEMO_DATA=false`; para el tutor IA `LLM_PROVIDER=anthropic`,
+   `LLM_MODEL=claude-sonnet-5`, `LLM_MODEL_HEAVY=claude-opus-5`,
+   `ANTHROPIC_API_KEY=<secreto>`.
+
 **Tu Backend estará en:**
 ```
-https://campus-backend-XXXX.railway.app/api
+https://campus-posgrado-v2-production.up.railway.app/api
 ```
 
 ---
