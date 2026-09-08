@@ -55,7 +55,7 @@ export function NotificationBell() {
                 <div
                   key={notification.id}
                   className={`p-4 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-                    !notification.read ? 'bg-blue-50 dark:bg-blue-900/10' : ''
+                    !notification.read ? 'bg-primary-50 dark:bg-primary-900/10' : ''
                   }`}
                   onClick={() => {
                     if (!notification.read) {
@@ -77,7 +77,7 @@ export function NotificationBell() {
                       </p>
                     </div>
                     {!notification.read && (
-                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1 flex-shrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-1 flex-shrink-0"></div>
                     )}
                   </div>
                 </div>

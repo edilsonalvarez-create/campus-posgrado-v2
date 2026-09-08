@@ -31,7 +31,7 @@ export function InstructorDashboard() {
           <p className="text-gray-500 mb-4">No tienes acceso a esta página</p>
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-blue-600 hover:underline"
+            className="text-primary-600 hover:underline"
           >
             Volver al dashboard
           </button>
@@ -49,7 +49,7 @@ export function InstructorDashboard() {
           </h1>
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-blue-600 dark:text-blue-400 hover:underline"
+            className="text-primary-600 dark:text-primary-400 hover:underline"
           >
             ← Volver al dashboard
           </button>
@@ -95,8 +95,8 @@ export function InstructorDashboard() {
                   onClick={() => setSelectedCourseId(course.id)}
                   className={`text-left p-4 rounded-lg border-2 transition-colors ${
                     selectedCourseId === course.id
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-300'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-primary-300'
                   }`}
                 >
                   <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -119,7 +119,7 @@ export function InstructorDashboard() {
                 onClick={() => setSelectedTab('submissions')}
                 className={`px-4 py-2 font-medium border-b-2 transition-colors ${
                   selectedTab === 'submissions'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                     : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
                 }`}
               >
@@ -129,7 +129,7 @@ export function InstructorDashboard() {
                 onClick={() => setSelectedTab('analytics')}
                 className={`px-4 py-2 font-medium border-b-2 transition-colors ${
                   selectedTab === 'analytics'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                     : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
                 }`}
               >
@@ -144,7 +144,7 @@ export function InstructorDashboard() {
                     onClick={() => setSubmissionsTab('pending')}
                     className={`px-4 py-2 font-medium text-sm transition-colors ${
                       submissionsTab === 'pending'
-                        ? 'text-blue-600 dark:text-blue-400'
+                        ? 'text-primary-600 dark:text-primary-400'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
                     }`}
                   >
@@ -154,7 +154,7 @@ export function InstructorDashboard() {
                     onClick={() => setSubmissionsTab('all')}
                     className={`px-4 py-2 font-medium text-sm transition-colors ${
                       submissionsTab === 'all'
-                        ? 'text-blue-600 dark:text-blue-400'
+                        ? 'text-primary-600 dark:text-primary-400'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
                     }`}
                   >

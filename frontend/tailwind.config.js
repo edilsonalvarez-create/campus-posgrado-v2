@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // el tema lo fija el script de index.html (localStorage → preferencia del SO)
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,8 +8,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Paleta institucional IEP (rojo). Fase 1: se usa en la UI de evaluación
-        // nueva; el barrido completo de los literales blue-* es de Fase 3.
+        // Paleta institucional IEP (rojo). Fuente única de color de marca; los
+        // literales blue-*/indigo-* se barrieron a primary-* (sep-2026).
         primary: {
           50: '#fff1ef',
           100: '#ffe1dc',

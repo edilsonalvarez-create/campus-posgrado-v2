@@ -25,11 +25,11 @@ export function CertificatesList() {
       {certificates.map((cert) => (
         <div
           key={cert.id}
-          className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-6"
+          className="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border-2 border-primary-200 dark:border-primary-800 rounded-lg p-6"
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">
+              <h3 className="text-lg font-bold text-primary-900 dark:text-primary-100 mb-2">
                 🎓 Certificado
               </h3>
               <p className="text-gray-800 dark:text-gray-200 font-semibold mb-1">
@@ -43,7 +43,7 @@ export function CertificatesList() {
               </p>
             </div>
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
               onClick={() => {
                 // Future: Download certificate PDF
                 alert('Descarga de certificado disponible próximamente');

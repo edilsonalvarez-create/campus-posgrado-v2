@@ -236,9 +236,9 @@ function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; 
       <div>
         {cj.mins ? <p className="text-sm text-gray-500 mb-4">⏱️ {cj.mins} min</p> : null}
         {cj.objetivo && (
-          <div className="mb-4 flex gap-2 items-start bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded p-3">
+          <div className="mb-4 flex gap-2 items-start bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 rounded p-3">
             <span className="text-lg leading-none">🎯</span>
-            <p className="text-sm text-indigo-900 dark:text-indigo-200">
+            <p className="text-sm text-primary-900 dark:text-primary-200">
               <span className="font-semibold">Objetivo: </span>
               {cj.objetivo}
             </p>

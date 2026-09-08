@@ -22,7 +22,7 @@ export function SubmissionsPage() {
         <p className="text-gray-500">Curso no encontrado</p>
         <button
           onClick={() => navigate('/dashboard')}
-          className="text-blue-600 hover:underline mt-4"
+          className="text-primary-600 hover:underline mt-4"
         >
           Volver al dashboard
         </button>
@@ -46,7 +46,7 @@ export function SubmissionsPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <button
           onClick={() => navigate(`/courses/${courseId}`)}
-          className="text-blue-600 dark:text-blue-400 hover:underline mb-4 flex items-center gap-2"
+          className="text-primary-600 dark:text-primary-400 hover:underline mb-4 flex items-center gap-2"
         >
           ← Volver al curso
         </button>
@@ -85,7 +85,7 @@ export function SubmissionsPage() {
                 onClick={() => setSelectedTab('my-submissions')}
                 className={`px-4 py-2 font-medium border-b-2 transition-colors ${
                   selectedTab === 'my-submissions'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                     : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
                 }`}
               >
@@ -95,7 +95,7 @@ export function SubmissionsPage() {
                 onClick={() => setSelectedTab('grading')}
                 className={`px-4 py-2 font-medium border-b-2 transition-colors ${
                   selectedTab === 'grading'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                     : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
                 }`}
               >

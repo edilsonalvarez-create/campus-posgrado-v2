@@ -82,7 +82,7 @@ export function MasterIEPPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <p className="text-gray-500">No se pudo cargar el Máster.</p>
-        <button onClick={() => navigate('/')} className="text-blue-600 hover:underline">
+        <button onClick={() => navigate('/')} className="text-primary-600 hover:underline">
           Volver al dashboard
         </button>
       </div>

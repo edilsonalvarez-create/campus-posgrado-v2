@@ -54,7 +54,7 @@ export function SubmissionForm({ resourceId, courseId, resourceTitle, onSuccess 
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Describe tu respuesta o solución aquí..."
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
           rows={8}
           required
         />
@@ -62,7 +62,7 @@ export function SubmissionForm({ resourceId, courseId, resourceTitle, onSuccess 
       <button
         type="submit"
         disabled={isPending || !content.trim()}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+        className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
       >
         {isPending ? 'Enviando...' : 'Enviar entrega'}
       </button>

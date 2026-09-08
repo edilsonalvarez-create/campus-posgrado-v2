@@ -24,7 +24,7 @@ export default function CourseCard({ id, title, description, imageUrl, progress 
       onClick={() => navigate(`/courses/${id}`)}
       className="text-left bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition overflow-hidden flex flex-col border border-gray-100 dark:border-gray-700"
     >
-      <div className="h-32 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-end p-4">
+      <div className="h-32 bg-gradient-to-br from-primary-500 to-primary-600 flex items-end p-4">
         {imageUrl ? (
           <img src={imageUrl} alt="" className="absolute inset-0 h-32 w-full object-cover opacity-0" aria-hidden />
         ) : null}
@@ -40,7 +40,7 @@ export default function CourseCard({ id, title, description, imageUrl, progress 
             <span>{pct}%</span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-            <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+            <div className="bg-primary-600 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {completed}/{total} lecciones

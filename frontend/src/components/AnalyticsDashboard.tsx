@@ -21,7 +21,7 @@ export function AnalyticsDashboard({ courseId, courseName }: AnalyticsDashboardP
       label: 'Estudiantes Inscritos',
       value: analytics.totalStudents,
       icon: '👥',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20'
+      bgColor: 'bg-primary-50 dark:bg-primary-900/20'
     },
     {
       label: 'Entregas Totales',
@@ -76,7 +76,7 @@ export function AnalyticsDashboard({ courseId, courseName }: AnalyticsDashboardP
             Calificación Promedio
           </h3>
           <div className="flex items-center justify-between">
-            <span className="text-5xl font-bold text-blue-600 dark:text-blue-400">
+            <span className="text-5xl font-bold text-primary-600 dark:text-primary-400">
               {analytics.averageGrade.toFixed(1)}
             </span>
             <span className="text-sm text-gray-600 dark:text-gray-400">

@@ -159,7 +159,7 @@ export function LecturaGuiada({ data }: { data: LecturaGuiadaData }) {
             {data.fuentes.map((f, i) => (
               <li key={i}>
                 {f.url ? (
-                  <a href={f.url} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                  <a href={f.url} target="_blank" rel="noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline">
                     {f.titulo}
                   </a>
                 ) : (

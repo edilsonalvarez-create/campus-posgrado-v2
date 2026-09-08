@@ -32,7 +32,7 @@ export function ExploreCoursesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <button
           onClick={() => navigate('/')}
-          className="mb-6 text-blue-600 dark:text-blue-400 hover:underline"
+          className="mb-6 text-primary-600 dark:text-primary-400 hover:underline"
         >
           ← Volver al dashboard
         </button>
@@ -51,7 +51,7 @@ export function ExploreCoursesPage() {
                 placeholder="Buscar cursos por título o descripción..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500"
               />
               <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
             </div>
@@ -60,7 +60,7 @@ export function ExploreCoursesPage() {
             <select
               value={filterProgress}
               onChange={(e) => setFilterProgress(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
             >
               <option value="all">Todos</option>
               <option value="active">En Progreso</option>
@@ -71,7 +71,7 @@ export function ExploreCoursesPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
             >
               <option value="recent">Recientes</option>
               <option value="progress">Por Progreso</option>

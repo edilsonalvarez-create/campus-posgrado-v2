@@ -50,9 +50,9 @@ export function SubmissionList({ submissions, isLoading }: SubmissionListProps) 
           </p>
 
           {submission.status === 'graded' && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded p-3">
+            <div className="bg-primary-50 dark:bg-primary-900/20 rounded p-3">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Calificación: <span className="text-blue-600 dark:text-blue-400">{submission.grade}/100</span>
+                Calificación: <span className="text-primary-600 dark:text-primary-400">{submission.grade}/100</span>
               </p>
               {submission.feedback && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{submission.feedback}</p>

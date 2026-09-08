@@ -76,7 +76,7 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
             setAnswers({});
             setScore(null);
           }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+          className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
           Reintentar
         </button>
@@ -109,7 +109,7 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
         </div>
         <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-2">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all"
+            className="bg-primary-600 h-2 rounded-full transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -125,7 +125,7 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
         {question.options.map((option) => (
           <label
             key={option.id}
-            className="flex items-center p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
+            className="flex items-center p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary-500 dark:hover:border-primary-500 transition-colors"
           >
             <input
               type="radio"
@@ -138,7 +138,7 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
                   [question.id]: e.target.value
                 })
               }
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-primary-600"
             />
             <span className="ml-3 text-gray-900 dark:text-white font-medium">
               {option.text}
@@ -163,7 +163,7 @@ export function QuizView({ quizId, onComplete }: QuizViewProps) {
             }
           }}
           disabled={!answers[question.id] || currentQuestion === quiz.questions.length - 1}
-          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors font-medium"
+          className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg transition-colors font-medium"
         >
           Siguiente →
         </button>

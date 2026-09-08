@@ -54,7 +54,7 @@ export function CourseCreationWizard({ onSuccess, onCancel }: CourseCreationWiza
             key={i}
             className={`h-2 flex-1 rounded-full transition-colors ${
               i <= step
-                ? 'bg-blue-600 dark:bg-blue-400'
+                ? 'bg-primary-600 dark:bg-primary-400'
                 : 'bg-gray-300 dark:bg-gray-600'
             }`}
           />
@@ -73,7 +73,7 @@ export function CourseCreationWizard({ onSuccess, onCancel }: CourseCreationWiza
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Ej: Inteligencia Artificial Avanzada"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div>
@@ -86,7 +86,7 @@ export function CourseCreationWizard({ onSuccess, onCancel }: CourseCreationWiza
                 setFormData({ ...formData, description: e.target.value })
               }
               placeholder="Describe el contenido y objetivos del curso..."
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 resize-none"
               rows={4}
             />
           </div>
@@ -99,8 +99,8 @@ export function CourseCreationWizard({ onSuccess, onCancel }: CourseCreationWiza
       {/* Step 2: Estructura */}
       {step === 2 && (
         <div className="space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+          <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 border border-primary-200 dark:border-primary-800">
+            <p className="text-sm text-primary-800 dark:text-primary-200">
               💡 En el siguiente paso podrás agregar módulos y recursos a tu curso.
             </p>
           </div>
@@ -165,7 +165,7 @@ export function CourseCreationWizard({ onSuccess, onCancel }: CourseCreationWiza
           <button
             onClick={handleNext}
             disabled={step === 1 && !formData.title}
-            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors font-medium"
+            className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg transition-colors font-medium"
           >
             Siguiente →
           </button>
