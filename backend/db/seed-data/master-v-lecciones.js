@@ -5,6 +5,12 @@
 // asignatura aborda el mismo territorio desde el marco legal y de gobernanza,
 // evitando deliberadamente repetir el contenido de aquella lección.
 
+//
+// Recursos: cada lección recibe >=2 recursos. Las que no traen bloque `recursos:`
+// inline se completan en el seed desde `template.json` (weaveLessonResources).
+// El resultado completo y revisable está en seed-data/RECURSOS_POR_LECCION.md
+// (regenerar con: node scripts/dump-lesson-resources.mjs).
+
 const lecciones = [
   {
     contenidoOficial: 'Introducción a la Inteligencia Artificial',

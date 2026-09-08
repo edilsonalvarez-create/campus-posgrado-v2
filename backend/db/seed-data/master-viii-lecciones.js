@@ -5,6 +5,12 @@
 // proyectos; esta asignatura aborda el mismo territorio de innovación desde
 // el diseño centrado en el humano (Design Thinking), con técnicas propias.
 
+//
+// Recursos: cada lección recibe >=2 recursos. Las que no traen bloque `recursos:`
+// inline se completan en el seed desde `template.json` (weaveLessonResources).
+// El resultado completo y revisable está en seed-data/RECURSOS_POR_LECCION.md
+// (regenerar con: node scripts/dump-lesson-resources.mjs).
+
 const lecciones = [
   {
     contenidoOficial: 'Fundamentos de Design Thinking',

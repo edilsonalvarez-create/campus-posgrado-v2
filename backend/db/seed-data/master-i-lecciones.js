@@ -7,6 +7,12 @@
 // las aulas ya escritas del campus (AI for Everyone, Elements of AI, Introduction
 // to Generative AI), no copiado literalmente de ellas.
 
+//
+// Recursos: cada lección recibe >=2 recursos. Las que no traen bloque `recursos:`
+// inline se completan en el seed desde `template.json` (weaveLessonResources).
+// El resultado completo y revisable está en seed-data/RECURSOS_POR_LECCION.md
+// (regenerar con: node scripts/dump-lesson-resources.mjs).
+
 const lecciones = [
   {
     contenidoOficial: 'IA y Toma de Decisiones Automatizadas',
