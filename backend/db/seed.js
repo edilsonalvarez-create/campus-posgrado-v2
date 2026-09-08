@@ -52,10 +52,10 @@ function loadItemBanks() {
 const ITEM_BANKS = loadItemBanks();
 const REVISIONS = tryRequire('revisions.json') || {};
 
-// Tracks hands-on (Fase 2): sustituyen el entregable de las asignaturas técnicas
-// por una práctica computacional real. handson/master-{iii,vi,ix,x}.js
+// Tracks hands-on: sustituyen el entregable conceptual por una práctica
+// computacional real. handson/master-{iii,vi,vii,ix,x,xi}.js
 const HANDSON = {};
-for (const n of ['iii', 'vi', 'ix', 'x']) {
+for (const n of ['iii', 'vi', 'vii', 'ix', 'x', 'xi']) {
   const h = tryRequire(`handson/master-${n}.js`);
   if (h) HANDSON[h.scopeSlug] = h;
 }
@@ -448,7 +448,7 @@ async function main() {
       }
       const proyecto = asig.slug === 'master-tfm' ? tm : PROYECTOS_PRACTICOS[asig.slug];
       if (proyecto) {
-        const hs = HANDSON[asig.slug]; // track hands-on (III/VI/IX/X)
+        const hs = HANDSON[asig.slug]; // track hands-on (III/VI/VII/IX/X/XI)
         modules.push({
           title: asig.slug === 'master-tfm' ? 'Entrega del TFM' : hs ? 'Práctica computacional' : 'Proyecto práctico',
           subtitle: hs

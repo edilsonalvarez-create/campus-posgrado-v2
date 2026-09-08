@@ -666,8 +666,8 @@ const RUBRICS = [
     ],
   },
 
-  // ---------- Rúbricas de los tracks hands-on (Fase 2, asignaturas III/VI/IX/X) ----------
-  ...['iii', 'vi', 'ix', 'x'].map((n) => {
+  // ---------- Rúbricas de los tracks hands-on (asignaturas III/VI/VII/IX/X/XI) ----------
+  ...['iii', 'vi', 'vii', 'ix', 'x', 'xi'].map((n) => {
     const dominio = {
       iii: {
         key: 'batch-vs-streaming-medido',
@@ -689,6 +689,28 @@ const RUBRICS = [
           'Justifica la métrica en un caso; fuga mencionada en abstracto.',
           'Métrica justificada en los tres problemas y un punto de fuga concreto evitado.',
           'Además, el orden correcto de split/transform y cómo se auditaría la fuga.',
+        ],
+      },
+      vii: {
+        key: 'delta-de-metrica-y-diagnostico',
+        title: 'Cada cambio de prompt reporta un delta de métrica + sabe cuándo el problema no es el prompt',
+        desc: 'La biblioteca de prompts registra qué versión subió qué métrica sobre la batería de evaluación, y hay al menos un caso donde el diagnóstico es que el fallo no está en el prompt sino en el modelo o en el contexto que se le da.',
+        lv: [
+          'Prompts sin batería de evaluación; mejoras afirmadas "a ojo".',
+          'Batería de casos pero sin registrar el delta de cada cambio.',
+          'Cada versión de prompt con su delta de métrica y un caso de "no es el prompt".',
+          'Además, comparación multimodal (texto vs captura+instrucción) con tasas de acierto.',
+        ],
+      },
+      xi: {
+        key: 'ataque-real-y-mapeo-a-controles',
+        title: 'Rompe su propio sistema y mapea los hallazgos a controles ISO 27001/42001',
+        desc: 'El ejercicio ofensivo es real (inyección de prompt / extracción de contexto sobre el RAG propio del módulo IX), el informe tiene formato de pentesting (hallazgo, criticidad, evidencia, mitigación) y cada hallazgo se mapea a un control concreto de ISO/IEC 27001 y 42001.',
+        lv: [
+          'Sin ejercicio ofensivo real, o informe sin evidencia reproducible.',
+          'Ataque genérico descrito; sin criticidad ni mapeo a controles.',
+          'Hallazgos con evidencia y criticidad, mapeados a controles 27001/42001.',
+          'Además, el detector de anomalías defensivo con umbral calibrado a la tasa de falsos positivos asumible.',
         ],
       },
       ix: {
