@@ -25,71 +25,41 @@
 
 ---
 
-## 📚 Master de IEP - Estructura
+## 📚 Máster IEP — Estructura real
 
-### Visión General
+Fuente: documento oficial del IEP + `iep.edu.es`. 11 asignaturas + TFM = **74 ECTS**
+(11 × 6 + TFM 8), en 3 certificados por tramo. Cada asignatura = un curso propio
+(`meta.programSlug = 'master-iep'`), con 6 lecciones (una por "Contenido oficial")
++ examen + proyecto. Gate lineal: cada asignatura se desbloquea al completar la anterior.
 
-El Master de IEP "Inteligencia Artificial y Tecnologías Disruptivas para la Innovación en la Industria 4.0" está diseñado como un programa integral de 52 semanas que cubre:
+### PRO-essentials — Certificado en Innovación y Tecnologías Disruptivas
+| # | Asignatura | slug |
+|---|---|---|
+| I | Artificial Intelligence | `master-i` |
+| II | Innovación tecnológica: Principales Tecnologías Disruptivas | `master-ii` |
+| III | Big Data Dentro de la informática | `master-iii` |
 
-- Fundamentos de IA y Machine Learning
-- Deep Learning y Redes Neuronales
-- Big Data e IoT
-- Cloud Computing
-- Ética y Seguridad en IA
+### PROadvance — Certificado en Tecnologías Disruptivas e IA Avanzada
+| # | Asignatura | slug |
+|---|---|---|
+| IV | Metodologías Ágiles para gestión de proyectos | `master-iv` |
+| V | Ética y regulaciones en el Uso de la IA | `master-v` |
+| VI | Machine Learning | `master-vi` |
+| VII | Prompts Multimodales y Adaptación a Contextos Complejos | `master-vii` |
+| VIII | Metodologías para el desarrollo de productos tecnológicos innovadores | `master-viii` |
+| IX | Uso e Implementación de Modelos de IA Generativa en la Industria 4.0 | `master-ix` |
 
-### Asignaturas Principales
+### PROexpertify — Certificado en Cloud Computing e IA para entornos seguros
+| # | Asignatura | slug |
+|---|---|---|
+| X | AI Platforms | `master-x` |
+| XI | Principios de IA aplicada a entornos seguros | `master-xi` |
 
-#### **Asignatura 1: Fundamentos de IA y Tecnologías Disruptivas**
-- **Créditos:** 6
-- **Duración:** 8 semanas
-- **Nivel:** Introductorio
+### TFM
+| — | Proyecto Fin de Programa / Trabajo Fin de Máster (8 ECTS) | `master-tfm` |
 
-**Módulos:**
-1. **Introducción a la IA**
-   - Historia y evolución (MIT OpenCourseWare)
-   - Tipos de IA (Débil/Fuerte, Narrow/General)
-   - Aplicaciones en la industria
-
-2. **Machine Learning - Fundamentos**
-   - Tipos de aprendizaje (supervisado, no supervisado, refuerzo)
-   - Google ML Crash Course
-   - TensorFlow Playground (interactivo)
-   - Libro: "Machine Learning for Absolute Beginners"
-
-3. **Deep Learning y Redes Neuronales**
-   - Perceptrón y Backpropagation
-   - Andrew Ng Deep Learning Specialization
-   - Libro: "Deep Learning" (Goodfellow, Bengio, Courville)
-   - Proyecto: CNN para clasificación de imágenes
-
-4. **Big Data e IoT**
-   - Los 4 V del Big Data
-   - Sensores inteligentes
-   - Industria 4.0 en manufactura
-
-5. **Cloud Computing**
-   - IaaS, PaaS, SaaS
-   - AWS, Google Cloud, Azure
-   - Labs prácticos
-
-6. **Ética y Seguridad en IA**
-   - Sesgos y Fairness
-   - "Weapons of Math Destruction" (O'Neil)
-   - Privacidad en la era digital
-
-#### **Asignatura 2: Machine Learning Avanzado**
-*(En desarrollo)*
-- Feature Engineering
-- Ensemble Methods
-- Hyperparameter Tuning
-- AutoML y MLOps
-
-#### **Asignatura 3: Deep Learning Especializado**
-*(En desarrollo)*
-- Transfer Learning
-- GANs (Generative Adversarial Networks)
-- NLP con Transformers
-- Vision Transformers
+> El "Módulo puente MLOps" (`modulo-puente-mlops`) es una adición propia del
+> legado, **no** forma parte del pensum oficial; se sirve como curso bonus aparte.
 
 ---
 
@@ -127,53 +97,37 @@ El Master de IEP "Inteligencia Artificial y Tecnologías Disruptivas para la Inn
 
 ## 📝 Sistema de Evaluación
 
-### Componentes de Calificación
+### Componentes de calificación (real)
 
-1. **Quizzes** (10%)
-   - 20 preguntas por módulo
-   - Retroalimentación inmediata
-   - Refuerzo de conceptos
+Por asignatura (I–XI):
 
-2. **Proyectos** (30%)
-   - Propuestas de solución
-   - Análisis crítico
-   - Implementación
+1. **Quiz formativo de lección** — 3 preguntas por lección, se guardan y cuentan
+   para el completado de la lección. No puntúa la nota final.
+2. **Examen de asignatura** — motor de intentos: banco de ítems de aplicación,
+   sorteo de ~15 por intento, 3 intentos + cooldown de 24 h, umbral 70 %,
+   calificación 100 % en servidor.
+3. **Proyecto práctico** — calificado por rúbrica (ver abajo), umbral 70 %.
+   III/VI/IX/X entregan además una práctica computacional (repo/notebook).
 
-3. **Prácticas Hands-On** (30%)
-   - Laboratorios en Python/TensorFlow
-   - Proyectos de código
-   - Implementación de algoritmos
+**Certificado de asignatura** = lecciones completas **+** proyecto ≥ 70 **+**
+examen aprobado (`evaluateCourseCompletion`).
 
-4. **Examen Final** (30%)
-   - Evaluación integral
-   - 120 minutos
-   - Preguntas de análisis y aplicación
+**TFM** — 4 hitos (10/20/30/40 %), rúbrica por hito, subida de artefactos +
+vídeo de defensa, flujo de director (`director_tfm`).
 
-### Rúbricas de Evaluación
+### Rúbricas de evaluación
 
-#### Comprensión Conceptual (25%)
-- Excelente (95): Profunda comprensión de todos los conceptos
-- Bueno (80): Comprensión clara de conceptos principales
-- Aceptable (65): Comprensión parcial
-- Deficiente (40): Comprensión limitada
+20 rúbricas publicadas en `backend/db/seed-data/rubrics.js`, sembradas en
+`rubrics` / `rubric_criteria` / `rubric_levels`:
 
-#### Análisis Crítico (25%)
-- Excelente (95): Análisis profundo y perspicaz
-- Bueno (80): Análisis adecuado
-- Aceptable (65): Análisis básico
-- Deficiente (40): Poco análisis
+- 12 de asignatura (`rubric-master-{i..xi,tfm}`) — 4 criterios × 4 niveles
+  (`Insuficiente` / `En desarrollo` / `Competente` / `Ejemplar`), umbral 70.
+- 4 hands-on (`rubric-handson-master-{iii,vi,ix,x}`).
+- 4 de hito de TFM (`rubric-tfm-{propuesta,estado-arte,revision-intermedia,final}`).
 
-#### Calidad de Solución (30%)
-- Excelente (95): Innovadora, completa y bien fundamentada
-- Bueno (80): Sólida y bien implementada
-- Aceptable (65): Adecuada pero con limitaciones
-- Deficiente (40): Incompleta o mal implementada
-
-#### Presentación (20%)
-- Excelente (95): Clara, organizada y profesional
-- Bueno (80): Clara y bien estructurada
-- Aceptable (65): Aceptable con algunos problemas
-- Deficiente (40): Desorganizada
+El estudiante ve la rúbrica **antes** de entregar (`GET /api/rubrics/:slug`).
+La nota la fija siempre un instructor por criterio; el LLM solo **propone**
+(`/grade-suggestion`, opcional, humano en el bucle).
 
 ---
 
@@ -225,22 +179,31 @@ aún no existen; el consumo del Máster es por web (responsive).
 
 Basado en `Auditoria_Master_IEP_Comite_Multidisciplinario.docx` (2,7/5 — requiere transformación).
 
-**Fase 0 (hecha):** fin de la fuga de respuestas del examen; seed no destructivo;
-certificado desacoplado de un solo examen; docs corregidas; examen suspenso ya no
-acredita progreso.
+**Fases 0–4: implementadas y en `main`** (commit `860cd00`). Migraciones 002–015,
+seed no destructivo. Cubierto por `backend/scripts/smoke.mjs` (15 comprobaciones).
 
-**Fase 1 (en curso):** motor de intentos de examen con límite + cooldown + banco
-de ítems aleatorizado; 12 rúbricas publicadas; recursos reales en las 66 lecciones;
-quiz formativo persistente; completado real de lección. **Nota (auditoría 2026-09-08):** el
-IEP no publica clave de catálogo por asignatura — el campo antes llamado `officialCode`
-(valores `2702799…`) era ruido de conversión del `.docx`; ahora las 12 asignaturas llevan
-`internalCode = IEP-<numeral>-INTERNO` y se expone además `ects` (6 por asignatura, 8 el TFM;
-dato oficial de iep.edu.es). Identificador oficial verificable a nivel programa: RVOE SEP
-México nº 20250986.
+- **Fase 0:** fin de la fuga de respuestas del examen; seed no destructivo;
+  certificado desacoplado de un solo examen; examen suspenso ya no acredita progreso.
+- **Fase 1:** motor de intentos de examen (límite + cooldown + banco aleatorizado,
+  330 ítems); 20 rúbricas publicadas; recursos en las 66 lecciones; quiz formativo
+  persistente; completado real de lección.
+- **Fase 2:** tracks hands-on III/VI/IX/X; TFM con 4 hitos + director; entregable
+  de la Asig. V como anexo SGSI ISO 27001; lectura guiada.
+- **Fase 3:** foro + revisión por pares; analítica de dificultad; navegación móvil;
+  renderer Markdown/diagramas/vídeo.
+- **Fase 4:** tutor socrático por lección (con guardarraíl anti-examen) + asistencia
+  de nota por LLM (propone, no decide).
 
-**Fases 2–4 (planificadas):** tracks hands-on (III/VI/IX/X), TFM con hitos y
-director, foro y revisión por pares, analítica de dificultad, navegación móvil,
-tutor socrático y asistencia de nota por LLM.
+> **Pendiente de despliegue:** al 2026-09-08 producción aún corre el build
+> pre-transformación (ver auditoría de seguimiento). El cierre requiere desplegar
+> `main` a Railway + `AUTO_SEED=sync` + configurar el LLM + re-verificar en vivo.
+
+**Nota sobre identificadores (auditoría 2026-09-08):** el IEP no publica clave de
+catálogo por asignatura. El campo antes llamado `officialCode` (valores `2702799…`)
+era ruido de conversión del `.docx` (coordenadas de líneas decorativas). Ahora las
+12 asignaturas llevan `internalCode = IEP-<numeral>-INTERNO` (override por entorno
+`OFFICIAL_CODE_<numeral>`) y se expone `ects` (6 por asignatura, 8 el TFM; dato
+oficial de iep.edu.es). Identificador oficial a nivel programa: RVOE SEP México nº 20250986.
 
 ---
 
@@ -248,32 +211,36 @@ tutor socrático y asistencia de nota por LLM.
 
 ### Para Estudiantes
 
-1. **Registrarse** y seleccionar "Master de IEP"
-2. **Navegar** por módulos y recursos
-3. **Completar** lecturas, videos y ejercicios
-4. **Enviar** entregas y proyectos
-5. **Recibir** calificación automática y feedback
+1. **Registrarse** y abrir "Máster en IA y Tecnologías Disruptivas".
+2. Recorrer cada lección: contenido → quiz formativo (se guarda) → actividad.
+3. Completar la lección = actividad entregada **+** quiz formativo aprobado.
+4. Hacer el **examen de asignatura** (3 intentos, cooldown 24 h) y entregar el
+   **proyecto** (se ve la rúbrica antes).
+5. El **certificado de asignatura** se emite al cumplir lecciones + proyecto ≥ 70
+   + examen aprobado. La nota del proyecto la pone un instructor por rúbrica.
 
 ### Para Instructores
 
-1. **Crear** preguntas de quiz
-2. **Configurar** rúbricas personalizadas
-3. **Revisar** análisis automático de entregas
-4. **Proporcionar** feedback adicional si es necesario
-5. **Trackear** progreso de estudiantes
+1. Revisar entregas y calificar el **proyecto por rúbrica** (nivel por criterio;
+   comentario obligatorio por debajo del nivel máximo).
+2. Opcional: pedir una **propuesta de nota al LLM** (`/grade-suggestion`) y
+   confirmarla o corregirla — el LLM nunca fija la nota.
+3. Ver el **panel de analítica** (dificultad por recurso, dominio por concepto).
+4. Moderar el **foro** por asignatura y la **revisión por pares**.
+5. Aprobar los **hitos del TFM** (rol `director_tfm` / instructor).
 
 ---
 
-## 📈 Datos
+## 📈 Datos (aprox.)
 
 | Métrica | Valor |
 |---------|-------|
-| Total de cursos | 3+ (Master completo) |
-| Módulos por asignatura | 6 |
-| Recursos integrados | 20+ por módulo |
-| Componentes web | 25+ |
-| Endpoints API | 25+ |
-| Líneas de código | 7,000+ |
+| Asignaturas del Máster | 11 + TFM (74 ECTS: 11 × 6 + 8) |
+| Lecciones propias | 66 (6 por asignatura) |
+| Ítems de examen | 330 (banco de 30 por asignatura) |
+| Rúbricas | 20 (12 asignatura + 4 hands-on + 4 hitos TFM) |
+| Migraciones | 15 (`001`–`015`, aditivas) |
+| Servicio backend | `backend/simple-server.js` (http nativo + `pg`) |
 
 ---
 
@@ -290,11 +257,10 @@ Al completar el Master, los estudiantes reciben:
 ## 📱 Disponibilidad
 
 - **Web:** https://campus-posgrado-v2.vercel.app
-- **Backend API:** https://campus-posgrado-v2-api.railway.app/api
-- **Mobile:** Disponible en Expo Go (iOS/Android)
+- **Backend API:** https://campus-posgrado-v2-production.up.railway.app/api
+- **Mobile:** app Expo con **solo Login + Dashboard** (el consumo del Máster es web)
 
 ---
 
-**Proyecto completado: Campus Posgrado v2.0 + Master de IEP Integrado**  
-**Estado: Production Ready**  
-**Última actualización: Septiembre 2026**
+**Campus Posgrado v2 + Máster IEP** — transformación Fases 0–4 en `main`,
+pendiente de despliegue a producción (2026-09-08).
