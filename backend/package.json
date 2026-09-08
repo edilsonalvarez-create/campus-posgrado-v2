@@ -14,7 +14,9 @@
     "migrate": "node db/migrate.js",
     "seed": "node db/seed.js",
     "extract": "node scripts/extract-legacy-content.mjs",
-    "reset": "node db/migrate.js && node db/seed.js"
+    "reset": "node db/migrate.js && node db/seed.js",
+    "smoke": "node scripts/smoke.mjs",
+    "test": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "pg": "^8.13.1"
