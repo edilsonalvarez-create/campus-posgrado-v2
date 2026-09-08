@@ -5,8 +5,9 @@ WORKDIR /app
 COPY backend/package.json backend/package-lock.json* ./
 RUN npm install --omit=dev --no-audit --no-fund
 
-# Código + migraciones + datos de seed
+# Código + librerías + migraciones + datos de seed
 COPY backend/simple-server.js ./simple-server.js
+COPY backend/lib ./lib
 COPY backend/db ./db
 COPY backend/scripts ./scripts
 

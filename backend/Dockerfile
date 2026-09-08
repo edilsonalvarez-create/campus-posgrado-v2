@@ -5,6 +5,7 @@ COPY package.json package-lock.json* ./
 RUN npm install --omit=dev --no-audit --no-fund
 
 COPY simple-server.js ./simple-server.js
+COPY lib ./lib
 COPY db ./db
 COPY scripts ./scripts
 

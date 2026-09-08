@@ -1,0 +1,10 @@
+# Contexto de build mínimo (la imagen solo necesita backend/{simple-server.js,lib,db,scripts})
+**/node_modules
+frontend
+mobile
+.git
+*.md
+backend/src
+backend/ai-grader.js
+backend/nest-cli.json
+backend/tsconfig.json
