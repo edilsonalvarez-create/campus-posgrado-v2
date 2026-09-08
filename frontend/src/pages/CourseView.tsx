@@ -16,6 +16,7 @@ import { DiagramView } from '../components/DiagramView'
 import { LecturaGuiada } from '../components/LecturaGuiada'
 import { VideoPlayer } from '../components/VideoPlayer'
 import { Forum } from '../components/Forum'
+import { TutorPanel } from '../components/TutorPanel'
 import { useRequestPeerReview, useReceivedPeerReviews } from '../hooks/useCommunity'
 
 interface Resource {
@@ -312,6 +313,7 @@ function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; 
             <p className="text-gray-700 dark:text-gray-300">{cj.preguntaReflexion}</p>
           </div>
         )}
+        <TutorPanel resourceId={resource.id} />
         {((Array.isArray(cj.quiz) && cj.quiz.length > 0) || cj.exercise?.text) && (
           <LessonFormative resourceId={resource.id} quiz={cj.quiz || []} exercise={cj.exercise} />
         )}

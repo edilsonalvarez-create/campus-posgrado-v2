@@ -244,6 +244,28 @@ export const useReviewMilestone = () => {
   });
 };
 
+// ---------- Tutor socrático por lección ----------
+export interface TutorMessage {
+  role: 'user' | 'assistant' | 'system-refusal';
+  content: string;
+  flagged?: boolean;
+}
+export const useTutor = (resourceId?: string) =>
+  useQuery({
+    queryKey: ['tutor', resourceId],
+    queryFn: async () => (await api.get<{ enabled: boolean; messages: TutorMessage[] }>(`/tutor/${resourceId}`)).data,
+    enabled: !!resourceId,
+  });
+
+export const useAskTutor = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { resourceId: string; question: string }) =>
+      (await api.post<{ answer: string; refused: boolean; disabled?: boolean }>(`/tutor/${v.resourceId}`, { question: v.question })).data,
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['tutor', v.resourceId] }),
+  });
+};
+
 // ---------- Asistencia de nota por IA (instructor) ----------
 export const useGradeSuggestion = () =>
   useMutation({

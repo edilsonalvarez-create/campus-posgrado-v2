@@ -1574,6 +1574,151 @@ route('POST', '/api/events', async ({ res, user, body }) => {
   sendJSON(res, 200, { ok: true });
 });
 
+// --- tutor socrático por lección (RAG sobre la lección + sus recursos) ---
+// Detecta intentos de sacar respuestas de examen comparando con los enunciados
+// del examen de la asignatura (coincidencia de trozos largos).
+async function looksLikeExamProbe(courseId, question) {
+  const q = String(question || '').toLowerCase();
+  if (q.length < 25) return false;
+  const exam = (
+    await pool.query(
+      `SELECT r.content_json FROM resources r JOIN modules m ON m.id = r.module_id
+        WHERE m.course_id = $1 AND r.type = 'exam' LIMIT 1`,
+      [courseId],
+    )
+  ).rows[0];
+  const stems = [];
+  if (exam && exam.content_json && Array.isArray(exam.content_json.questions)) {
+    for (const it of exam.content_json.questions) if (it && it.q) stems.push(String(it.q).toLowerCase());
+  }
+  const bankRows = (
+    await pool.query(
+      `SELECT ibq.stem FROM item_bank_questions ibq
+         JOIN item_banks b ON b.id = ibq.bank_id
+        WHERE b.scope_slug = (SELECT slug FROM courses WHERE id = $1)`,
+      [courseId],
+    )
+  ).rows;
+  for (const r of bankRows) stems.push(String(r.stem).toLowerCase());
+  // Solapamiento de una subcadena larga (>= 40 chars) entre la pregunta y algún enunciado.
+  return stems.some((s) => {
+    for (let i = 0; i + 40 <= s.length; i += 10) {
+      if (q.includes(s.slice(i, i + 40))) return true;
+    }
+    return false;
+  });
+}
+
+async function tutorContext(resourceId) {
+  const r = (
+    await pool.query(
+      `SELECT r.content_json, r.title, m.course_id, c.title AS course_title
+         FROM resources r JOIN modules m ON m.id = r.module_id JOIN courses c ON c.id = m.course_id
+        WHERE r.id = $1`,
+      [resourceId],
+    )
+  ).rows[0];
+  if (!r) return null;
+  const cj = r.content_json || {};
+  const parts = [
+    `Asignatura: ${r.course_title}`,
+    `Lección: ${r.title}`,
+    cj.objetivo ? `Objetivo: ${cj.objetivo}` : '',
+    cj.introduccion || '',
+    Array.isArray(cj.conceptosClave) ? `Conceptos clave: ${cj.conceptosClave.join('; ')}` : '',
+    ...(Array.isArray(cj.body) ? cj.body : []),
+    cj.example ? `Ejemplo — ${cj.example.title}: ${cj.example.text}` : '',
+    Array.isArray(cj.keys) ? `Puntos clave: ${cj.keys.join(' | ')}` : '',
+  ].filter(Boolean);
+  const resources = [];
+  const rec = cj.recursos || {};
+  for (const b of rec.libros || []) resources.push(`${b.titulo}${b.autor ? ` (${b.autor})` : ''} ${b.url || ''}`);
+  for (const v of rec.videos || []) resources.push(`${v.titulo}${v.canal ? ` (${v.canal})` : ''} ${v.url || ''}`);
+  return { courseId: r.course_id, text: parts.join('\n\n').slice(0, 12000), resources, faq: cj.tutorFaq || [] };
+}
+
+route('GET', '/api/tutor/:resourceId', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.resourceId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const th = (
+    await pool.query(`SELECT id FROM tutor_threads WHERE user_id = $1 AND resource_id = $2`, [user.id, params.resourceId])
+  ).rows[0];
+  const messages = th
+    ? (
+        await pool.query(`SELECT role, content, flagged, created_at FROM tutor_messages WHERE thread_id = $1 ORDER BY created_at`, [th.id])
+      ).rows
+    : [];
+  sendJSON(res, 200, { enabled: llm.enabled(), messages });
+});
+
+route('POST', '/api/tutor/:resourceId', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.resourceId)) return sendJSON(res, 400, { message: 'id inválido' });
+  const question = String(body.question || '').trim();
+  if (question.length < 3) return sendJSON(res, 400, { message: 'Escribe tu pregunta.' });
+  const ctx = await tutorContext(params.resourceId);
+  if (!ctx) return sendJSON(res, 404, { message: 'Lección no encontrada' });
+
+  const th = (
+    await pool.query(
+      `INSERT INTO tutor_threads (user_id, resource_id) VALUES ($1, $2)
+       ON CONFLICT (user_id, resource_id) DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id`,
+      [user.id, params.resourceId],
+    )
+  ).rows[0];
+
+  const isProbe = await looksLikeExamProbe(ctx.courseId, question);
+  await pool.query(`INSERT INTO tutor_messages (thread_id, role, content, flagged) VALUES ($1, 'user', $2, $3)`, [
+    th.id,
+    question.slice(0, 4000),
+    isProbe,
+  ]);
+  await pool
+    .query(`INSERT INTO learning_events (user_id, course_id, resource_id, event_type, payload) VALUES ($1,$2,$3,'tutor_query',$4)`, [
+      user.id,
+      ctx.courseId,
+      params.resourceId,
+      JSON.stringify({ flagged: isProbe }),
+    ])
+    .catch(() => {});
+
+  if (isProbe) {
+    const refusal =
+      'No puedo darte la respuesta de una pregunta de examen o de quiz. Pero sí puedo ayudarte a razonarla: dime qué parte de la lección te genera duda y te hago preguntas para llegar tú a la respuesta.';
+    await pool.query(`INSERT INTO tutor_messages (thread_id, role, content) VALUES ($1, 'system-refusal', $2)`, [th.id, refusal]);
+    return sendJSON(res, 200, { answer: refusal, refused: true });
+  }
+
+  const history = (
+    await pool.query(
+      `SELECT role, content FROM tutor_messages WHERE thread_id = $1 AND role IN ('user','assistant') ORDER BY created_at DESC LIMIT 8`,
+      [th.id],
+    )
+  ).rows
+    .reverse()
+    .slice(0, -1) // quita el mensaje que acabamos de insertar (se pasa como `question`)
+    .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+
+  let answer = null;
+  if (llm.enabled()) {
+    try {
+      const r = await llm.tutor({ lessonContext: ctx.text, resources: ctx.resources, history, question });
+      answer = r.text;
+    } catch (e) {
+      console.error('[tutor] LLM:', e.message);
+    }
+  }
+  if (!answer) {
+    // Fallback: FAQ redactada de la lección, o puntero genérico.
+    const faqHit = (ctx.faq || []).find((f) => question.toLowerCase().includes(String(f.q || '').toLowerCase().slice(0, 20)));
+    answer = faqHit
+      ? faqHit.a
+      : 'El tutor con IA no está disponible ahora mismo. Revisa la sección de "Conceptos clave" y el ejemplo de la lección; si sigues con la duda, plantéala en el foro de la asignatura.';
+  }
+  await pool.query(`INSERT INTO tutor_messages (thread_id, role, content) VALUES ($1, 'assistant', $2)`, [th.id, answer.slice(0, 6000)]);
+  sendJSON(res, 200, { answer, refused: false, disabled: !llm.enabled() });
+});
+
 // --- plan de repaso dirigido (sustituye el gate hueco por control de dominio) ---
 route('GET', '/api/me/review-plan', async ({ res, user }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
