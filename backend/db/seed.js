@@ -787,6 +787,33 @@ async function main() {
       );
     }
 
+    // ---- 8. Hilos ancla del foro (Fase 3): el foro no arranca vacío ----
+    const instructorForAnchor = instructorId;
+    for (const asig of MASTER_ASIGNATURAS) {
+      const cid = bySlug[asig.slug];
+      if (!cid) continue;
+      const anchors = [
+        {
+          title: 'Errores más comunes en el proyecto de esta asignatura',
+          body:
+            'Hilo de referencia. El fallo que más se repite en las entregas de esta asignatura es no cubrir el "apartado que casi todo el mundo se salta" descrito en el criterio de dominio del proyecto. Antes de entregar, revisa que tu trabajo lo aborde de forma explícita. Comenta aquí tus dudas sobre ese punto.',
+        },
+        {
+          title: 'Dudas frecuentes y elección del caso de práctica',
+          body:
+            'Usa este hilo para preguntar sobre el enunciado del proyecto, la elección entre las opciones de práctica, o cómo adaptar el caso de referencia a tu contexto. La opción 1 (un caso real de tu organización) suele dar el mejor aprendizaje.',
+        },
+      ];
+      for (const a of anchors) {
+        await client.query(
+          `INSERT INTO forum_threads (course_id, author_id, title, body, pinned, anchor)
+           SELECT $1, $2, $3, $4, true, true
+           WHERE NOT EXISTS (SELECT 1 FROM forum_threads WHERE course_id = $1 AND title = $3)`,
+          [cid, instructorForAnchor, a.title, a.body],
+        );
+      }
+    }
+
     if (orphanModules || orphanResources) {
       console.warn(
         `[seed] AVISO: ${orphanModules} módulo(s) y ${orphanResources} recurso(s) en la BD ya no están en seed-data ` +

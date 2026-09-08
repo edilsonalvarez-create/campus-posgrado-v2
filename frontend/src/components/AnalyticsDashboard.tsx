@@ -127,6 +127,51 @@ export function AnalyticsDashboard({ courseId, courseName }: AnalyticsDashboardP
         )}
       </div>
 
+      {/* Dificultad por recurso (analítica de aprendizaje) */}
+      {analytics.difficulty && analytics.difficulty.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Dificultad por examen</h3>
+          <p className="text-xs text-gray-500 mb-4">Recursos con mayor tasa de suspenso en la cohorte.</p>
+          <div className="space-y-2">
+            {analytics.difficulty.map((d) => (
+              <div key={d.resourceId} className="flex items-center justify-between text-sm">
+                <span className="text-gray-700 dark:text-gray-300 truncate flex-1">{d.title}</span>
+                <span className="text-gray-500 mx-3">{d.attempts} intento(s)</span>
+                <span
+                  className={`font-semibold ${d.failRate >= 50 ? 'text-rose-600' : d.failRate >= 25 ? 'text-amber-600' : 'text-emerald-600'}`}
+                >
+                  {d.failRate}% suspenso{d.avgScore != null ? ` · media ${d.avgScore}` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Conceptos con más fallo en la cohorte */}
+      {analytics.skillGaps && analytics.skillGaps.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Conceptos que más cuestan</h3>
+          <p className="text-xs text-gray-500 mb-4">Ratio de acierto agregado de la cohorte por contenido oficial.</p>
+          <div className="space-y-2">
+            {analytics.skillGaps.map((g) => (
+              <div key={g.skillTag} className="text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-700 dark:text-gray-300 truncate">{g.skillTag}</span>
+                  <span className="text-gray-500 ml-2">{g.ratio}%</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-1">
+                  <div
+                    className={`h-1.5 rounded-full ${g.ratio < 50 ? 'bg-rose-500' : g.ratio < 70 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                    style={{ width: `${g.ratio}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Entregas Pendientes */}
       {analytics.pendingSubmissions > 0 && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">

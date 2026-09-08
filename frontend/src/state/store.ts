@@ -5,7 +5,7 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'student' | 'instructor' | 'admin'
+  role: 'student' | 'instructor' | 'director_tfm' | 'admin'
 }
 
 export interface AuthState {
@@ -16,6 +16,7 @@ export interface AuthState {
   error: string | null
   setUser: (user: User | null) => void
   setTokens: (access: string, refresh: string) => void
+  setAccessToken: (access: string) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   logout: () => void
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user }),
       setTokens: (access, refresh) =>
         set({ accessToken: access, refreshToken: refresh }),
+      setAccessToken: (access) => set({ accessToken: access }),
       setLoading: (loading) => set({ isLoading: loading }),
       setError: (error) => set({ error }),
       logout: () =>

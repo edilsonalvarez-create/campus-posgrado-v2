@@ -14,6 +14,9 @@ import { LessonFormative } from '../components/LessonFormative'
 import { SubmissionForm } from '../components/SubmissionForm'
 import { DiagramView } from '../components/DiagramView'
 import { LecturaGuiada } from '../components/LecturaGuiada'
+import { VideoPlayer } from '../components/VideoPlayer'
+import { Forum } from '../components/Forum'
+import { useRequestPeerReview, useReceivedPeerReviews } from '../hooks/useCommunity'
 
 interface Resource {
   id: string
@@ -110,7 +113,7 @@ function ProjectDelivery({ resource, courseId, courseSlug }: { resource: Resourc
         </div>
       )}
       {cj.deliverable && (
-        <div className="mb-5 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r">
+        <div className="mb-5 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-r">
           <p className="font-semibold text-gray-900 dark:text-white mb-1">Qué debes entregar</p>
           <p className="text-gray-700 dark:text-gray-300">{cj.deliverable}</p>
         </div>
@@ -162,6 +165,7 @@ function ProjectDelivery({ resource, courseId, courseSlug }: { resource: Resourc
                     {s.feedback}
                   </p>
                 )}
+                {cj.rubricSlug && <PeerReviewSection submissionId={s.id} />}
               </div>
             ))}
           </div>
@@ -169,6 +173,37 @@ function ProjectDelivery({ resource, courseId, courseSlug }: { resource: Resourc
       )}
 
       <SubmissionForm resourceId={resource.id} courseId={courseId} resourceTitle={resource.title} />
+    </div>
+  )
+}
+
+function PeerReviewSection({ submissionId }: { submissionId: string }) {
+  const request = useRequestPeerReview()
+  const { data: received = [] } = useReceivedPeerReviews(submissionId)
+  return (
+    <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-2">
+      {received.length > 0 ? (
+        <div>
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Revisión por pares recibida</p>
+          {received.map((r, i) => (
+            <p key={i} className="text-xs text-gray-600 dark:text-gray-400">
+              «{r.comment}»
+            </p>
+          ))}
+        </div>
+      ) : (
+        <button
+          onClick={() => request.mutate(submissionId)}
+          disabled={request.isPending}
+          className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+        >
+          {request.isPending
+            ? 'Asignando…'
+            : request.data?.pending
+              ? 'Aún no hay compañeros que hayan entregado; se asignará cuando los haya'
+              : '👥 Solicitar revisión por pares'}
+        </button>
+      )}
     </div>
   )
 }
@@ -227,7 +262,7 @@ function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; 
         ))}
         {cj.diagram?.mermaid && <DiagramView title={cj.diagram.title} chart={cj.diagram.mermaid} />}
         {cj.example && (
-          <div className="my-5 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r">
+          <div className="my-5 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-r">
             <p className="font-semibold text-gray-900 dark:text-white mb-1">{cj.example.title || 'Ejemplo'}</p>
             <p className="text-gray-700 dark:text-gray-300">{cj.example.text}</p>
           </div>
@@ -243,42 +278,32 @@ function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; 
           </div>
         )}
         {cj.lecturaGuiada && <LecturaGuiada data={cj.lecturaGuiada} />}
-        {(cj.recursos?.libros?.length > 0 || cj.recursos?.videos?.length > 0) && (
-          <div className="my-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {cj.recursos.libros?.length > 0 && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                <p className="font-semibold text-gray-900 dark:text-white mb-2">📚 Para profundizar</p>
-                <ul className="space-y-2">
-                  {cj.recursos.libros.map((b: any, i: number) => (
-                    <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
-                      {b.url ? (
-                        <a href={b.url} target="_blank" rel="noreferrer" className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                          {b.titulo}
-                        </a>
-                      ) : (
-                        <span className="font-medium">{b.titulo}</span>
-                      )}
-                      {b.autor && <span className="text-gray-500 dark:text-gray-400"> — {b.autor}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {cj.recursos.videos?.length > 0 && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                <p className="font-semibold text-gray-900 dark:text-white mb-2">🎬 Videos recomendados</p>
-                <ul className="space-y-2">
-                  {cj.recursos.videos.map((v: any, i: number) => (
-                    <li key={i} className="text-sm">
-                      <a href={v.url} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
-                        {v.titulo}
-                      </a>
-                      {v.canal && <span className="text-gray-500 dark:text-gray-400"> · {v.canal}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {cj.recursos?.libros?.length > 0 && (
+          <div className="my-5 border border-gray-200 dark:border-gray-700 rounded p-4">
+            <p className="font-semibold text-gray-900 dark:text-white mb-2">📚 Para profundizar</p>
+            <ul className="space-y-2">
+              {cj.recursos.libros.map((b: any, i: number) => (
+                <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
+                  {b.url ? (
+                    <a href={b.url} target="_blank" rel="noreferrer" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                      {b.titulo}
+                    </a>
+                  ) : (
+                    <span className="font-medium">{b.titulo}</span>
+                  )}
+                  {b.autor && <span className="text-gray-500 dark:text-gray-400"> — {b.autor}</span>}
+                  {b.ficha && <span className="text-gray-400"> · {b.ficha}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {cj.recursos?.videos?.length > 0 && (
+          <div className="my-5">
+            <p className="font-semibold text-gray-900 dark:text-white mb-2">🎬 Vídeos recomendados</p>
+            {cj.recursos.videos.map((v: any, i: number) => (
+              <VideoPlayer key={i} url={v.url} title={`${v.titulo}${v.canal ? ` · ${v.canal}` : ''}`} />
+            ))}
           </div>
         )}
         {cj.preguntaReflexion && (
@@ -324,7 +349,7 @@ function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; 
     <div className="text-gray-600 dark:text-gray-400">
       <p>Contenido en preparación.</p>
       {resource.url && (
-        <a href={resource.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline mt-2 inline-block">
+        <a href={resource.url} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline mt-2 inline-block">
           Abrir material original ↗
         </a>
       )}
@@ -341,6 +366,8 @@ export default function CourseView() {
   const saveResume = useSaveResume()
   const [selectedId, setSelectedId] = useState<string | null>(resourceId || null)
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({})
+  const [navOpen, setNavOpen] = useState(false)
+  const [tab, setTab] = useState<'content' | 'forum'>('content')
   const initedRef = useRef<string | null>(null)
 
   const modules: Module[] = course?.modules || []
@@ -383,7 +410,7 @@ export default function CourseView() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <p className="text-gray-500">No se pudo cargar el curso.</p>
-        <button onClick={() => navigate('/')} className="text-blue-600 hover:underline">
+        <button onClick={() => navigate('/')} className="text-primary-600 hover:underline">
           Volver al dashboard
         </button>
       </div>
@@ -408,12 +435,46 @@ export default function CourseView() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <button onClick={() => navigate('/')} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            ← Dashboard
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{course.title}</h1>
+          <nav className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-1">
+            <button onClick={() => navigate('/')} className="text-primary-600 dark:text-primary-400 hover:underline">
+              Dashboard
+            </button>
+            {course.meta?.programSlug === 'master-iep' && (
+              <>
+                <span>/</span>
+                <button onClick={() => navigate('/master-iep')} className="text-primary-600 dark:text-primary-400 hover:underline">
+                  Máster IEP
+                </button>
+              </>
+            )}
+            <span>/</span>
+            <span className="text-gray-700 dark:text-gray-300">{course.title}</span>
+            {tab === 'content' && selected && (
+              <>
+                <span>/</span>
+                <span className="text-gray-700 dark:text-gray-300 truncate max-w-[40vw]">{selected.title}</span>
+              </>
+            )}
+          </nav>
+          <div className="flex items-start justify-between gap-3 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{course.title}</h1>
+            <div className="flex gap-1 shrink-0">
+              <button
+                onClick={() => setTab('content')}
+                className={`text-xs px-3 py-1.5 rounded ${tab === 'content' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+              >
+                Contenido
+              </button>
+              <button
+                onClick={() => setTab('forum')}
+                className={`text-xs px-3 py-1.5 rounded ${tab === 'forum' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+              >
+                Foro
+              </button>
+            </div>
+          </div>
           {course.description && (
-            <p className="text-gray-600 dark:text-gray-400 mt-1 max-w-3xl">{course.description}</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1 max-w-3xl text-sm">{course.description}</p>
           )}
           <div className="mt-3 max-w-md">
             <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -423,16 +484,29 @@ export default function CourseView() {
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
+              <div className="bg-primary-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
             </div>
           </div>
         </div>
       </header>
 
+      {tab === 'forum' ? (
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <Forum courseId={course.id} />
+        </div>
+      ) : (
       <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-        {/* Sidebar */}
-        <aside className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-max lg:sticky lg:top-6">
-          <div className="p-3 border-b border-gray-100 dark:border-gray-700 font-semibold text-gray-900 dark:text-white text-sm">
+        {/* Sidebar — plegable en móvil */}
+        <button
+          onClick={() => setNavOpen((o) => !o)}
+          className="lg:hidden w-full text-left bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white"
+        >
+          {navOpen ? '▾' : '▸'} Contenido · {modules.length} módulos
+        </button>
+        <aside
+          className={`${navOpen ? 'block' : 'hidden'} lg:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-max lg:sticky lg:top-6`}
+        >
+          <div className="hidden lg:block p-3 border-b border-gray-100 dark:border-gray-700 font-semibold text-gray-900 dark:text-white text-sm">
             Contenido · {modules.length} módulos
           </div>
           <nav className="max-h-[70vh] overflow-y-auto">
@@ -455,10 +529,13 @@ export default function CourseView() {
                       {m.resources.map((r) => (
                         <li key={r.id}>
                           <button
-                            onClick={() => setSelectedId(r.id)}
+                            onClick={() => {
+                              setSelectedId(r.id)
+                              setNavOpen(false)
+                            }}
                             className={`w-full text-left pl-5 pr-3 py-1.5 text-sm flex items-center gap-2 ${
                               r.id === selectedId
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                             }`}
                           >
@@ -490,7 +567,7 @@ export default function CourseView() {
               {selected.contentJson?.internalCourseSlug && (
                 <button
                   onClick={() => navigate(`/courses/${selected.contentJson.internalCourseSlug}`)}
-                  className="inline-flex items-center gap-2 mb-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                  className="inline-flex items-center gap-2 mb-3 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"
                 >
                   ▶ Ver este curso completo aquí — sin salir de la plataforma
                 </button>
@@ -500,7 +577,7 @@ export default function CourseView() {
                   href={selected.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-block mb-4 text-blue-600 dark:text-blue-400 hover:underline"
+                  className="inline-block mb-4 text-primary-600 dark:text-primary-400 hover:underline"
                 >
                   {selected.contentJson?.internalCourseSlug ? 'También disponible en el sitio original ↗' : 'Abrir material ↗'}
                 </a>
@@ -559,6 +636,7 @@ export default function CourseView() {
           )}
         </main>
       </div>
+      )}
     </div>
   )
 }

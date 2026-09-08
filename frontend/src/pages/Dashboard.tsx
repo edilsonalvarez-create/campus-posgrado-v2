@@ -5,6 +5,8 @@ import { useCourses, useProgress } from '../hooks/useCourses'
 import CourseCard from '../components/CourseCard'
 import { NotificationBell } from '../components/NotificationBell'
 import { CertificatesList } from '../components/CertificatesList'
+import { ReviewPlan } from '../components/ReviewPlan'
+import { PeerReviewInbox } from '../components/PeerReviewPanel'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -39,10 +41,10 @@ export default function Dashboard() {
               🎓
             </button>
             <span className="text-gray-700 dark:text-gray-300">{user?.name}</span>
-            {user?.role === 'instructor' && (
+            {user?.role !== 'student' && (
               <button
                 onClick={() => navigate('/instructor')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition dark:bg-blue-700 dark:hover:bg-blue-800"
+                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
               >
                 Panel de Instructor
               </button>
@@ -60,11 +62,11 @@ export default function Dashboard() {
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome card */}
-        <div className="md:col-span-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-8 text-white mb-12 dark:from-blue-700 dark:to-indigo-700">
+        <div className="md:col-span-3 bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg shadow-lg p-8 text-white mb-12 dark:from-primary-700 dark:to-primary-800">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h2 className="text-3xl font-bold mb-2">¡Bienvenido, {user?.name}!</h2>
-              <p className="text-blue-100">
+              <p className="text-primary-100">
                 {user?.role === 'student'
                   ? `Estás matriculado en ${progress?.totalCourses ?? 0} de ${courses?.length ?? 0} cursos del catálogo. Tu progreso general es ${progress?.averageProgress || 0}%.`
                   : 'Gestiona tus cursos y estudiantes.'}
@@ -73,7 +75,7 @@ export default function Dashboard() {
             {user?.role === 'student' && (
               <button
                 onClick={() => navigate('/explore')}
-                className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors whitespace-nowrap ml-4 dark:bg-gray-100 dark:hover:bg-gray-200"
+                className="bg-white text-primary-700 px-6 py-2 rounded-lg font-semibold hover:bg-primary-50 transition-colors whitespace-nowrap ml-4 dark:bg-gray-100 dark:hover:bg-gray-200"
               >
                 Explorar Cursos
               </button>
@@ -112,12 +114,21 @@ export default function Dashboard() {
               </div>
               <button
                 onClick={() => navigate('/native-courses')}
-                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
+                className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline whitespace-nowrap"
               >
                 Explorar →
               </button>
             </div>
           </div>
+        )}
+
+        {user?.role === 'student' && (
+          <>
+            <ReviewPlan />
+            <div className="mb-8">
+              <PeerReviewInbox />
+            </div>
+          </>
         )}
 
         {/* Stats cards */}
@@ -128,7 +139,7 @@ export default function Dashboard() {
                 <p className="text-gray-600 text-sm font-medium">Cursos Activos</p>
                 <p className="text-3xl font-bold text-gray-900">{activeCourses.length}</p>
               </div>
-              <div className="text-4xl text-blue-600">📚</div>
+              <div className="text-4xl text-primary-600">📚</div>
             </div>
           </div>
 

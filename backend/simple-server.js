@@ -727,6 +727,26 @@ route('GET', '/api/courses/:id/analytics', async ({ res, user, params }) => {
     )
   ).rows;
   const graded = subs.filter((s) => s.score != null);
+  // Dificultad por recurso (matview) + conceptos con más fallo agregado en la cohorte.
+  const difficulty = (
+    await pool.query(
+      `SELECT rd.resource_id, r.title, r.type, rd.exam_submits, rd.exam_fails, rd.avg_score
+         FROM resource_difficulty rd JOIN resources r ON r.id = rd.resource_id
+        WHERE rd.course_id = $1 AND rd.exam_submits + rd.exam_fails > 0
+        ORDER BY (rd.exam_fails::float / NULLIF(rd.exam_submits + rd.exam_fails, 0)) DESC NULLS LAST
+        LIMIT 8`,
+      [course.id],
+    )
+  ).rows;
+  const skillGaps = (
+    await pool.query(
+      `SELECT skill_tag, sum(correct)::int AS correct, sum(total)::int AS total
+         FROM skill_mastery WHERE course_id = $1 GROUP BY skill_tag
+        HAVING sum(total) > 0
+        ORDER BY (sum(correct)::float / sum(total)) ASC LIMIT 6`,
+      [course.id],
+    )
+  ).rows;
   sendJSON(res, 200, {
     courseId: course.id,
     totalStudents: students.length,
@@ -743,6 +763,23 @@ route('GET', '/api/courses/:id/analytics', async ({ res, user, params }) => {
       name: s.name,
       progress: totalRes ? Math.round((Number(s.done) / totalRes) * 100) : 0,
       submissions: Number(s.subs),
+    })),
+    difficulty: difficulty.map((d) => ({
+      resourceId: d.resource_id,
+      title: d.title,
+      type: d.type,
+      attempts: Number(d.exam_submits) + Number(d.exam_fails),
+      failRate:
+        Number(d.exam_submits) + Number(d.exam_fails) > 0
+          ? Math.round((Number(d.exam_fails) / (Number(d.exam_submits) + Number(d.exam_fails))) * 100)
+          : 0,
+      avgScore: d.avg_score != null ? Math.round(Number(d.avg_score)) : null,
+    })),
+    skillGaps: skillGaps.map((g) => ({
+      skillTag: g.skill_tag,
+      correct: g.correct,
+      total: g.total,
+      ratio: Math.round((g.correct / g.total) * 100),
     })),
   });
 });
@@ -1537,6 +1574,263 @@ route('POST', '/api/events', async ({ res, user, body }) => {
   sendJSON(res, 200, { ok: true });
 });
 
+// --- plan de repaso dirigido (sustituye el gate hueco por control de dominio) ---
+route('GET', '/api/me/review-plan', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  // Conceptos con menor ratio de acierto en skill_mastery, con las lecciones asociadas.
+  const rows = (
+    await pool.query(
+      `SELECT sm.skill_tag, sm.correct, sm.total, c.id AS course_id, c.slug, c.title AS course_title,
+              (sm.correct::float / NULLIF(sm.total, 0)) AS ratio
+         FROM skill_mastery sm
+         JOIN courses c ON c.id = sm.course_id
+        WHERE sm.user_id = $1 AND sm.total >= 2 AND (sm.correct::float / NULLIF(sm.total, 0)) < 0.7
+        ORDER BY ratio ASC LIMIT 12`,
+      [user.id],
+    )
+  ).rows;
+  const out = [];
+  for (const r of rows) {
+    const lesson = (
+      await pool.query(
+        `SELECT r.id, r.title FROM resources r JOIN modules m ON m.id = r.module_id
+          WHERE m.course_id = $1 AND r.type = 'lesson' AND r.content_json->>'contenidoOficial' = $2 LIMIT 1`,
+        [r.course_id, r.skill_tag],
+      )
+    ).rows[0];
+    out.push({
+      skillTag: r.skill_tag,
+      courseSlug: r.slug,
+      courseTitle: r.course_title,
+      ratio: r.ratio != null ? Math.round(r.ratio * 100) : null,
+      correct: r.correct,
+      total: r.total,
+      lesson: lesson ? { resourceId: lesson.id, title: lesson.title } : null,
+    });
+  }
+  sendJSON(res, 200, { items: out });
+});
+
+// --- foro por asignatura ---
+route('GET', '/api/courses/:id/forum', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const course = await findCourseRow(params.id);
+  if (!course) return sendJSON(res, 404, { message: 'Course not found' });
+  const rows = (
+    await pool.query(
+      `SELECT t.*, u.name AS author_name,
+              (SELECT count(*) FROM forum_posts p WHERE p.thread_id = t.id) AS replies,
+              (SELECT max(p.created_at) FROM forum_posts p WHERE p.thread_id = t.id) AS last_reply_at
+         FROM forum_threads t JOIN users u ON u.id = t.author_id
+        WHERE t.course_id = $1
+        ORDER BY t.pinned DESC, COALESCE((SELECT max(p.created_at) FROM forum_posts p WHERE p.thread_id = t.id), t.created_at) DESC`,
+      [course.id],
+    )
+  ).rows;
+  sendJSON(
+    res,
+    200,
+    rows.map((t) => ({
+      id: t.id,
+      title: t.title,
+      body: t.body,
+      authorName: t.author_name,
+      pinned: t.pinned,
+      locked: t.locked,
+      anchor: t.anchor,
+      replies: Number(t.replies),
+      createdAt: t.created_at,
+      lastReplyAt: t.last_reply_at || t.created_at,
+    })),
+  );
+});
+
+route('POST', '/api/courses/:id/forum', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const target = await findCourseRow(params.id);
+  const title = String(body.title || '').trim();
+  const text = String(body.body || '').trim();
+  if (!target) return sendJSON(res, 404, { message: 'Course not found' });
+  if (title.length < 4 || text.length < 4) return sendJSON(res, 400, { message: 'Título y cuerpo requeridos.' });
+  const r = await pool.query(
+    `INSERT INTO forum_threads (course_id, author_id, title, body) VALUES ($1, $2, $3, $4) RETURNING id`,
+    [target.id, user.id, title.slice(0, 200), text.slice(0, 8000)],
+  );
+  sendJSON(res, 201, { id: r.rows[0].id });
+});
+
+route('GET', '/api/forum/threads/:id', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  const t = (
+    await pool.query(
+      `SELECT t.*, u.name AS author_name FROM forum_threads t JOIN users u ON u.id = t.author_id WHERE t.id = $1`,
+      [params.id],
+    )
+  ).rows[0];
+  if (!t) return sendJSON(res, 404, { message: 'Hilo no encontrado' });
+  const posts = (
+    await pool.query(
+      `SELECT p.*, u.name AS author_name FROM forum_posts p JOIN users u ON u.id = p.author_id
+        WHERE p.thread_id = $1 ORDER BY p.created_at`,
+      [params.id],
+    )
+  ).rows;
+  sendJSON(res, 200, {
+    id: t.id,
+    courseId: t.course_id,
+    title: t.title,
+    body: t.body,
+    authorName: t.author_name,
+    pinned: t.pinned,
+    locked: t.locked,
+    anchor: t.anchor,
+    createdAt: t.created_at,
+    posts: posts.map((p) => ({
+      id: p.id,
+      authorName: p.author_name,
+      body: p.body,
+      parentPostId: p.parent_post_id,
+      createdAt: p.created_at,
+    })),
+  });
+});
+
+route('POST', '/api/forum/threads/:id/posts', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  const t = (await pool.query('SELECT locked FROM forum_threads WHERE id = $1', [params.id])).rows[0];
+  if (!t) return sendJSON(res, 404, { message: 'Hilo no encontrado' });
+  if (t.locked && user.role === 'student') return sendJSON(res, 403, { message: 'El hilo está cerrado.' });
+  const text = String(body.body || '').trim();
+  if (text.length < 2) return sendJSON(res, 400, { message: 'Escribe una respuesta.' });
+  await pool.query(
+    `INSERT INTO forum_posts (thread_id, author_id, parent_post_id, body) VALUES ($1, $2, $3, $4)`,
+    [params.id, user.id, isUuid(body.parentPostId) ? body.parentPostId : null, text.slice(0, 8000)],
+  );
+  await pool.query(`UPDATE forum_threads SET updated_at = now() WHERE id = $1`, [params.id]);
+  sendJSON(res, 201, { ok: true });
+});
+
+route('PUT', '/api/forum/threads/:id', async ({ res, user, params, body }) => {
+  if (!user || user.role === 'student') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  await pool.query(
+    `UPDATE forum_threads SET pinned = COALESCE($2, pinned), locked = COALESCE($3, locked) WHERE id = $1`,
+    [params.id, typeof body.pinned === 'boolean' ? body.pinned : null, typeof body.locked === 'boolean' ? body.locked : null],
+  );
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- revisión por pares ---
+route('GET', '/api/me/peer-reviews', async ({ res, user }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  const rows = (
+    await pool.query(
+      `SELECT pr.*, s.content, s.repo_url, r.title AS resource_title, c.title AS course_title,
+              (SELECT coalesce(json_agg(json_build_object('label',sf.label,'type',sf.file_type,'url',sf.url)), '[]'::json)
+                 FROM submission_files sf WHERE sf.submission_id = s.id) AS files
+         FROM peer_reviews pr
+         JOIN submissions s ON s.id = pr.submission_id
+         LEFT JOIN resources r ON r.id = s.resource_id
+         LEFT JOIN courses c ON c.id = s.course_id
+        WHERE pr.reviewer_id = $1
+        ORDER BY pr.status, pr.assigned_at DESC`,
+      [user.id],
+    )
+  ).rows;
+  sendJSON(
+    res,
+    200,
+    rows.map((r) => ({
+      id: r.id,
+      submissionId: r.submission_id,
+      rubricSlug: r.rubric_slug,
+      status: r.status,
+      content: r.content,
+      repoUrl: r.repo_url,
+      files: r.files || [],
+      resourceTitle: r.resource_title,
+      courseTitle: r.course_title,
+      scores: r.scores,
+      comment: r.comment,
+    })),
+  );
+});
+
+route('POST', '/api/submissions/:id/peer-reviews', async ({ res, user, params, body }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  const pr = (
+    await pool.query(`SELECT * FROM peer_reviews WHERE submission_id = $1 AND reviewer_id = $2`, [params.id, user.id])
+  ).rows[0];
+  if (!pr) return sendJSON(res, 404, { message: 'No tienes esta revisión asignada.' });
+  const rub = await rubricBySlug(pr.rubric_slug);
+  const scores = Array.isArray(body.scores) ? body.scores : [];
+  if (rub) {
+    const keys = new Set(rub.criteria.map((c) => c.key));
+    if (!scores.every((s) => keys.has(s.key))) return sendJSON(res, 400, { message: 'Criterio desconocido en la revisión.' });
+  }
+  await pool.query(
+    `UPDATE peer_reviews SET scores = $2, comment = $3, status = 'submitted', submitted_at = now() WHERE id = $1`,
+    [pr.id, JSON.stringify(scores), String(body.comment || '').slice(0, 4000)],
+  );
+  sendJSON(res, 200, { ok: true });
+});
+
+// El estudiante pide revisión por pares de su entrega: se asignan hasta 2
+// compañeros del mismo curso que también hayan entregado ese recurso.
+route('POST', '/api/submissions/:id/request-peer-review', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  const sub = (
+    await pool.query(
+      `SELECT s.id, s.user_id, s.resource_id, s.course_id, r.content_json->>'rubricSlug' AS rubric_slug
+         FROM submissions s LEFT JOIN resources r ON r.id = s.resource_id WHERE s.id = $1`,
+      [params.id],
+    )
+  ).rows[0];
+  if (!sub || sub.user_id !== user.id) return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!sub.rubric_slug) return sendJSON(res, 409, { message: 'Esta entrega no admite revisión por pares.' });
+  const candidates = (
+    await pool.query(
+      `SELECT DISTINCT s.user_id
+         FROM submissions s
+        WHERE s.resource_id = $1 AND s.user_id <> $2
+          AND s.user_id NOT IN (SELECT reviewer_id FROM peer_reviews WHERE submission_id = $3)
+        LIMIT 2`,
+      [sub.resource_id, user.id, sub.id],
+    )
+  ).rows;
+  for (const c of candidates) {
+    await pool.query(
+      `INSERT INTO peer_reviews (submission_id, reviewer_id, rubric_slug) VALUES ($1, $2, $3)
+       ON CONFLICT (submission_id, reviewer_id) DO NOTHING`,
+      [sub.id, c.user_id, sub.rubric_slug],
+    );
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, title, message) VALUES ($1, 'grade', 'Revisión por pares', 'Tienes una entrega de un compañero para revisar.')`,
+      [c.user_id],
+    );
+  }
+  sendJSON(res, 200, { assigned: candidates.length, pending: candidates.length === 0 });
+});
+
+route('GET', '/api/submissions/:id/peer-reviews', async ({ res, user, params }) => {
+  if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'id inválido' });
+  const sub = (await pool.query('SELECT user_id FROM submissions WHERE id = $1', [params.id])).rows[0];
+  if (!sub) return sendJSON(res, 404, { message: 'Entrega no encontrada' });
+  if (sub.user_id !== user.id && user.role === 'student') return sendJSON(res, 403, { message: 'Forbidden' });
+  const rows = (
+    await pool.query(
+      `SELECT status, scores, comment, submitted_at FROM peer_reviews WHERE submission_id = $1 AND status = 'submitted'`,
+      [params.id],
+    )
+  ).rows;
+  sendJSON(res, 200, rows.map((r) => ({ scores: r.scores, comment: r.comment, submittedAt: r.submitted_at })));
+});
+
 // --- enrollments ---
 route('GET', '/api/enrollments', async ({ res, user }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
@@ -1911,6 +2205,9 @@ async function prepareDatabase() {
       await require('./db/seed')();
     }
   }
+  await pool
+    .query('REFRESH MATERIALIZED VIEW CONCURRENTLY resource_difficulty')
+    .catch(() => pool.query('REFRESH MATERIALIZED VIEW resource_difficulty').catch(() => {}));
   dbReady = true;
   console.log('[start] base de datos lista.');
 }
@@ -1925,6 +2222,13 @@ async function start() {
   setInterval(() => {
     pool.query('DELETE FROM sessions WHERE expires_at < now()').catch(() => {});
   }, 3600 * 1000).unref();
+
+  // Refresco de la vista de dificultad (analítica) cada 30 min.
+  setInterval(() => {
+    pool
+      .query('REFRESH MATERIALIZED VIEW CONCURRENTLY resource_difficulty')
+      .catch(() => pool.query('REFRESH MATERIALIZED VIEW resource_difficulty').catch(() => {}));
+  }, 30 * 60 * 1000).unref();
 
   try {
     await prepareDatabase();

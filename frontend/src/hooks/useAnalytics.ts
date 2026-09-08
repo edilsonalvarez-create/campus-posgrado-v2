@@ -15,6 +15,15 @@ export interface CourseAnalytics {
     progress: number;
     submissions: number;
   }>;
+  difficulty?: Array<{
+    resourceId: string;
+    title: string;
+    type: string;
+    attempts: number;
+    failRate: number;
+    avgScore: number | null;
+  }>;
+  skillGaps?: Array<{ skillTag: string; correct: number; total: number; ratio: number }>;
 }
 
 export const useCourseAnalytics = (courseId: string) => {
