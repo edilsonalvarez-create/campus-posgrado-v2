@@ -1,0 +1,170 @@
+// Lectura guiada — Asignatura III: Big Data (lecciones densas L1 y L2).
+const F = {
+  kleppmann: { titulo: 'Designing Data-Intensive Applications — Martin Kleppmann' },
+  islp: { titulo: 'An Introduction to Statistical Learning (Python)', url: 'https://www.statlearning.com/' },
+  polars: { titulo: 'Polars — documentación', url: 'https://docs.pola.rs/' },
+  duckdb: { titulo: 'DuckDB — documentación', url: 'https://duckdb.org/docs/' },
+  spark: { titulo: 'Learning Spark 2e (Databricks)', url: 'https://www.databricks.com/resources/ebook/learning-spark' },
+};
+
+module.exports = {
+  'Arquitecturas y Soluciones de Big Data: Análisis, Procesamiento y Escalabilidad en la Era Digital': {
+    objetivo: 'Distinguir batch de streaming por el costo real y saber cuándo un problema deja de necesitar procesamiento distribuido.',
+    terminos: [
+      {
+        n: 1,
+        termino: 'Procesamiento por lotes (batch) frente a en flujo (streaming)',
+        definicionTextual: 'Batch: se procesa un conjunto acumulado de datos de forma periódica. Streaming: se procesa cada evento a medida que llega.',
+        fuente: F.kleppmann.titulo,
+        idea: ['Streaming añade complejidad operativa y de gestión de estado que solo compensa si el problema exige latencia baja de verdad. "Suena más avanzado" no es una razón.'],
+        ejemplo: 'Un informe diario de ventas: batch. Bloquear una transacción sospechosa en el momento: streaming.',
+        errorComun: 'Elegir streaming por defecto para todo, asumiendo un coste operativo que el caso no justifica.',
+        fraseClave: 'Streaming se paga; úsalo cuando el reloj lo exija.',
+      },
+      {
+        n: 2,
+        termino: 'Sobrecarga de coordinación en sistemas distribuidos',
+        definicionTextual: 'El coste de repartir el trabajo entre varios nodos: comunicación, sincronización, tolerancia a fallos y movimiento de datos entre máquinas.',
+        fuente: F.spark.titulo,
+        idea: ['Para datos que caben en la memoria de una máquina, esa sobrecarga puede hacer que Spark sea más lento que pandas, Polars o DuckDB en local.'],
+        ejemplo: 'Una agregación sobre 30 M de filas puede tardar más en Spark que en DuckDB en el mismo equipo.',
+        errorComun: 'Suponer que "distribuido = más rápido" sin medir en el volumen concreto.',
+        fraseClave: 'Distribuir tiene peaje; a veces el peaje es mayor que el ahorro.',
+      },
+      {
+        n: 3,
+        termino: 'El punto donde un problema deja de necesitar Spark',
+        definicionTextual: 'El volumen (o la complejidad) a partir del cual el procesamiento distribuido compensa su sobrecarga; por debajo, herramientas de un solo nodo son más rápidas y sencillas.',
+        fuente: F.polars.titulo,
+        idea: ['Ese punto no es una regla fija: se determina midiendo tiempo y memoria de cada opción en tu caso, no citando una cifra aprendida.'],
+        ejemplo: 'Medir la misma agregación en pandas, Polars, DuckDB y Spark y ver dónde Spark empieza a ganar.',
+        errorComun: 'Justificar "usamos Spark" con "porque son muchos datos" sin haber medido.',
+        fraseClave: 'El umbral se mide, no se recita.',
+      },
+      {
+        n: 4,
+        termino: 'Data lake frente a data warehouse',
+        definicionTextual: 'Data lake: almacena datos en crudo, de cualquier formato, para uso flexible posterior. Data warehouse: datos estructurados y modelados para consulta analítica eficiente.',
+        fuente: F.kleppmann.titulo,
+        idea: ['Un lake sin gobernanza (catálogo, linaje, calidad) se convierte en un "pantano de datos" inutilizable; el warehouse impone estructura a cambio de rigidez.'],
+        ejemplo: 'El lake guarda los logs en crudo; el warehouse guarda las tablas de ventas listas para el BI.',
+        errorComun: 'Volcar todo al lake "por si acaso" sin catálogo ni control de calidad.',
+        fraseClave: 'Lake sin gobierno es pantano.',
+      },
+    ],
+    casoCompleto: {
+      escenario: 'Un área quiere "una solución de Big Data" para 2 GB de datos al día que hoy procesa en una hoja de cálculo.',
+      pasos: [
+        { titulo: 'Cuestionar', texto: '2 GB/día no exige tecnología distribuida; define primero qué pregunta no se puede responder hoy.' },
+        { titulo: 'Medir', texto: 'Prueba pandas/Polars/DuckDB en una máquina antes de plantear un clúster.' },
+        { titulo: 'Batch o streaming', texto: '¿El proceso es diario o exige reacción inmediata? Eso decide el patrón.' },
+        { titulo: 'Almacenamiento', texto: 'Si vas a lake, define desde el día 1 el catálogo y la calidad.' },
+      ],
+    },
+    preguntas: [
+      {
+        q: 'Una agregación sobre 30 M de filas tarda 40 s en pandas en una máquina de 32 GB, y se ejecuta una vez al día. Un equipo propone migrarla a un clúster Spark. ¿Qué haces?',
+        opts: [
+          'Migrar: Spark siempre es más rápido para Big Data.',
+          'Probablemente no compensa: cabe en memoria, no hay presión de latencia y Spark añade sobrecarga; mide primero Polars/DuckDB en la misma máquina.',
+          'Migrar a Spark pero sin clúster.',
+          'Comprar 128 GB de RAM sin medir.',
+        ],
+        a: 1,
+        why: 'El punto en que Spark compensa se justifica midiendo; a esta escala hay opciones más simples y probablemente más rápidas.',
+      },
+      {
+        q: '¿Por qué un data lake sin gobernanza se vuelve un problema?',
+        opts: [
+          'Porque ocupa poco espacio.',
+          'Porque sin catálogo, linaje y control de calidad nadie sabe qué hay ni si es fiable: se convierte en un "pantano de datos".',
+          'Porque el streaming lo llena.',
+          'Porque necesita cifrado.',
+        ],
+        a: 1,
+        why: 'El valor del lake depende de poder encontrar y confiar en los datos; eso lo da la gobernanza, no el almacenamiento.',
+      },
+    ],
+    fuentes: [F.kleppmann, F.polars, F.duckdb, F.spark],
+  },
+
+  'Entornos de trabajo para arquitecturas Deep Learning': {
+    objetivo: 'Distinguir paralelismo de datos y de modelo, y por qué el seguimiento de experimentos es parte del trabajo, no un extra.',
+    terminos: [
+      {
+        n: 1,
+        termino: 'Paralelismo de datos',
+        definicionTextual: 'Cada GPU tiene una copia completa del modelo y procesa un subconjunto del lote; los gradientes se promedian entre GPUs.',
+        fuente: F.spark.titulo,
+        idea: ['Es la estrategia cuando el modelo cabe en una GPU pero los datos o el lote no. Es la más común.'],
+        ejemplo: '4 GPUs, cada una con el mismo modelo, procesando 1/4 del lote y sincronizando gradientes.',
+        errorComun: 'Confundirlo con paralelismo de modelo cuando el problema es solo el tamaño del lote.',
+        fraseClave: 'Modelo cabe, datos no: reparte los datos.',
+      },
+      {
+        n: 2,
+        termino: 'Paralelismo de modelo',
+        definicionTextual: 'El modelo se reparte entre varias GPUs (unas capas en cada una) porque no cabe entero en una sola.',
+        fuente: F.spark.titulo,
+        idea: ['Más complejo y con más comunicación entre GPUs; se usa cuando el modelo es demasiado grande para una GPU.'],
+        ejemplo: 'Un modelo de lenguaje muy grande con las primeras capas en la GPU 0 y las últimas en la GPU 1.',
+        errorComun: 'Usar paralelismo de modelo por defecto cuando bastaba con paralelismo de datos.',
+        fraseClave: 'Modelo no cabe: reparte el modelo.',
+      },
+      {
+        n: 3,
+        termino: 'Seguimiento de experimentos (experiment tracking)',
+        definicionTextual: 'Registrar, para cada corrida de entrenamiento, los hiperparámetros, las métricas, la versión de los datos y del código.',
+        fuente: F.islp.titulo,
+        idea: ['Sin este registro no se pueden comparar corridas ni reproducir un resultado bueno tres semanas después. Es parte del método, no un lujo.'],
+        ejemplo: 'Una herramienta que guarda "corrida 47: learning rate 0,001, 12 épocas, F1 0,82, dataset v3, commit abc123".',
+        errorComun: 'Anotar los resultados "a mano" en un documento y perder la trazabilidad de qué produjo qué.',
+        fraseClave: 'Si no lo registras, no lo puedes reproducir.',
+      },
+      {
+        n: 4,
+        termino: 'Gestión de la memoria de GPU',
+        definicionTextual: 'El límite práctico del entrenamiento suele ser la VRAM: modelo + activaciones + gradientes + optimizador deben caber.',
+        fuente: F.spark.titulo,
+        idea: ['Cuando no cabe, las palancas son: bajar el tamaño de lote, usar precisión mixta, acumular gradientes o repartir (paralelismo).'],
+        ejemplo: 'Un entrenamiento que falla con "out of memory" y se resuelve bajando el batch de 64 a 16.',
+        errorComun: 'Asumir que "más épocas" o "más capas" es gratis mientras la GPU aguante, sin planificar la memoria.',
+        fraseClave: 'La VRAM es el techo; planifícala.',
+      },
+    ],
+    casoCompleto: {
+      escenario: 'Vas a entrenar un modelo cuyo dataset no cabe en la memoria de una GPU, pero el modelo sí.',
+      pasos: [
+        { titulo: 'Estrategia', texto: 'Paralelismo de datos: copia del modelo en cada GPU, reparto del lote.' },
+        { titulo: 'Memoria', texto: 'Ajusta el tamaño de lote por GPU para no exceder la VRAM.' },
+        { titulo: 'Tracking', texto: 'Registra cada corrida (hiperparámetros, métricas, versión de datos) desde el principio.' },
+        { titulo: 'Comparar', texto: 'Usa el registro para elegir la mejor configuración con evidencia, no por impresión.' },
+      ],
+    },
+    preguntas: [
+      {
+        q: 'El modelo cabe en una GPU pero el dataset no. ¿Qué paralelismo usas?',
+        opts: [
+          'De modelo: repartir las capas.',
+          'De datos: copia del modelo en cada GPU, cada una procesa parte del lote y se promedian los gradientes.',
+          'No se puede entrenar.',
+          'Reducir el modelo hasta que quepan los datos.',
+        ],
+        a: 1,
+        why: 'El paralelismo de modelo es para modelos que no caben; aquí el problema es el volumen de datos.',
+      },
+      {
+        q: '¿Por qué el seguimiento de experimentos no es opcional?',
+        opts: [
+          'Acelera el entrenamiento.',
+          'Sin registrar hiperparámetros, métricas, datos y código de cada corrida no se puede comparar ni reproducir un buen resultado después.',
+          'Cifra el modelo.',
+          'Reduce el uso de VRAM.',
+        ],
+        a: 1,
+        why: 'La reproducibilidad y la comparación de corridas son parte del método experimental.',
+      },
+    ],
+    fuentes: [F.spark, F.islp, F.kleppmann],
+  },
+};
