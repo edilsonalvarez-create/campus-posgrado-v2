@@ -587,6 +587,10 @@ export default function CourseView() {
 
               <ResourceBody resource={selected} courseId={course.id} courseSlug={course.slug} />
 
+              {/* La barra de navegación anterior/siguiente se oculta en examen y
+                  proyecto: son vistas terminales con su propio flujo (ExamRunner /
+                  ProjectDelivery) y la doble barra confundía (P-23). */}
+              {selected.type !== 'exam' && selected.type !== 'project' && (
               <div className="mt-8 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4">
                 <button
                   onClick={() => go(-1)}
@@ -634,6 +638,7 @@ export default function CourseView() {
                   Siguiente →
                 </button>
               </div>
+              )}
             </>
           )}
         </main>
