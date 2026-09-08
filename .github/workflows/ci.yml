@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: campus_posgrado
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d campus_posgrado"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/campus_posgrado
+      PORT: 3001
+      AUTO_SEED: "false"
+      SEED_DEMO_DATA: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        run: npm install
+      - name: Migrate (1/2)
+        run: npm run migrate
+      - name: Migrate (2/2, idempotent)
+        run: npm run migrate
+      - name: Seed (1/2)
+        run: npm run seed
+      - name: Seed (2/2, non-destructive)
+        run: npm run seed
+      - name: Start server
+        run: |
+          node simple-server.js &
+          for i in $(seq 1 40); do
+            if curl -sf http://127.0.0.1:3001/api/health >/dev/null; then
+              echo "server healthy"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "server did not become healthy"
+          exit 1
+      - name: Smoke
+        run: npm test
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        run: npm install
+      - name: Typecheck and build
+        run: npm run build
