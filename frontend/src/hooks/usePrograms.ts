@@ -9,7 +9,12 @@ export interface ProgramAsignatura {
   track: string
   programOrder: number
   prerequisiteSlug: string | null
+  /** El IEP no publica clave de catálogo por asignatura; referencia interna (IEP-<numeral>-INTERNO). */
+  internalCode: string | null
+  /** @deprecated conservado por compatibilidad; hoy coincide con internalCode */
   officialCode: string | null
+  /** Créditos ECTS (dato oficial: iep.edu.es). 6 por asignatura, 8 el TFM. */
+  ects: number | null
   contenidos: string[]
   progress: { completed: number; total: number; percentage: number }
   locked: boolean

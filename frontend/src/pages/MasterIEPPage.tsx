@@ -38,9 +38,11 @@ function AsignaturaCard({
       className="text-left bg-white dark:bg-gray-800 rounded-lg border-l-4 border-red-600 shadow-md hover:shadow-lg transition p-5 flex flex-col"
     >
       <h3 className="font-bold text-gray-900 dark:text-white mb-1">{asignatura.title}</h3>
-      {asignatura.officialCode && (
+      {(asignatura.internalCode || asignatura.ects != null) && (
         <p className="text-[11px] text-gray-400 mb-2 font-mono">
-          {asignatura.officialCode.startsWith('IEP-') ? 'Código interno' : 'Código oficial'}: {asignatura.officialCode}
+          {asignatura.internalCode ? `Referencia interna: ${asignatura.internalCode}` : ''}
+          {asignatura.internalCode && asignatura.ects != null ? ' · ' : ''}
+          {asignatura.ects != null ? `${asignatura.ects} ECTS` : ''}
         </p>
       )}
       {asignatura.contenidos.length > 0 && (

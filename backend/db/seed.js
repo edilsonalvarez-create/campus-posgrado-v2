@@ -354,10 +354,19 @@ async function main() {
 
     // ---- 1. Máster IEP: 11 asignaturas oficiales + TFM (cada una = un curso propio) ----
     // Fuente de verdad de títulos/tramos: el documento oficial del programa
-    // (IEP_Master_Online_..._Industria_4_0_LAT.docx). La estructura (módulos/recursos
-    // curados) viene del artefacto legado (TEMPLATE), que ya coincide casi palabra por
-    // palabra con el documento; aquí se corrige el título a la forma exacta del documento
-    // y se añade la agrupación por tramo/certificado que el documento sí declara.
+    // (IEP_Master_Online_..._Industria_4_0_LAT.docx / folleto IEP / iep.edu.es). La
+    // estructura (módulos/recursos curados) viene del artefacto legado (TEMPLATE), que ya
+    // coincide casi palabra por palabra con el documento; aquí se corrige el título a la
+    // forma exacta del documento y se añade la agrupación por tramo/certificado.
+    //
+    // NOTA sobre identificadores (auditoría 2026-09-08): el documento oficial del IEP NO
+    // publica una clave de catálogo por asignatura. Lo único oficial es el RVOE del
+    // programa (acuerdo SEP México nº 20250986) y los ECTS por asignatura (6 c/u; TFM 8).
+    // Los "officialCode" 2702799xxxxxx que se sembraron antes eran un error: coordenadas
+    // de posición (EMU) de las líneas decorativas del .docx, mal extraídas como números.
+    // Por eso ahora TODAS las asignaturas llevan una referencia interna consistente
+    // `IEP-<numeral>-INTERNO`. Si el IEP facilita las claves reales, se pueden inyectar
+    // por entorno (OFFICIAL_CODE_<numeral>) o sustituir aquí.
     const TEMPLATE = read('template.json');
     const byNumeral = Object.fromEntries((TEMPLATE.modules || []).map((m) => [m.numeral, m]));
     // Calculado aquí (antes de sembrar las aulas en la sección 2) para poder enlazar cada
@@ -366,44 +375,39 @@ async function main() {
     // que se completa hoy queda enlazable sin más cambios en esta sección.
     const AULAS_FOR_LINKING = loadAulasWithOverrides();
 
+    // `ects`: dato oficial verificable (iep.edu.es, plan de estudios — 74 ECTS: 11 x 6 + TFM 8).
+    // `internalCode` se deriva más abajo como `IEP-<numeral>-INTERNO` (con override opcional
+    // por entorno OFFICIAL_CODE_<numeral> si el IEP facilita la clave real de catálogo).
     const MASTER_ASIGNATURAS = [
-      { numeral: 'I', slug: 'master-i', title: 'I. Artificial Intelligence', track: 'PRO-essentials',
-        officialCode: '2702799205636',
+      { numeral: 'I', slug: 'master-i', title: 'I. Artificial Intelligence', track: 'PRO-essentials', ects: 6,
         contenidos: ['IA y Toma de Decisiones Automatizadas', 'Machine Learning', 'Generative AI', 'Ethics in AI', 'Casos de Uso en Diferentes Sectores', 'Plataformas de Software'] },
-      { numeral: 'II', slug: 'master-ii', title: 'II. Innovación tecnológica: Principales Tecnologías Disruptivas', track: 'PRO-essentials',
-        officialCode: '2702799205366',
+      { numeral: 'II', slug: 'master-ii', title: 'II. Innovación tecnológica: Principales Tecnologías Disruptivas', track: 'PRO-essentials', ects: 6,
         contenidos: ['Conceptos fundamentales del Big Data', 'Conceptos fundamentales de la Inteligencia Artificial', 'Conceptos fundamentales del IoT', 'Computación en la nube y su rol en el IoT', 'Conceptos fundamentales de Blockchain', 'El futuro de las tecnologías emergentes'] },
-      { numeral: 'III', slug: 'master-iii', title: 'III. Big Data Dentro de la informática', track: 'PRO-essentials',
-        officialCode: '2702799209255',
+      { numeral: 'III', slug: 'master-iii', title: 'III. Big Data Dentro de la informática', track: 'PRO-essentials', ects: 6,
         contenidos: ['Arquitecturas y Soluciones de Big Data: Análisis, Procesamiento y Escalabilidad', 'Entornos de trabajo para arquitecturas Deep Learning', 'Aprendizaje Automático', 'Regresiones y series temporales autorregresivas', 'Árboles de decisión y Algoritmos', 'Redes neuronales Artificiales'] },
-      { numeral: 'IV', slug: 'master-iv', title: 'IV. Metodologías Ágiles para gestión de proyectos', track: 'PROadvance',
-        officialCode: '2702799205392',
+      { numeral: 'IV', slug: 'master-iv', title: 'IV. Metodologías Ágiles para gestión de proyectos', track: 'PROadvance', ects: 6,
         contenidos: ['Principios y fundamentos de la agilidad', 'Comparativa de marcos ágiles (Scrum, Kanban, Lean)', 'Roles y eventos en Scrum', 'Prácticas de planificación y seguimiento en Scrum', 'Ciclos iterativos para la mejora de productos y procesos', 'Evaluación y ajuste continuo en proyectos ágiles'] },
-      { numeral: 'V', slug: 'master-v', title: 'V. Ética y regulaciones en el Uso de la IA', track: 'PROadvance',
-        officialCode: process.env.OFFICIAL_CODE_V || 'IEP-V-INTERNO',
+      { numeral: 'V', slug: 'master-v', title: 'V. Ética y regulaciones en el Uso de la IA', track: 'PROadvance', ects: 6,
         contenidos: ['Introducción a la Inteligencia Artificial', 'Regulación jurídica de la IA', 'Consideraciones éticas en el uso de la IA', 'Principales Retos y desafíos en el uso de IA', 'Inteligencia Artificial aplicada para la detección y prevención de riesgos', 'Modelo de Gobernanza de la IA. Big Data, Blockchain y otras tecnologías disruptivas'] },
-      { numeral: 'VI', slug: 'master-vi', title: 'VI. Machine Learning', track: 'PROadvance',
-        officialCode: '2702799208864',
+      { numeral: 'VI', slug: 'master-vi', title: 'VI. Machine Learning', track: 'PROadvance', ects: 6,
         contenidos: ['Introducción a Machine Learning', 'Aprendizaje Supervisado', 'Aprendizaje supervisado de regresión', 'Aprendizaje no supervisado', 'Aprendizaje semi-supervisado y por Refuerzo', 'Interpretabilidad de Modelos'] },
-      { numeral: 'VII', slug: 'master-vii', title: 'VII. Prompts Multimodales y Adaptación a Contextos Complejos', track: 'PROadvance',
-        officialCode: '2702799209304',
+      { numeral: 'VII', slug: 'master-vii', title: 'VII. Prompts Multimodales y Adaptación a Contextos Complejos', track: 'PROadvance', ects: 6,
         contenidos: ['Integración de texto, imagen y sonido', 'Aplicaciones en arte digital y transmedia', 'Desafíos en entornos multimodales', 'Adaptación de Prompts a Diferentes audiencias', 'Creación de Prompts para interfaces inteligentes', 'Evaluación de la usabilidad'] },
-      { numeral: 'VIII', slug: 'master-viii', title: 'VIII. Metodologías para el desarrollo de productos tecnológicos innovadores', track: 'PROadvance',
-        officialCode: process.env.OFFICIAL_CODE_VIII || 'IEP-VIII-INTERNO',
+      { numeral: 'VIII', slug: 'master-viii', title: 'VIII. Metodologías para el desarrollo de productos tecnológicos innovadores', track: 'PROadvance', ects: 6,
         contenidos: ['Fundamentos de Design Thinking', 'Fases de empatía y definición de problemas', 'Técnicas de ideación para soluciones innovadoras', 'Prototipado rápido y validación inicial', 'Iteración y mejoras continuas del prototipo', 'Pruebas con usuarios y retroalimentación'] },
-      { numeral: 'IX', slug: 'master-ix', title: 'IX. Uso e Implementación de Modelos de Inteligencia Artificial Generativa en la Industria 4.0', track: 'PROadvance',
-        officialCode: '2702799209220',
+      { numeral: 'IX', slug: 'master-ix', title: 'IX. Uso e Implementación de Modelos de Inteligencia Artificial Generativa en la Industria 4.0', track: 'PROadvance', ects: 6,
         contenidos: ['Conceptos básicos de IA Generativa', 'Paradigmas de ML en la IA Generativa', 'Redes Neuronales Generativas', 'Modelos Generativos', 'IA Generativa para contenido Multimedia y multimodal', 'Tendencias y dirección futura de la IA Generativa'] },
-      { numeral: 'X', slug: 'master-x', title: 'X. AI Platforms', track: 'PROexpertify',
-        officialCode: '2702799211500',
+      { numeral: 'X', slug: 'master-x', title: 'X. AI Platforms', track: 'PROexpertify', ects: 6,
         contenidos: ['Computación en la nube', 'Arquitectura de referencia', 'Principales servicios', 'Amazon Web Services', 'Microsoft Azure', 'Google Cloud'] },
-      { numeral: 'XI', slug: 'master-xi', title: 'XI. Principios de Inteligencia Artificial aplicada a entornos seguros', track: 'PROexpertify',
-        officialCode: '2702799179257',
+      { numeral: 'XI', slug: 'master-xi', title: 'XI. Principios de Inteligencia Artificial aplicada a entornos seguros', track: 'PROexpertify', ects: 6,
         contenidos: ['Introducción a la Inteligencia Artificial y aprendizaje automático', 'Principios y aplicaciones Big Data en la ciberseguridad', 'Manejo y procesamiento de datos', 'Modelos predictivos en ciberseguridad', 'Introducción a los modelos generativos en Inteligencia Artificial', 'Retos y oportunidades de la Inteligencia Artificial en el contexto de la ciberseguridad'] },
-      { numeral: 'TFM', slug: 'master-tfm', title: 'Proyecto Fin de Programa (TFM)', track: 'TFM',
-        officialCode: process.env.OFFICIAL_CODE_TFM || 'IEP-TFM-INTERNO',
+      { numeral: 'TFM', slug: 'master-tfm', title: 'Proyecto Fin de Programa (TFM)', track: 'TFM', ects: 8,
         contenidos: ['Trabajo académico de cierre que aplica competencias generales del programa'] },
-    ];
+    ].map((a) => ({
+      ...a,
+      // Referencia interna consistente; override opcional con la clave real del IEP vía entorno.
+      internalCode: process.env[`OFFICIAL_CODE_${a.numeral}`] || `IEP-${a.numeral}-INTERNO`,
+    }));
 
     let prevSlug = null;
     for (const [i, asig] of MASTER_ASIGNATURAS.entries()) {
@@ -500,7 +504,11 @@ async function main() {
           track: asig.track,
           programOrder: i + 1,
           prerequisiteSlug: prevSlug,
-          officialCode: asig.officialCode,
+          // Referencia interna (el IEP no publica clave de catálogo por asignatura).
+          // `officialCode` se mantiene por compatibilidad y ahora es igual a `internalCode`.
+          internalCode: asig.internalCode,
+          officialCode: asig.internalCode,
+          ects: asig.ects,
           contenidos: asig.contenidos,
           legacyTitle: tm.title || null,
           practice: tm.practice || null, deliverable: tm.deliverable || null, mastery: tm.mastery || null,

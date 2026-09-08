@@ -892,7 +892,12 @@ route('GET', '/api/programs/:slug', async ({ res, user, params }) => {
       id: r.id, slug: r.slug, title: r.title, description: r.description,
       track: meta.track, programOrder: meta.programOrder,
       prerequisiteSlug: meta.prerequisiteSlug || null,
+      // El IEP no publica clave de catálogo por asignatura; `internalCode` es una
+      // referencia interna consistente (IEP-<numeral>-INTERNO). `officialCode` se
+      // conserva por compatibilidad y hoy coincide con `internalCode`.
+      internalCode: meta.internalCode || meta.officialCode || null,
       officialCode: meta.officialCode || null,
+      ects: meta.ects ?? null,
       contenidos: meta.contenidos || [],
       progress: { completed, total, percentage },
     };

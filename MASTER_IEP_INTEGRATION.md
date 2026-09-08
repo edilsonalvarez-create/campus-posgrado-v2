@@ -231,7 +231,12 @@ acredita progreso.
 
 **Fase 1 (en curso):** motor de intentos de examen con límite + cooldown + banco
 de ítems aleatorizado; 12 rúbricas publicadas; recursos reales en las 66 lecciones;
-quiz formativo persistente; completado real de lección; `officialCode` de V/VIII/TFM.
+quiz formativo persistente; completado real de lección. **Nota (auditoría 2026-09-08):** el
+IEP no publica clave de catálogo por asignatura — el campo antes llamado `officialCode`
+(valores `2702799…`) era ruido de conversión del `.docx`; ahora las 12 asignaturas llevan
+`internalCode = IEP-<numeral>-INTERNO` y se expone además `ects` (6 por asignatura, 8 el TFM;
+dato oficial de iep.edu.es). Identificador oficial verificable a nivel programa: RVOE SEP
+México nº 20250986.
 
 **Fases 2–4 (planificadas):** tracks hands-on (III/VI/IX/X), TFM con hitos y
 director, foro y revisión por pares, analítica de dificultad, navegación móvil,
