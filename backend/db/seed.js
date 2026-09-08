@@ -87,6 +87,12 @@ function projectRubricSlug(slug) {
   const want = `rubric-${slug}`;
   return RUBRICS.some((r) => r.slug === want) ? want : null;
 }
+// Aviso temprano: rubricSlug declarado en proyectos-practicos.js que no existe en rubrics.js.
+for (const [slug, p] of Object.entries(PROYECTOS_PRACTICOS)) {
+  if (p.rubricSlug && !RUBRICS.some((r) => r.slug === p.rubricSlug)) {
+    console.warn(`[seed] AVISO: proyecto ${slug} referencia rúbrica inexistente "${p.rubricSlug}"`);
+  }
+}
 
 // Lecciones propias por asignatura (FASE 3 en adelante): un módulo .js opcional por
 // slug, con { lecciones: [...], examen: [...] } siguiendo el modelo estándar de
@@ -461,7 +467,10 @@ async function main() {
               deliverable: (hs && hs.deliverable) || proyecto.deliverable || null,
               practice: proyecto.practice || null,
               mastery: proyecto.mastery || null,
-              rubricSlug: hs ? hs.rubricSlug : projectRubricSlug(asig.slug),
+              // Prioridad: rúbrica hands-on → rúbrica declarada en el dato del
+              // proyecto → convención de slug (fallback). Así renombrar una
+              // rúbrica no deja el proyecto sin rúbrica en silencio.
+              rubricSlug: (hs && hs.rubricSlug) || (proyecto && proyecto.rubricSlug) || projectRubricSlug(asig.slug),
               track: hs ? 'handson' : undefined,
               handson: hs
                 ? {
