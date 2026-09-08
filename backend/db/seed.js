@@ -72,7 +72,7 @@ function loadLecturaGuiada(slug) {
 function examConfigFor(slug) {
   const bank = ITEM_BANKS.find((b) => b.scopeSlug === slug);
   if (!bank) return null;
-  const drawSize = Math.min(12, Math.max(8, Math.floor((bank.questions.length * 2) / 3)));
+  const drawSize = Math.min(15, Math.max(10, Math.floor(bank.questions.length / 2)));
   return {
     maxAttempts: 3,
     cooldownHours: Number(process.env.EXAM_COOLDOWN_HOURS) || 24,
