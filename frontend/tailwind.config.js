@@ -7,13 +7,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Paleta institucional IEP (rojo). Fase 1: se usa en la UI de evaluación
+        // nueva; el barrido completo de los literales blue-* es de Fase 3.
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          900: '#0c2d6b',
+          50: '#fff1ef',
+          100: '#ffe1dc',
+          200: '#ffc4b9',
+          300: '#ff9c88',
+          400: '#fb6a4d',
+          500: '#f93319',
+          600: '#d92c16',
+          700: '#b0210f',
+          800: '#8a1a0d',
+          900: '#7a1608',
         },
         secondary: {
           50: '#faf5ff',

@@ -1,5 +1,14 @@
 # 📚 Especificación de Cursos Nativos de Excelencia
 
+> **Nota de veracidad (2026-09).** Este documento describe un **diseño objetivo**,
+> no el estado implementado. Hoy en `backend/db/seed-data/native-curriculum.json`
+> solo `native-ai-101` está desarrollado (3 módulos); `native-ml-101` y
+> `native-dl-101` son esqueletos. **No existen** en la plataforma: repetición
+> espaciada, revisión de "mapa mental", ensayo de metacognición, visualizaciones
+> interactivas ni calificación automática por IA. Las secciones marcadas
+> _(aspiracional)_ abajo no están construidas. Los cursos nativos son un recurso
+> complementario y no forman parte del pensum oficial del Máster.
+
 ## Filosofía
 
 Crear cursos de **excelencia académica equivalentes a MIT, Google y Andrew Ng** pero diseñados específicamente para:
@@ -466,12 +475,15 @@ Presentación (10%)
 
 ---
 
-## Mejores Prácticas
+## Mejores Prácticas _(aspiracional — no implementado)_
 
-### 1. Espaced Repetition
+### 1. Repetición espaciada _(aspiracional)_
 - Quiz de repaso después de 1 semana
 - Quiz de repaso después de 1 mes
 - Conexión con temas relacionados
+- _Estado real: no existe un planificador de repaso. En Fase 3 se implementa un
+  "repaso dirigido" que, tras un examen suspenso, exige revisar las lecciones de
+  los conceptos fallados antes de reintentar._
 
 ### 2. Active Recall
 - Preguntas antes de mostrar respuesta

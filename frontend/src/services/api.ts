@@ -23,11 +23,29 @@ class ApiClient {
       return config
     })
 
-    // Handle token expiration
+    // Ante un 401, intenta refrescar el access token UNA vez y reintentar la
+    // petición original; solo cierra sesión si el refresh también falla. Evita el
+    // cierre de sesión a mitad de un examen cuando caduca el token de 1 h.
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
-        if (error.response?.status === 401) {
+        const original = error.config
+        if (error.response?.status === 401 && original && !original._retried) {
+          const { refreshToken } = useAuthStore.getState()
+          if (refreshToken) {
+            try {
+              const r = await axios.post(`${API_URL}/auth/refresh`, { refreshToken })
+              const newAccess = r.data?.accessToken
+              if (newAccess) {
+                useAuthStore.getState().setAccessToken(newAccess)
+                original._retried = true
+                original.headers.Authorization = `Bearer ${newAccess}`
+                return this.client.request(original)
+              }
+            } catch {
+              /* el refresh falló: se cierra sesión abajo */
+            }
+          }
           useAuthStore.getState().logout()
           window.location.href = '/login'
         }

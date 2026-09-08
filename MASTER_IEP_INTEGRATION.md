@@ -1,16 +1,27 @@
-# 🎓 Master de IEP - Integración Completa en Plataforma
+# 🎓 Master de IEP - Integración en Plataforma
 
-## Proyecto Final: Sistema LMS Completo para el Master de IEP en IA
+> **Nota de veracidad (transformación Fase 0/1, 2026-09).** Este documento se
+> corrigió para describir lo que la plataforma **hace de verdad**. Versiones
+> anteriores anunciaban una "calificación automática con IA", "rúbricas
+> automáticas" y "repetición espaciada" que no existían en el backend en
+> ejecución (`backend/simple-server.js`). Estado real abajo.
 
-### ✨ Estado General
+## Sistema LMS para el Máster IEP en IA
 
-**Campus Posgrado v2.0 ahora incluye:**
-- ✅ Plataforma web completa (React + TypeScript)
-- ✅ Plataforma móvil (React Native + Expo)
-- ✅ Sistema de calificación automática con IA
-- ✅ Estructura del Master de IEP integrada
-- ✅ Recursos de estudio completos
-- ✅ Sistema de entregas y evaluación
+### ✨ Estado real
+
+**Campus Posgrado v2 incluye hoy:**
+- ✅ Plataforma web (React 18 + TypeScript + Vite) desplegada en Vercel
+- ⚠️ App móvil (Expo) — solo Login + Dashboard; el consumo de curso es web
+- ✅ Backend `simple-server.js` (Node http nativo + PostgreSQL) en Railway
+- ✅ 11 asignaturas oficiales + TFM como cursos propios, agrupados por `meta.programSlug='master-iep'`
+- ✅ 66 lecciones propias con quiz formativo, diagrama y actividad
+- ✅ Calificación de proyectos **por rúbrica**, realizada por un instructor
+  (con *asistencia* opcional de un LLM que propone, sin decidir — humano en el bucle)
+- ✅ Certificado de asignatura que exige **lecciones + proyecto + examen**
+  (no basta aprobar un examen de opción múltiple)
+- ❌ NO hay calificación autónoma por IA. `backend/ai-grader.js` es código muerto
+  (heurística de conteo de palabras, nunca importado) y será eliminado.
 
 ---
 
@@ -166,31 +177,22 @@ El Master de IEP "Inteligencia Artificial y Tecnologías Disruptivas para la Inn
 
 ---
 
-## 🤖 Sistema de Calificación con IA
+## Calificación de proyectos (real)
 
-### Características
-
-1. **Análisis Automático de Entregas**
-   - Evaluación de comprensión conceptual
-   - Análisis de pensamiento crítico
-   - Calidad de soluciones propuestas
-   - Evaluación de presentación
-
-2. **Para Entregas de Código**
-   - Calidad del código
-   - Funcionalidad
-   - Documentación
-   - Eficiencia
-
-3. **Feedback Personalizado**
-   - Puntos fuertes identificados
-   - Áreas de mejora
-   - Recomendaciones específicas
-
-4. **Scoring Ponderado**
-   - Basado en rúbricas
-   - Cálculo automático de calificaciones
-   - Transparencia en criterios
+1. **Por rúbrica.** Cada asignatura + TFM tiene una rúbrica publicada (tablas
+   `rubrics` / `rubric_criteria` / `rubric_levels`, sembradas desde
+   `backend/db/seed-data/rubrics.js`). El estudiante la ve **antes** de entregar.
+2. **La califica un instructor.** `PUT /api/submissions/:id/grade` recibe el
+   nivel elegido por criterio; el servidor calcula la nota y guarda el snapshot
+   en `grades.rubric`. La nota final la fija siempre una persona.
+3. **Asistencia opcional de IA (humano en el bucle).** `POST
+   /api/submissions/:id/grade-suggestion` (solo con `LLM_PROVIDER=anthropic`)
+   devuelve una **propuesta** por criterio que se escribe en
+   `grades.llm_suggestion` y nunca en `grades.score`. El instructor confirma o
+   corrige antes de enviar. Sin API key, el botón no aparece.
+4. **Certificado desacoplado.** `evaluateCourseCompletion` exige lecciones
+   completas + proyecto ≥ 70 + examen aprobado. Ver `certificates.kind`
+   (`asignatura` | `tramo` | `programa`) y `certificates.requirements`.
 
 ---
 
@@ -198,58 +200,42 @@ El Master de IEP "Inteligencia Artificial y Tecnologías Disruptivas para la Inn
 
 ### Backend (Node.js)
 
-**Nuevos archivos:**
-- `master-iep-data.js`: Estructura de cursos, módulos y recursos
-- `ai-grader.js`: Sistema de calificación automática
+- `backend/simple-server.js` — API completa (http nativo + `pg`). Único servicio desplegado.
+- `backend/db/seed.js` — siembra **no destructiva** por clave estable (`stable_key`).
+- `backend/db/seed-data/*` — contenido: `master-{i..xi}-lecciones.js`, `proyectos-practicos.js`,
+  `template.json`, `books.json`, `rubrics.js`, `item-banks/`.
+- `backend/lib/llm.js` — único punto de integración con el LLM (tutor, asistencia de nota).
+- El árbol `backend/src/**` (NestJS) y `backend/ai-grader.js` son código muerto.
 
-**Endpoints ampliados:**
-- GET `/api/master-courses` - Listar cursos del Master
-- GET `/api/courses/:id/resources` - Recursos de un curso
-- POST `/api/submissions/:id/auto-grade` - Calificación automática
-- GET `/api/rubrics/:courseId` - Rúbricas de evaluación
+**Endpoints reales de evaluación:**
+- `GET /api/quizzes/:id` — enunciados y opciones, **sin** respuesta correcta
+- `POST /api/quiz-responses` — calificación de examen 100% en servidor (Fase 1: motor de intentos)
+- `GET /api/rubrics/:slug` — rúbrica completa (criterios × niveles)
+- `PUT /api/submissions/:id/grade` — nota por rúbrica (instructor)
+- `POST /api/submissions/:id/grade-suggestion` — propuesta de IA (opcional; 501 si `LLM_PROVIDER=none`)
 
-### Frontend (React)
+### Mobile (React Native / Expo)
 
-**Nuevos componentes:**
-- ResourceBrowser - Explorador de recursos
-- AIGradingDisplay - Mostrar calificación automática
-- RubricDisplay - Mostrar criterios de evaluación
-- ResourcePlayer - Reproductor de videos/PDFs
-
-### Mobile (React Native)
-
-**Nuevas pantallas:**
-- CourseDetail - Detalle de curso con módulos
-- ResourceView - Ver recursos
-- SubmissionView - Enviar entregas
+Estado real: **solo Login + Dashboard**. Las pantallas de curso/recurso/entrega
+aún no existen; el consumo del Máster es por web (responsive).
 
 ---
 
-## 📊 Métricas y Progreso
+## 📊 Estado de la transformación (auditoría → 5/5)
 
-### Asignatura 1: Fundamentos de IA
-- ✅ Estructura completa definida
-- ✅ 6 módulos diseñados
-- ✅ 20+ recursos integrados
-- ✅ Sistema de evaluación configurado
-- ✅ IA Grader implementada
+Basado en `Auditoria_Master_IEP_Comite_Multidisciplinario.docx` (2,7/5 — requiere transformación).
 
-### Próximas Fases
+**Fase 0 (hecha):** fin de la fuga de respuestas del examen; seed no destructivo;
+certificado desacoplado de un solo examen; docs corregidas; examen suspenso ya no
+acredita progreso.
 
-1. **Integración de PDFs**
-   - Libros recomendados en español
-   - Papares académicos
-   - Guías de estudio
+**Fase 1 (en curso):** motor de intentos de examen con límite + cooldown + banco
+de ítems aleatorizado; 12 rúbricas publicadas; recursos reales en las 66 lecciones;
+quiz formativo persistente; completado real de lección; `officialCode` de V/VIII/TFM.
 
-2. **Contenido Interactivo**
-   - Videos embebidos
-   - Labs interactivos
-   - Simulaciones
-
-3. **Comunidad**
-   - Foros por asignatura
-   - Grupos de estudio
-   - Mentoría
+**Fases 2–4 (planificadas):** tracks hands-on (III/VI/IX/X), TFM con hitos y
+director, foro y revisión por pares, analítica de dificultad, navegación móvil,
+tutor socrático y asistencia de nota por LLM.
 
 ---
 

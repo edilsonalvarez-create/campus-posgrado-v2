@@ -1,13 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCourse } from '../hooks/useCourses'
 import { useMarkResource } from '../hooks/useProgress'
 import { useSubmissions } from '../hooks/useSubmissions'
+import { useResume, useSaveResume, logEvent } from '../hooks/useEvaluation'
 import { Markdown } from '../components/Markdown'
 import { QuizView } from '../components/QuizView'
+import { ExamRunner } from '../components/ExamRunner'
+import { RubricView } from '../components/RubricView'
+import { HandsOnSubmission } from '../components/HandsOnSubmission'
+import { TfmMilestones } from '../components/TfmMilestones'
+import { LessonFormative } from '../components/LessonFormative'
 import { SubmissionForm } from '../components/SubmissionForm'
 import { DiagramView } from '../components/DiagramView'
 import { LecturaGuiada } from '../components/LecturaGuiada'
+import { VideoPlayer } from '../components/VideoPlayer'
+import { Forum } from '../components/Forum'
+import { TutorPanel } from '../components/TutorPanel'
+import { useRequestPeerReview, useReceivedPeerReviews } from '../hooks/useCommunity'
 
 interface Resource {
   id: string
@@ -19,6 +29,7 @@ interface Resource {
   content?: string
   contentJson?: any
   completed?: boolean
+  revisedAt?: string
 }
 interface Module {
   id: string
@@ -45,64 +56,51 @@ const TYPE_LABEL: Record<string, string> = {
   norma: 'Norma',
 }
 
-function LessonQuiz({ quiz }: { quiz: any[] }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({})
-  return (
-    <div className="mt-6 space-y-5">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Comprueba tu comprensión</h3>
-      {quiz.map((q, i) => {
-        const chosen = answers[i]
-        return (
-          <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <p className="font-medium text-gray-900 dark:text-white mb-3">
-              {i + 1}. {q.q}
-            </p>
-            <div className="space-y-2">
-              {(q.opts || []).map((opt: string, j: number) => {
-                const isChosen = chosen === j
-                const isCorrect = j === q.a
-                const show = chosen !== undefined
-                return (
-                  <button
-                    key={j}
-                    onClick={() => setAnswers((a) => ({ ...a, [i]: j }))}
-                    disabled={show}
-                    className={`block w-full text-left px-3 py-2 rounded border text-sm transition-colors ${
-                      show && isCorrect
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        : show && isChosen
-                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                          : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                )
-              })}
-            </div>
-            {chosen !== undefined && q.why && (
-              <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                {chosen === q.a ? '✅ ' : '❌ '}
-                {q.why[chosen]}
-              </p>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 const SUBMISSION_STATUS_LABEL: Record<string, string> = {
   submitted: 'Enviada · pendiente de calificación',
   graded: 'Calificada',
   draft: 'Borrador',
 }
 
-function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId: string }) {
+function ProjectDelivery({ resource, courseId, courseSlug }: { resource: Resource; courseId: string; courseSlug?: string }) {
   const cj = resource.contentJson || {}
   const { data: submissions = [] } = useSubmissions({ courseId })
   const mine = submissions.filter((s) => s.resourceId === resource.id)
+
+  // TFM: proceso de 4 hitos con director, no un textarea.
+  if (courseSlug === 'master-tfm') {
+    return (
+      <div>
+        {cj.deliverable && (
+          <div className="mb-5 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-r text-sm text-gray-700 dark:text-gray-300">
+            {cj.deliverable}
+          </div>
+        )}
+        <TfmMilestones />
+      </div>
+    )
+  }
+
+  // Tracks hands-on (III/VI/IX/X): entrega de repositorio + artefactos.
+  if (cj.track === 'handson' && cj.handson) {
+    return (
+      <div>
+        {cj.deliverable && (
+          <div className="mb-5 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-r">
+            <p className="font-semibold text-gray-900 dark:text-white mb-1">Qué debes entregar</p>
+            <p className="text-gray-700 dark:text-gray-300 text-sm">{cj.deliverable}</p>
+          </div>
+        )}
+        {cj.mastery && (
+          <div className="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded text-sm text-gray-700 dark:text-gray-300">
+            <span className="font-semibold text-gray-900 dark:text-white">Criterio de dominio. </span>
+            {cj.mastery}
+          </div>
+        )}
+        <HandsOnSubmission resource={resource} courseId={courseId} spec={cj.handson} rubricSlug={cj.rubricSlug} />
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -116,7 +114,7 @@ function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId:
         </div>
       )}
       {cj.deliverable && (
-        <div className="mb-5 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r">
+        <div className="mb-5 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-r">
           <p className="font-semibold text-gray-900 dark:text-white mb-1">Qué debes entregar</p>
           <p className="text-gray-700 dark:text-gray-300">{cj.deliverable}</p>
         </div>
@@ -131,6 +129,14 @@ function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId:
         <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded">
           <p className="font-semibold text-gray-900 dark:text-white mb-1">Criterio de dominio</p>
           <p className="text-gray-700 dark:text-gray-300">{cj.mastery}</p>
+        </div>
+      )}
+
+      {cj.rubricSlug && (
+        <div className="mb-6">
+          <p className="font-semibold text-gray-900 dark:text-white mb-1">Rúbrica de evaluación</p>
+          <p className="text-sm text-gray-500 mb-2">Así se calificará tu entrega. El primer criterio es el que más pesa.</p>
+          <RubricView slug={cj.rubricSlug} />
         </div>
       )}
 
@@ -149,12 +155,18 @@ function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId:
                   )}
                 </div>
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{s.content}</p>
+                {s.rubric && cj.rubricSlug && (
+                  <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-2">
+                    <RubricView slug={cj.rubricSlug} snapshot={s.rubric} />
+                  </div>
+                )}
                 {s.feedback && (
                   <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2">
                     <span className="font-semibold">Retroalimentación: </span>
                     {s.feedback}
                   </p>
                 )}
+                {cj.rubricSlug && <PeerReviewSection submissionId={s.id} />}
               </div>
             ))}
           </div>
@@ -166,15 +178,49 @@ function ProjectDelivery({ resource, courseId }: { resource: Resource; courseId:
   )
 }
 
-function ResourceBody({ resource, courseId }: { resource: Resource; courseId: string }) {
+function PeerReviewSection({ submissionId }: { submissionId: string }) {
+  const request = useRequestPeerReview()
+  const { data: received = [] } = useReceivedPeerReviews(submissionId)
+  return (
+    <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-2">
+      {received.length > 0 ? (
+        <div>
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Revisión por pares recibida</p>
+          {received.map((r, i) => (
+            <p key={i} className="text-xs text-gray-600 dark:text-gray-400">
+              «{r.comment}»
+            </p>
+          ))}
+        </div>
+      ) : (
+        <button
+          onClick={() => request.mutate(submissionId)}
+          disabled={request.isPending}
+          className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+        >
+          {request.isPending
+            ? 'Asignando…'
+            : request.data?.pending
+              ? 'Aún no hay compañeros que hayan entregado; se asignará cuando los haya'
+              : '👥 Solicitar revisión por pares'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; courseId: string; courseSlug?: string }) {
   const cj = resource.contentJson || {}
 
   if (resource.type === 'exam') {
+    // Máster: motor de intentos con banco de ítems. Aulas legadas: quiz simple.
+    if (cj.examConfig) {
+      return <ExamRunner resourceId={resource.id} />
+    }
     return (
       <div>
         <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Examen de {Array.isArray(cj.questions) ? cj.questions.length : 10} preguntas. Necesitas 70% para aprobar y
-          obtener el certificado.
+          Examen de {Array.isArray(cj.questions) ? cj.questions.length : 10} preguntas. Necesitas 70% para aprobar.
         </p>
         <QuizView quizId={resource.id} />
       </div>
@@ -182,7 +228,7 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
   }
 
   if (resource.type === 'project') {
-    return <ProjectDelivery resource={resource} courseId={courseId} />
+    return <ProjectDelivery resource={resource} courseId={courseId} courseSlug={courseSlug} />
   }
 
   if (resource.type === 'lesson' && Array.isArray(cj.body) && cj.body.length) {
@@ -217,7 +263,7 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
         ))}
         {cj.diagram?.mermaid && <DiagramView title={cj.diagram.title} chart={cj.diagram.mermaid} />}
         {cj.example && (
-          <div className="my-5 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r">
+          <div className="my-5 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded-r">
             <p className="font-semibold text-gray-900 dark:text-white mb-1">{cj.example.title || 'Ejemplo'}</p>
             <p className="text-gray-700 dark:text-gray-300">{cj.example.text}</p>
           </div>
@@ -233,50 +279,32 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
           </div>
         )}
         {cj.lecturaGuiada && <LecturaGuiada data={cj.lecturaGuiada} />}
-        {cj.exercise && (
-          <div className="my-5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded">
-            <p className="font-semibold text-gray-900 dark:text-white mb-1">
-              Ejercicio {cj.exercise.mins ? `(${cj.exercise.mins} min)` : ''}
-            </p>
-            <p className="text-gray-700 dark:text-gray-300">{cj.exercise.text}</p>
+        {cj.recursos?.libros?.length > 0 && (
+          <div className="my-5 border border-gray-200 dark:border-gray-700 rounded p-4">
+            <p className="font-semibold text-gray-900 dark:text-white mb-2">📚 Para profundizar</p>
+            <ul className="space-y-2">
+              {cj.recursos.libros.map((b: any, i: number) => (
+                <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
+                  {b.url ? (
+                    <a href={b.url} target="_blank" rel="noreferrer" className="font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                      {b.titulo}
+                    </a>
+                  ) : (
+                    <span className="font-medium">{b.titulo}</span>
+                  )}
+                  {b.autor && <span className="text-gray-500 dark:text-gray-400"> — {b.autor}</span>}
+                  {b.ficha && <span className="text-gray-400"> · {b.ficha}</span>}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
-        {(cj.recursos?.libros?.length > 0 || cj.recursos?.videos?.length > 0) && (
-          <div className="my-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {cj.recursos.libros?.length > 0 && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                <p className="font-semibold text-gray-900 dark:text-white mb-2">📚 Para profundizar</p>
-                <ul className="space-y-2">
-                  {cj.recursos.libros.map((b: any, i: number) => (
-                    <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
-                      {b.url ? (
-                        <a href={b.url} target="_blank" rel="noreferrer" className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                          {b.titulo}
-                        </a>
-                      ) : (
-                        <span className="font-medium">{b.titulo}</span>
-                      )}
-                      {b.autor && <span className="text-gray-500 dark:text-gray-400"> — {b.autor}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {cj.recursos.videos?.length > 0 && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded p-4">
-                <p className="font-semibold text-gray-900 dark:text-white mb-2">🎬 Videos recomendados</p>
-                <ul className="space-y-2">
-                  {cj.recursos.videos.map((v: any, i: number) => (
-                    <li key={i} className="text-sm">
-                      <a href={v.url} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
-                        {v.titulo}
-                      </a>
-                      {v.canal && <span className="text-gray-500 dark:text-gray-400"> · {v.canal}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {cj.recursos?.videos?.length > 0 && (
+          <div className="my-5">
+            <p className="font-semibold text-gray-900 dark:text-white mb-2">🎬 Vídeos recomendados</p>
+            {cj.recursos.videos.map((v: any, i: number) => (
+              <VideoPlayer key={i} url={v.url} title={`${v.titulo}${v.canal ? ` · ${v.canal}` : ''}`} />
+            ))}
           </div>
         )}
         {cj.preguntaReflexion && (
@@ -285,10 +313,16 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
             <p className="text-gray-700 dark:text-gray-300">{cj.preguntaReflexion}</p>
           </div>
         )}
-        {Array.isArray(cj.quiz) && cj.quiz.length > 0 && <LessonQuiz quiz={cj.quiz} />}
+        <TutorPanel resourceId={resource.id} />
+        {((Array.isArray(cj.quiz) && cj.quiz.length > 0) || cj.exercise?.text) && (
+          <LessonFormative resourceId={resource.id} quiz={cj.quiz || []} exercise={cj.exercise} />
+        )}
+        {resource.revisedAt && (
+          <p className="mt-4 text-xs text-gray-400">Contenido revisado: {resource.revisedAt}</p>
+        )}
         {cj.criterioFinalizacion && (
           <p className="mt-6 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-700 pt-3">
-            <span className="font-semibold">Criterio de finalización: </span>
+            <span className="font-semibold">Para completar la lección: </span>
             {cj.criterioFinalizacion}
           </p>
         )}
@@ -317,7 +351,7 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
     <div className="text-gray-600 dark:text-gray-400">
       <p>Contenido en preparación.</p>
       {resource.url && (
-        <a href={resource.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline mt-2 inline-block">
+        <a href={resource.url} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline mt-2 inline-block">
           Abrir material original ↗
         </a>
       )}
@@ -326,32 +360,50 @@ function ResourceBody({ resource, courseId }: { resource: Resource; courseId: st
 }
 
 export default function CourseView() {
-  const { courseId } = useParams()
+  const { courseId, resourceId } = useParams()
   const navigate = useNavigate()
   const { data: course, isLoading, isError } = useCourse(courseId || '')
   const mark = useMarkResource()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { data: resume } = useResume(course?.id)
+  const saveResume = useSaveResume()
+  const [selectedId, setSelectedId] = useState<string | null>(resourceId || null)
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({})
+  const [navOpen, setNavOpen] = useState(false)
+  const [tab, setTab] = useState<'content' | 'forum'>('content')
+  const initedRef = useRef<string | null>(null)
 
   const modules: Module[] = course?.modules || []
   const flatResources = useMemo(() => modules.flatMap((m) => m.resources), [modules])
 
-  // Navegar de un curso a otro (p. ej. desde el botón "Ver este curso completo
-  // aquí" de un recurso curado) reutiliza esta misma instancia del componente,
-  // así que hay que olvidar la selección del curso anterior explícitamente —
-  // si no, selectedId sigue apuntando a un id que no existe en flatResources
-  // del curso nuevo y la vista se queda mostrando "sin contenido".
+  // Al cambiar de curso, olvidar la selección anterior (esta instancia del
+  // componente se reutiliza al navegar entre cursos).
   useEffect(() => {
-    setSelectedId(null)
     setOpenModules({})
-  }, [courseId])
+    initedRef.current = null
+    if (!resourceId) setSelectedId(null)
+  }, [courseId, resourceId])
 
+  // Selección inicial: 1) resourceId de la URL, 2) posición guardada,
+  // 3) primer recurso sin completar, 4) primero.
   useEffect(() => {
-    if (!selectedId && flatResources.length) {
-      setSelectedId(flatResources[0].id)
-      if (modules[0]) setOpenModules({ [modules[0].id]: true })
-    }
-  }, [flatResources, selectedId, modules])
+    if (!flatResources.length || initedRef.current === courseId) return
+    let target = resourceId && flatResources.find((r) => r.id === resourceId)?.id
+    if (!target && resume?.resourceId && flatResources.some((r) => r.id === resume.resourceId)) target = resume.resourceId
+    if (!target) target = (flatResources.find((r) => !r.completed) || flatResources[0]).id
+    initedRef.current = courseId || null
+    setSelectedId(target)
+    const mod = modules.find((m) => m.resources.some((r) => r.id === target))
+    if (mod) setOpenModules({ [mod.id]: true })
+  }, [flatResources, courseId, resourceId, resume, modules])
+
+  // Guardar posición + sincronizar URL + evento.
+  useEffect(() => {
+    if (!selectedId || !course?.id) return
+    if (resourceId !== selectedId) navigate(`/courses/${courseId}/${selectedId}`, { replace: true })
+    saveResume.mutate({ courseId: course.id, resourceId: selectedId })
+    logEvent('lesson_view', {}, selectedId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, course?.id])
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center text-gray-500">Cargando curso...</div>
@@ -360,7 +412,7 @@ export default function CourseView() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <p className="text-gray-500">No se pudo cargar el curso.</p>
-        <button onClick={() => navigate('/')} className="text-blue-600 hover:underline">
+        <button onClick={() => navigate('/')} className="text-primary-600 hover:underline">
           Volver al dashboard
         </button>
       </div>
@@ -385,12 +437,46 @@ export default function CourseView() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <button onClick={() => navigate('/')} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            ← Dashboard
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{course.title}</h1>
+          <nav className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-1">
+            <button onClick={() => navigate('/')} className="text-primary-600 dark:text-primary-400 hover:underline">
+              Dashboard
+            </button>
+            {course.meta?.programSlug === 'master-iep' && (
+              <>
+                <span>/</span>
+                <button onClick={() => navigate('/master-iep')} className="text-primary-600 dark:text-primary-400 hover:underline">
+                  Máster IEP
+                </button>
+              </>
+            )}
+            <span>/</span>
+            <span className="text-gray-700 dark:text-gray-300">{course.title}</span>
+            {tab === 'content' && selected && (
+              <>
+                <span>/</span>
+                <span className="text-gray-700 dark:text-gray-300 truncate max-w-[40vw]">{selected.title}</span>
+              </>
+            )}
+          </nav>
+          <div className="flex items-start justify-between gap-3 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{course.title}</h1>
+            <div className="flex gap-1 shrink-0">
+              <button
+                onClick={() => setTab('content')}
+                className={`text-xs px-3 py-1.5 rounded ${tab === 'content' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+              >
+                Contenido
+              </button>
+              <button
+                onClick={() => setTab('forum')}
+                className={`text-xs px-3 py-1.5 rounded ${tab === 'forum' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+              >
+                Foro
+              </button>
+            </div>
+          </div>
           {course.description && (
-            <p className="text-gray-600 dark:text-gray-400 mt-1 max-w-3xl">{course.description}</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1 max-w-3xl text-sm">{course.description}</p>
           )}
           <div className="mt-3 max-w-md">
             <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -400,16 +486,29 @@ export default function CourseView() {
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
+              <div className="bg-primary-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
             </div>
           </div>
         </div>
       </header>
 
+      {tab === 'forum' ? (
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <Forum courseId={course.id} />
+        </div>
+      ) : (
       <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-        {/* Sidebar */}
-        <aside className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-max lg:sticky lg:top-6">
-          <div className="p-3 border-b border-gray-100 dark:border-gray-700 font-semibold text-gray-900 dark:text-white text-sm">
+        {/* Sidebar — plegable en móvil */}
+        <button
+          onClick={() => setNavOpen((o) => !o)}
+          className="lg:hidden w-full text-left bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white"
+        >
+          {navOpen ? '▾' : '▸'} Contenido · {modules.length} módulos
+        </button>
+        <aside
+          className={`${navOpen ? 'block' : 'hidden'} lg:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 h-max lg:sticky lg:top-6`}
+        >
+          <div className="hidden lg:block p-3 border-b border-gray-100 dark:border-gray-700 font-semibold text-gray-900 dark:text-white text-sm">
             Contenido · {modules.length} módulos
           </div>
           <nav className="max-h-[70vh] overflow-y-auto">
@@ -432,10 +531,13 @@ export default function CourseView() {
                       {m.resources.map((r) => (
                         <li key={r.id}>
                           <button
-                            onClick={() => setSelectedId(r.id)}
+                            onClick={() => {
+                              setSelectedId(r.id)
+                              setNavOpen(false)
+                            }}
                             className={`w-full text-left pl-5 pr-3 py-1.5 text-sm flex items-center gap-2 ${
                               r.id === selectedId
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                             }`}
                           >
@@ -467,7 +569,7 @@ export default function CourseView() {
               {selected.contentJson?.internalCourseSlug && (
                 <button
                   onClick={() => navigate(`/courses/${selected.contentJson.internalCourseSlug}`)}
-                  className="inline-flex items-center gap-2 mb-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                  className="inline-flex items-center gap-2 mb-3 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"
                 >
                   ▶ Ver este curso completo aquí — sin salir de la plataforma
                 </button>
@@ -477,13 +579,13 @@ export default function CourseView() {
                   href={selected.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-block mb-4 text-blue-600 dark:text-blue-400 hover:underline"
+                  className="inline-block mb-4 text-primary-600 dark:text-primary-400 hover:underline"
                 >
                   {selected.contentJson?.internalCourseSlug ? 'También disponible en el sitio original ↗' : 'Abrir material ↗'}
                 </a>
               )}
 
-              <ResourceBody resource={selected} courseId={course.id} />
+              <ResourceBody resource={selected} courseId={course.id} courseSlug={course.slug} />
 
               <div className="mt-8 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4">
                 <button
@@ -493,19 +595,37 @@ export default function CourseView() {
                 >
                   ← Anterior
                 </button>
-                {selected.type !== 'exam' && selected.type !== 'project' && (
-                  <button
-                    onClick={() => mark.mutate({ resourceId: selected.id, completed: !selected.completed })}
-                    disabled={mark.isPending}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      selected.completed
-                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    {selected.completed ? '✅ Completada — desmarcar' : 'Marcar como completada'}
-                  </button>
-                )}
+                {(() => {
+                  const cjs = selected.contentJson || {}
+                  const lessonHasFormative =
+                    selected.type === 'lesson' &&
+                    ((Array.isArray(cjs.quiz) && cjs.quiz.length > 0) || !!cjs.exercise?.text)
+                  const canManual =
+                    selected.type !== 'exam' && selected.type !== 'project' && !lessonHasFormative
+                  if (lessonHasFormative) {
+                    return (
+                      <span className="text-xs text-gray-400">
+                        {selected.completed
+                          ? '✅ Lección completada'
+                          : 'Entrega la actividad y aprueba el quiz para completar'}
+                      </span>
+                    )
+                  }
+                  if (!canManual) return <span />
+                  return (
+                    <button
+                      onClick={() => mark.mutate({ resourceId: selected.id, completed: !selected.completed })}
+                      disabled={mark.isPending}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                        selected.completed
+                          ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
+                    >
+                      {selected.completed ? '✅ Completada — desmarcar' : 'Marcar como completada'}
+                    </button>
+                  )
+                })()}
                 <button
                   onClick={() => go(1)}
                   disabled={selIndex >= flatResources.length - 1}
@@ -518,6 +638,7 @@ export default function CourseView() {
           )}
         </main>
       </div>
+      )}
     </div>
   )
 }

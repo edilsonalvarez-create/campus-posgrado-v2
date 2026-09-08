@@ -241,39 +241,43 @@ export const NativeCoursesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Guarantee */}
+        {/* Enfoque pedagógico (real) */}
         <div className="bg-red-600 text-white rounded-lg shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">✅ Garantía de Asimilación</h2>
+          <h2 className="text-2xl font-bold mb-4">Enfoque pedagógico</h2>
+          <p className="text-sm mb-4 text-red-50">
+            Cada curso nativo combina lectura conceptual, quiz formativo de comprensión
+            y un proyecto práctico calificado por rúbrica. El progreso de una lección se
+            registra al entregar su actividad y aprobar su quiz.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-lg font-bold mb-3">Distribución de Contenido</h3>
+              <h3 className="text-lg font-bold mb-3">Composición de cada curso</h3>
               <ul className="space-y-2 text-sm">
-                <li>• 30% Lecturas académicas</li>
-                <li>• 30% Videos explicativos</li>
-                <li>• 20% Ejercicios prácticos</li>
-                <li>• 20% Proyectos integradores</li>
+                <li>• Lecciones con objetivo, contenido, ejemplo y diagrama</li>
+                <li>• Quiz formativo de comprensión por lección</li>
+                <li>• Proyecto práctico con rúbrica publicada</li>
+                <li>• Recursos externos curados</li>
               </ul>
             </div>
             <div>
-              <h3 className="text-lg font-bold mb-3">Técnicas Pedagógicas</h3>
+              <h3 className="text-lg font-bold mb-3">En construcción</h3>
               <ul className="space-y-2 text-sm">
-                <li>• Spaced Repetition (1 semana, 1 mes)</li>
-                <li>• Active Recall (preguntas antes de respuestas)</li>
-                <li>• Interleaving (mezcla de temas)</li>
-                <li>• Elaboration (explicación propia)</li>
+                <li>• Repaso dirigido tras un examen suspenso (Fase 3)</li>
+                <li>• Tutor socrático por lección (Fase 4)</li>
+                <li>• Foro y revisión por pares (Fase 3)</li>
               </ul>
             </div>
           </div>
         </div>
 
-        {/* Enrollment */}
+        {/* Acceso */}
         <div className="flex gap-4">
-          <button className="flex-1 bg-red-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-red-700 transition">
-            Matricularme ahora
-          </button>
-          <button className="flex-1 border-2 border-red-600 text-primary py-4 rounded-lg font-bold text-lg hover:bg-red-50 transition">
-            Más información
-          </button>
+          <a
+            href={`/courses/${course.id}`}
+            className="flex-1 bg-red-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-red-700 transition text-center"
+          >
+            Abrir el curso
+          </a>
         </div>
       </div>
     </div>

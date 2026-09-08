@@ -7,8 +7,15 @@
 // tramo tomados del documento oficial del programa (fuente de verdad); el
 // contenido/recursos curados de cada una vienen del artefacto legado (TEMPLATE).
 //
-// Idempotente: TRUNCATE del catálogo y re-inserción. Los usuarios se conservan
-// (upsert). El progreso del usuario se re-siembra en un estado inicial realista.
+// Idempotente y NO destructivo: hace upsert del catálogo por clave estable
+//   courses   -> slug
+//   modules   -> (course_id, stable_key)   [stable_key = 'm' + posición]
+//   resources -> (module_id, stable_key)   [stable_key = 'r' + posición]
+// Nunca borra filas: los UUID de courses/resources se conservan, así que el
+// progreso, las entregas, las notas y los certificados de los estudiantes
+// siguen siendo válidos tras cada sincronización. Los datos de demostración
+// (matrículas y progreso del usuario de prueba) solo se siembran con
+// SEED_DEMO_DATA=true.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -23,6 +30,64 @@ const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 // que ya usa el TFM, reutilizando sin cambios su mecanismo de entrega/calificación.
 const PROYECTOS_PRACTICOS = require(path.join(DATA, 'proyectos-practicos.js'));
 
+// Rúbricas (Fase 1). Array de { slug, title, scope, passThreshold, totalPoints?, criteria: [...] }.
+function tryRequire(rel) {
+  try {
+    return require(path.join(DATA, rel));
+  } catch (err) {
+    if (err.code !== 'MODULE_NOT_FOUND') console.warn(`[seed] ${rel}:`, err.message);
+    return null;
+  }
+}
+const RUBRICS = tryRequire('rubrics.js') || [];
+// Bancos de ítems por asignatura: item-banks/master-{i..xi}.js -> { slug, title, scopeSlug, questions:[...] }
+function loadItemBanks() {
+  const banks = [];
+  for (const n of ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi']) {
+    const b = tryRequire(`item-banks/master-${n}.js`);
+    if (b && Array.isArray(b.questions) && b.questions.length) banks.push(b);
+  }
+  return banks;
+}
+const ITEM_BANKS = loadItemBanks();
+const REVISIONS = tryRequire('revisions.json') || {};
+
+// Tracks hands-on (Fase 2): sustituyen el entregable de las asignaturas técnicas
+// por una práctica computacional real. handson/master-{iii,vi,ix,x}.js
+const HANDSON = {};
+for (const n of ['iii', 'vi', 'ix', 'x']) {
+  const h = tryRequire(`handson/master-${n}.js`);
+  if (h) HANDSON[h.scopeSlug] = h;
+}
+const TFM_SPEC = tryRequire('tfm.js');
+
+// Lectura guiada por asignatura (WS-7): lectura-guiada/master-<slug>.js exporta
+// un objeto { <contenidoOficial>: LecturaGuiadaData }. Se inyecta en la lección
+// correspondiente si esta no trae ya su propio `lecturaGuiada`.
+function loadLecturaGuiada(slug) {
+  return tryRequire(`lectura-guiada/${slug}.js`) || null;
+}
+
+// Config de examen por asignatura: apunta al banco de ítems y fija intentos/cooldown.
+function examConfigFor(slug) {
+  const bank = ITEM_BANKS.find((b) => b.scopeSlug === slug);
+  if (!bank) return null;
+  const drawSize = Math.min(15, Math.max(10, Math.floor(bank.questions.length / 2)));
+  return {
+    maxAttempts: 3,
+    cooldownHours: Number(process.env.EXAM_COOLDOWN_HOURS) || 24,
+    drawSize,
+    durationMinutes: 40,
+    passThreshold: 70,
+    bankSlug: bank.slug,
+  };
+}
+// Rúbrica del proyecto por asignatura (convención de slug).
+function projectRubricSlug(slug) {
+  const want = `rubric-${slug}`;
+  return RUBRICS.some((r) => r.slug === want) ? want : null;
+}
+
 // Lecciones propias por asignatura (FASE 3 en adelante): un módulo .js opcional por
 // slug, con { lecciones: [...], examen: [...] } siguiendo el modelo estándar de
 // lección del plan. Si no existe el archivo, la asignatura sigue solo con su lista
@@ -35,6 +100,46 @@ function tryRequireLecciones(slug) {
     return null;
   }
 }
+// Tipos de recurso curado (template.json) que se muestran como "video" en la lección;
+// el resto (libro, curso, lectura, docs, norma, tool, dataset, cert) como "libro".
+function curatedToRecurso(r) {
+  const entry = { titulo: r.n, autor: r.s || undefined, canal: r.s || undefined, url: r.u || undefined };
+  return r.t === 'video' ? { kind: 'videos', item: { titulo: entry.titulo, canal: entry.canal, url: entry.url } }
+                         : { kind: 'libros', item: { titulo: entry.titulo, autor: entry.autor, url: entry.url } };
+}
+
+// WS-1: garantiza >=2 recursos reales por lección, repartiendo los recursos
+// curados de la asignatura (template.json) entre sus 6 lecciones y respetando
+// los `recursos` que la lección ya trae. Fuente de datos: ya existente.
+function weaveLessonResources(lecciones, curated) {
+  const pool = (curated || []).filter((r) => r.u).map(curatedToRecurso);
+  if (!pool.length) return lecciones;
+  return lecciones.map((l, idx) => {
+    const have = l.recursos || {};
+    const libros = [...(have.libros || [])];
+    const videos = [...(have.videos || [])];
+    const urls = new Set([...libros, ...videos].map((x) => x.url).filter(Boolean));
+    // asignación principal round-robin + relleno cíclico hasta >=2
+    let k = idx;
+    let guard = 0;
+    while (libros.length + videos.length < 2 && guard < pool.length * 3) {
+      const pick = pool[k % pool.length];
+      k += 1;
+      guard += 1;
+      if (pick.item.url && urls.has(pick.item.url)) continue;
+      if (pick.item.url) urls.add(pick.item.url);
+      (pick.kind === 'videos' ? videos : libros).push(pick.item);
+    }
+    // además: reparto directo del recurso idx-ésimo del pool a esta lección
+    const direct = pool[idx % pool.length];
+    if (direct.item.url && !urls.has(direct.item.url)) {
+      urls.add(direct.item.url);
+      (direct.kind === 'videos' ? videos : libros).push(direct.item);
+    }
+    return { ...l, recursos: { libros, videos } };
+  });
+}
+
 function leccionAResource(l) {
   return {
     title: l.title,
@@ -54,6 +159,7 @@ function leccionAResource(l) {
       criterioFinalizacion: l.criterioFinalizacion || null,
       diagram: l.diagram || null,
       recursos: l.recursos || null,
+      lecturaGuiada: l.lecturaGuiada || null,
     },
   };
 }
@@ -141,12 +247,16 @@ function bookMarkdown(b) {
   return parts.join('\n\n');
 }
 
+const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA === 'true';
+
 async function main() {
   const client = await pool.connect();
+  let orphanModules = 0;
+  let orphanResources = 0;
   try {
     await client.query('BEGIN');
 
-    // ---- usuarios (upsert) ----
+    // ---- usuarios de servicio (no se resetea la contraseña si ya existen) ----
     const users = [
       ['test@example.com', 'Test User', sha256('Password123'), 'student'],
       ['instructor@example.com', 'Instructor Demo', sha256('Password123'), 'instructor'],
@@ -154,62 +264,93 @@ async function main() {
     for (const [email, name, hash, role] of users) {
       await client.query(
         `INSERT INTO users (email, name, password_hash, role) VALUES ($1, $2, $3, $4)
-         ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role`,
+         ON CONFLICT (email) DO NOTHING`,
         [email, name, hash, role],
       );
     }
     const instructorId = (
-      await client.query(`SELECT id FROM users WHERE email = 'instructor@example.com'`)
+      await client.query(
+        `SELECT id FROM users WHERE role IN ('instructor','admin') ORDER BY created_at LIMIT 1`,
+      )
     ).rows[0].id;
-    const testId = (
-      await client.query(`SELECT id FROM users WHERE email = 'test@example.com'`)
-    ).rows[0].id;
+    const testRow = await client.query(`SELECT id FROM users WHERE email = 'test@example.com'`);
+    const testId = testRow.rows[0] ? testRow.rows[0].id : null;
 
-    // ---- limpiar catálogo ----
-    await client.query('TRUNCATE courses RESTART IDENTITY CASCADE');
-
+    // ---- catálogo: upsert NO destructivo por clave estable ----
     let courseOrder = 0;
     const bySlug = {};
 
-    async function insertCourse(c) {
+    async function upsertCourse(c) {
       courseOrder += 1;
       const meta = c.meta || {};
       const { rows } = await client.query(
         `INSERT INTO courses (slug, kind, title, description, image_url, instructor_id, published, source, url, note, meta, order_index)
-         VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8, $9, $10, $11) RETURNING id`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         ON CONFLICT (slug) DO UPDATE SET
+           kind = EXCLUDED.kind, title = EXCLUDED.title, description = EXCLUDED.description,
+           image_url = EXCLUDED.image_url, instructor_id = EXCLUDED.instructor_id,
+           published = EXCLUDED.published, source = EXCLUDED.source, url = EXCLUDED.url,
+           note = EXCLUDED.note, meta = EXCLUDED.meta, order_index = EXCLUDED.order_index,
+           updated_at = now()
+         RETURNING id`,
         [
           c.slug, c.kind, c.title, c.description || '', c.image_url || null,
-          instructorId, c.source || null, c.url || null, c.note || null,
-          JSON.stringify(meta), courseOrder,
+          instructorId, c.published === false ? false : true, c.source || null,
+          c.url || null, c.note || null, JSON.stringify(meta), courseOrder,
         ],
       );
       const id = rows[0].id;
       bySlug[c.slug] = id;
+      const seenModules = [];
       let mi = 0;
       for (const m of c.modules || []) {
         mi += 1;
+        const mKey = m.stableKey || 'm' + mi;
+        seenModules.push(mKey);
         const mres = await client.query(
-          `INSERT INTO modules (course_id, title, numeral, subtitle, meta, order_index)
-           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-          [id, m.title, m.numeral || null, m.subtitle || null, JSON.stringify(m.meta || {}), mi],
+          `INSERT INTO modules (course_id, title, numeral, subtitle, meta, order_index, stable_key)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (course_id, stable_key) WHERE stable_key IS NOT NULL DO UPDATE SET
+             title = EXCLUDED.title, numeral = EXCLUDED.numeral, subtitle = EXCLUDED.subtitle,
+             meta = EXCLUDED.meta, order_index = EXCLUDED.order_index
+           RETURNING id`,
+          [id, m.title, m.numeral || null, m.subtitle || null, JSON.stringify(m.meta || {}), mi, mKey],
         );
         const moduleId = mres.rows[0].id;
+        const seenRes = [];
         let ri = 0;
         for (const r of m.resources || []) {
           ri += 1;
+          const rKey = r.stableKey || 'r' + ri;
+          seenRes.push(rKey);
           await client.query(
-            `INSERT INTO resources (module_id, title, type, url, source, note, content, content_json, order_index)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            `INSERT INTO resources (module_id, title, type, url, source, note, content, content_json, order_index, stable_key)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             ON CONFLICT (module_id, stable_key) WHERE stable_key IS NOT NULL DO UPDATE SET
+               title = EXCLUDED.title, type = EXCLUDED.type, url = EXCLUDED.url,
+               source = EXCLUDED.source, note = EXCLUDED.note, content = EXCLUDED.content,
+               content_json = EXCLUDED.content_json, order_index = EXCLUDED.order_index`,
             [
               moduleId, r.title, r.type || 'lecture', r.url || null, r.source || null,
               r.note || null, r.content || null,
-              r.content_json ? JSON.stringify(r.content_json) : null, ri,
+              r.content_json ? JSON.stringify(r.content_json) : null, ri, rKey,
             ],
           );
         }
+        const orphR = await client.query(
+          `SELECT count(*)::int AS c FROM resources WHERE module_id = $1 AND NOT (stable_key = ANY($2))`,
+          [moduleId, seenRes.length ? seenRes : ['__none__']],
+        );
+        orphanResources += orphR.rows[0].c;
       }
+      const orphM = await client.query(
+        `SELECT count(*)::int AS c FROM modules WHERE course_id = $1 AND NOT (stable_key = ANY($2))`,
+        [id, seenModules.length ? seenModules : ['__none__']],
+      );
+      orphanModules += orphM.rows[0].c;
       return id;
     }
+    const insertCourse = upsertCourse; // alias retro-compatible dentro de este archivo
 
     // ---- 1. Máster IEP: 11 asignaturas oficiales + TFM (cada una = un curso propio) ----
     // Fuente de verdad de títulos/tramos: el documento oficial del programa
@@ -239,7 +380,7 @@ async function main() {
         officialCode: '2702799205392',
         contenidos: ['Principios y fundamentos de la agilidad', 'Comparativa de marcos ágiles (Scrum, Kanban, Lean)', 'Roles y eventos en Scrum', 'Prácticas de planificación y seguimiento en Scrum', 'Ciclos iterativos para la mejora de productos y procesos', 'Evaluación y ajuste continuo en proyectos ágiles'] },
       { numeral: 'V', slug: 'master-v', title: 'V. Ética y regulaciones en el Uso de la IA', track: 'PROadvance',
-        officialCode: null,
+        officialCode: process.env.OFFICIAL_CODE_V || 'IEP-V-INTERNO',
         contenidos: ['Introducción a la Inteligencia Artificial', 'Regulación jurídica de la IA', 'Consideraciones éticas en el uso de la IA', 'Principales Retos y desafíos en el uso de IA', 'Inteligencia Artificial aplicada para la detección y prevención de riesgos', 'Modelo de Gobernanza de la IA. Big Data, Blockchain y otras tecnologías disruptivas'] },
       { numeral: 'VI', slug: 'master-vi', title: 'VI. Machine Learning', track: 'PROadvance',
         officialCode: '2702799208864',
@@ -248,7 +389,7 @@ async function main() {
         officialCode: '2702799209304',
         contenidos: ['Integración de texto, imagen y sonido', 'Aplicaciones en arte digital y transmedia', 'Desafíos en entornos multimodales', 'Adaptación de Prompts a Diferentes audiencias', 'Creación de Prompts para interfaces inteligentes', 'Evaluación de la usabilidad'] },
       { numeral: 'VIII', slug: 'master-viii', title: 'VIII. Metodologías para el desarrollo de productos tecnológicos innovadores', track: 'PROadvance',
-        officialCode: null,
+        officialCode: process.env.OFFICIAL_CODE_VIII || 'IEP-VIII-INTERNO',
         contenidos: ['Fundamentos de Design Thinking', 'Fases de empatía y definición de problemas', 'Técnicas de ideación para soluciones innovadoras', 'Prototipado rápido y validación inicial', 'Iteración y mejoras continuas del prototipo', 'Pruebas con usuarios y retroalimentación'] },
       { numeral: 'IX', slug: 'master-ix', title: 'IX. Uso e Implementación de Modelos de Inteligencia Artificial Generativa en la Industria 4.0', track: 'PROadvance',
         officialCode: '2702799209220',
@@ -260,7 +401,7 @@ async function main() {
         officialCode: '2702799179257',
         contenidos: ['Introducción a la Inteligencia Artificial y aprendizaje automático', 'Principios y aplicaciones Big Data en la ciberseguridad', 'Manejo y procesamiento de datos', 'Modelos predictivos en ciberseguridad', 'Introducción a los modelos generativos en Inteligencia Artificial', 'Retos y oportunidades de la Inteligencia Artificial en el contexto de la ciberseguridad'] },
       { numeral: 'TFM', slug: 'master-tfm', title: 'Proyecto Fin de Programa (TFM)', track: 'TFM',
-        officialCode: null,
+        officialCode: process.env.OFFICIAL_CODE_TFM || 'IEP-TFM-INTERNO',
         contenidos: ['Trabajo académico de cierre que aplica competencias generales del programa'] },
     ];
 
@@ -270,12 +411,23 @@ async function main() {
       const propias = tryRequireLecciones(asig.slug);
       const modules = [];
       if (propias && Array.isArray(propias.lecciones) && propias.lecciones.length) {
-        const resources = propias.lecciones.map(leccionAResource);
-        if (Array.isArray(propias.examen) && propias.examen.length) {
+        let woven = weaveLessonResources(propias.lecciones, tm.resources);
+        const lg = loadLecturaGuiada(asig.slug);
+        if (lg) {
+          woven = woven.map((l) => (l.lecturaGuiada || !lg[l.contenidoOficial] ? l : { ...l, lecturaGuiada: lg[l.contenidoOficial] }));
+        }
+        const resources = woven.map(leccionAResource);
+        const examCfg = examConfigFor(asig.slug);
+        if (examCfg || (Array.isArray(propias.examen) && propias.examen.length)) {
           resources.push({
             title: 'Examen de la asignatura',
             type: 'exam',
-            content_json: { questions: propias.examen },
+            content_json: {
+              // Las preguntas legadas se conservan como respaldo, pero el motor de
+              // intentos usa el banco de ítems si hay examConfig.bankSlug.
+              questions: Array.isArray(propias.examen) ? propias.examen : [],
+              examConfig: examCfg || undefined,
+            },
           });
         }
         modules.push({
@@ -286,17 +438,34 @@ async function main() {
       }
       const proyecto = asig.slug === 'master-tfm' ? tm : PROYECTOS_PRACTICOS[asig.slug];
       if (proyecto) {
+        const hs = HANDSON[asig.slug]; // track hands-on (III/VI/IX/X)
         modules.push({
-          title: asig.slug === 'master-tfm' ? 'Entrega del TFM' : 'Proyecto práctico',
-          subtitle: 'Sube tu entrega para evaluación del instructor',
+          title: asig.slug === 'master-tfm' ? 'Entrega del TFM' : hs ? 'Práctica computacional' : 'Proyecto práctico',
+          subtitle: hs
+            ? 'Práctica hands-on alineada a la ruta oficial. Entrega repositorio/notebook + artefactos.'
+            : 'Sube tu entrega para evaluación del instructor',
           resources: [{
-            title: asig.slug === 'master-tfm' ? 'Entrega: Proyecto Fin de Programa' : 'Entrega: proyecto práctico de la asignatura',
+            title:
+              asig.slug === 'master-tfm'
+                ? 'Entrega: Proyecto Fin de Programa'
+                : hs
+                  ? `Entrega: ${hs.title}`
+                  : 'Entrega: proyecto práctico de la asignatura',
             type: 'project',
             content_json: {
               contenidos: asig.contenidos,
-              deliverable: proyecto.deliverable || null,
+              deliverable: (hs && hs.deliverable) || proyecto.deliverable || null,
               practice: proyecto.practice || null,
               mastery: proyecto.mastery || null,
+              rubricSlug: hs ? hs.rubricSlug : projectRubricSlug(asig.slug),
+              track: hs ? 'handson' : undefined,
+              handson: hs
+                ? {
+                    referencePractice: hs.referencePractice,
+                    requiredArtifacts: hs.requiredArtifacts || [],
+                    notebookTemplateUrl: hs.notebookTemplateUrl || null,
+                  }
+                : undefined,
             },
           }],
         });
@@ -463,56 +632,194 @@ async function main() {
       });
     }
 
-    // ---- matrículas + progreso inicial del usuario de prueba ----
-    const enrollSlugs = [
-      ...MASTER_ASIGNATURAS.map((a) => a.slug),
-      'biblioteca-master',
-      'aula-ai-for-everyone',
-      'aula-elements-of-ai',
-      'native-ai-101',
-    ];
-    for (const slug of enrollSlugs) {
-      const courseId = bySlug[slug];
-      if (!courseId) continue;
-      await client.query(
-        `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'student')
-         ON CONFLICT (user_id, course_id) DO NOTHING`,
-        [testId, courseId],
+    // ---- 5. Rúbricas (upsert por slug) ----
+    for (const rub of RUBRICS) {
+      const totalPoints =
+        rub.totalPoints ||
+        (rub.criteria || []).reduce(
+          (n, c) => n + Math.max(0, ...(c.levels || []).map((l) => l.points)),
+          0,
+        ) ||
+        100;
+      const rr = await client.query(
+        `INSERT INTO rubrics (slug, title, scope, pass_threshold, total_points, meta)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, scope = EXCLUDED.scope,
+           pass_threshold = EXCLUDED.pass_threshold, total_points = EXCLUDED.total_points,
+           meta = EXCLUDED.meta, updated_at = now()
+         RETURNING id`,
+        [rub.slug, rub.title, rub.scope || 'asignatura', rub.passThreshold || 70, totalPoints, JSON.stringify(rub.meta || {})],
       );
-      await client.query(
-        `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'instructor')
-         ON CONFLICT (user_id, course_id) DO NOTHING`,
-        [instructorId, courseId],
-      );
+      const rubId = rr.rows[0].id;
+      let ci = 0;
+      for (const c of rub.criteria || []) {
+        ci += 1;
+        const cr = await client.query(
+          `INSERT INTO rubric_criteria (rubric_id, order_index, key, title, description, weight)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (rubric_id, key) DO UPDATE SET order_index = EXCLUDED.order_index,
+             title = EXCLUDED.title, description = EXCLUDED.description, weight = EXCLUDED.weight
+           RETURNING id`,
+          [rubId, ci, c.key, c.title, c.description || '', Math.max(0, ...(c.levels || []).map((l) => l.points))],
+        );
+        const critId = cr.rows[0].id;
+        await client.query('DELETE FROM rubric_levels WHERE criterion_id = $1', [critId]);
+        let li = 0;
+        for (const l of c.levels || []) {
+          li += 1;
+          await client.query(
+            `INSERT INTO rubric_levels (criterion_id, order_index, label, points, descriptor)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [critId, li, l.label, l.points, l.descriptor || ''],
+          );
+        }
+      }
     }
 
-    // marcar como completadas las 3 primeras lecciones de "AI for Everyone"
-    const aiForEveryone = bySlug['aula-ai-for-everyone'];
-    if (aiForEveryone) {
-      const { rows } = await client.query(
-        `SELECT r.id FROM resources r
-         JOIN modules m ON m.id = r.module_id
-         WHERE m.course_id = $1 AND r.type = 'lesson'
-         ORDER BY m.order_index, r.order_index
-         LIMIT 3`,
-        [aiForEveryone],
+    // ---- 6. Bancos de ítems (upsert por slug + ext_key) ----
+    for (const bank of ITEM_BANKS) {
+      const br = await client.query(
+        `INSERT INTO item_banks (slug, title, scope_slug) VALUES ($1, $2, $3)
+         ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title, scope_slug = EXCLUDED.scope_slug, updated_at = now()
+         RETURNING id`,
+        [bank.slug, bank.title, bank.scopeSlug],
       );
-      for (const r of rows) {
+      const bankId = br.rows[0].id;
+      for (const q of bank.questions || []) {
         await client.query(
-          `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
-           ON CONFLICT (user_id, resource_id) DO NOTHING`,
-          [testId, r.id],
+          `INSERT INTO item_bank_questions
+             (bank_id, ext_key, stem, options, correct_index, explanations, difficulty, skill_tag, cognitive, source, active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
+           ON CONFLICT (bank_id, ext_key) DO UPDATE SET
+             stem = EXCLUDED.stem, options = EXCLUDED.options, correct_index = EXCLUDED.correct_index,
+             explanations = EXCLUDED.explanations, difficulty = EXCLUDED.difficulty, skill_tag = EXCLUDED.skill_tag,
+             cognitive = EXCLUDED.cognitive, source = EXCLUDED.source, active = true`,
+          [
+            bankId, q.extKey, q.stem, JSON.stringify(q.options), q.correctIndex,
+            JSON.stringify(q.explanations || []), q.difficulty || 'media', q.skillTag || null,
+            q.cognitive || 'aplicacion', q.source || 'authored',
+          ],
         );
       }
     }
 
-    // ---- notificación de bienvenida ----
-    await client.query(
-      `INSERT INTO notifications (user_id, type, title, message)
-       SELECT $1, 'course', 'Bienvenido al Campus', 'Tu catálogo está listo: programa, aulas, biblioteca, Máster IEP y cursos nativos.'
-       WHERE NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = $1 AND title = 'Bienvenido al Campus')`,
-      [testId],
-    );
+    // ---- 6b. Hitos del TFM (Fase 2) ----
+    if (TFM_SPEC && Array.isArray(TFM_SPEC.milestones)) {
+      for (const ms of TFM_SPEC.milestones) {
+        await client.query(
+          `INSERT INTO tfm_milestones (slug, order_index, title, description, rubric_slug, weight, requires_video, template_url)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (slug) DO UPDATE SET
+             order_index = EXCLUDED.order_index, title = EXCLUDED.title, description = EXCLUDED.description,
+             rubric_slug = EXCLUDED.rubric_slug, weight = EXCLUDED.weight,
+             requires_video = EXCLUDED.requires_video, template_url = EXCLUDED.template_url`,
+          [ms.slug, ms.orderIndex, ms.title, ms.description || '', ms.rubricSlug, ms.weight, !!ms.requiresVideo, ms.templateUrl || null],
+        );
+      }
+    }
+
+    // ---- 7. Fechas de revisión de contenido ----
+    for (const [slug, entries] of Object.entries(REVISIONS)) {
+      const cid = bySlug[slug];
+      if (!cid) continue;
+      for (const e of entries) {
+        await client.query(
+          `UPDATE resources SET revised_at = $3, revision_note = $4
+             FROM modules m
+            WHERE resources.module_id = m.id AND m.course_id = $1
+              AND resources.content_json->>'contenidoOficial' = $2`,
+          [cid, e.contenidoOficial, e.revisedAt, e.note || null],
+        );
+      }
+    }
+
+    // ---- datos de demostración (solo con SEED_DEMO_DATA=true) ----
+    // Matrícula automática + progreso inicial del usuario de prueba. En producción
+    // los estudiantes reales se matriculan por su cuenta (POST /api/enrollments);
+    // no se auto-matricula ninguna cuenta demo ni se toca el progreso de nadie.
+    if (SEED_DEMO_DATA && testId) {
+      const enrollSlugs = [
+        ...MASTER_ASIGNATURAS.map((a) => a.slug),
+        'biblioteca-master',
+        'aula-ai-for-everyone',
+        'aula-elements-of-ai',
+        'native-ai-101',
+      ];
+      for (const slug of enrollSlugs) {
+        const courseId = bySlug[slug];
+        if (!courseId) continue;
+        await client.query(
+          `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'student')
+           ON CONFLICT (user_id, course_id) DO NOTHING`,
+          [testId, courseId],
+        );
+        await client.query(
+          `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'instructor')
+           ON CONFLICT (user_id, course_id) DO NOTHING`,
+          [instructorId, courseId],
+        );
+      }
+
+      const aiForEveryone = bySlug['aula-ai-for-everyone'];
+      if (aiForEveryone) {
+        const { rows } = await client.query(
+          `SELECT r.id FROM resources r
+           JOIN modules m ON m.id = r.module_id
+           WHERE m.course_id = $1 AND r.type = 'lesson'
+           ORDER BY m.order_index, r.order_index
+           LIMIT 3`,
+          [aiForEveryone],
+        );
+        for (const r of rows) {
+          await client.query(
+            `INSERT INTO progress (user_id, resource_id, completed) VALUES ($1, $2, true)
+             ON CONFLICT (user_id, resource_id) DO NOTHING`,
+            [testId, r.id],
+          );
+        }
+      }
+
+      await client.query(
+        `INSERT INTO notifications (user_id, type, title, message)
+         SELECT $1, 'course', 'Bienvenido al Campus', 'Tu catálogo está listo: programa, aulas, biblioteca, Máster IEP y cursos nativos.'
+         WHERE NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = $1 AND title = 'Bienvenido al Campus')`,
+        [testId],
+      );
+    }
+
+    // ---- 8. Hilos ancla del foro (Fase 3): el foro no arranca vacío ----
+    const instructorForAnchor = instructorId;
+    for (const asig of MASTER_ASIGNATURAS) {
+      const cid = bySlug[asig.slug];
+      if (!cid) continue;
+      const anchors = [
+        {
+          title: 'Errores más comunes en el proyecto de esta asignatura',
+          body:
+            'Hilo de referencia. El fallo que más se repite en las entregas de esta asignatura es no cubrir el "apartado que casi todo el mundo se salta" descrito en el criterio de dominio del proyecto. Antes de entregar, revisa que tu trabajo lo aborde de forma explícita. Comenta aquí tus dudas sobre ese punto.',
+        },
+        {
+          title: 'Dudas frecuentes y elección del caso de práctica',
+          body:
+            'Usa este hilo para preguntar sobre el enunciado del proyecto, la elección entre las opciones de práctica, o cómo adaptar el caso de referencia a tu contexto. La opción 1 (un caso real de tu organización) suele dar el mejor aprendizaje.',
+        },
+      ];
+      for (const a of anchors) {
+        await client.query(
+          `INSERT INTO forum_threads (course_id, author_id, title, body, pinned, anchor)
+           SELECT $1, $2, $3, $4, true, true
+           WHERE NOT EXISTS (SELECT 1 FROM forum_threads WHERE course_id = $1 AND title = $3)`,
+          [cid, instructorForAnchor, a.title, a.body],
+        );
+      }
+    }
+
+    if (orphanModules || orphanResources) {
+      console.warn(
+        `[seed] AVISO: ${orphanModules} módulo(s) y ${orphanResources} recurso(s) en la BD ya no están en seed-data ` +
+          `(contenido retirado o reordenado). No se eliminan; revísalos manualmente si procede.`,
+      );
+    }
 
     await client.query('COMMIT');
 
