@@ -1,0 +1,13 @@
+{
+  "_doc": "Fechas de revisión de contenido volátil. Keyed por slug de curso; cada entrada se aplica a la lección cuyo content_json.contenidoOficial coincide. El seed pone resources.revised_at / revision_note y el frontend muestra un chip 'Revisado: <fecha>'. Revisar cada 6 meses las lecciones aquí listadas.",
+  "master-x": [
+    { "contenidoOficial": "Principales servicios", "revisedAt": "2026-09-01", "note": "Nombres y límites de servicios gestionados de IA cambian con frecuencia; verificar contra la documentación del proveedor." },
+    { "contenidoOficial": "Amazon Web Services", "revisedAt": "2026-09-01", "note": "Bedrock / SageMaker: revisar modelos disponibles, regiones y precios cada semestre." },
+    { "contenidoOficial": "Microsoft Azure", "revisedAt": "2026-09-01", "note": "Azure AI Foundry / Azure OpenAI: nombres de producto y catálogo de modelos en evolución." },
+    { "contenidoOficial": "Google Cloud", "revisedAt": "2026-09-01", "note": "Vertex AI: revisar Model Garden y precios cada semestre." }
+  ],
+  "master-v": [
+    { "contenidoOficial": "Regulación jurídica de la IA", "revisedAt": "2026-09-01", "note": "AI Act (UE), NIST AI RMF, ISO/IEC 42001, y en Colombia el CONPES de IA vigente y Ley 1581/2012: confirmar la versión en vigor al impartir." },
+    { "contenidoOficial": "Modelo de Gobernanza de la IA. Big Data, Blockchain y otras tecnologías disruptivas", "revisedAt": "2026-09-01", "note": "Mapa ISO/IEC 42001 ↔ Anexo A de ISO/IEC 27001: revisar si sale nueva edición de alguna de las dos normas." }
+  ]
+}
