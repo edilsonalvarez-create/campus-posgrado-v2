@@ -32,7 +32,7 @@ const lecciones = [
       mermaid: 'graph LR\n  E["Empatizar"] --> D["Definir"]\n  D --> I["Idear"]\n  I --> P["Prototipar"]\n  P --> T["Probar"]\n  T -.->|vuelve atrás si hace falta| E',
     },
     recursos: {
-      videos: [{ titulo: 'Understand IBM Design Thinking in 10 minutes', canal: 'IBM', url: 'https://www.youtube.com/watch?v=psLjEBUOnVs' }],
+      videos: [{ titulo: 'Design Thinking 101', canal: 'NN/g (Nielsen Norman Group)', url: 'https://www.youtube.com/watch?v=6lmvCqvmjfE' }],
     },
     quiz: [
       { q: '¿Por qué el Design Thinking empieza por la empatía con el usuario en vez de por la tecnología disponible?', opts: ['Porque la tecnología nunca es relevante', 'Porque las soluciones técnicamente elegantes que no resuelven una necesidad real fracasan en la adopción', 'Porque es un requisito legal', 'Porque siempre es más barato empezar así'], a: 1, why: ['La tecnología sí es relevante, solo no es el punto de partida.', 'Correcto: esa es la razón empírica exacta que da la lección.', 'No existe tal requisito legal.', 'No es necesariamente una cuestión de costo inicial.'] },

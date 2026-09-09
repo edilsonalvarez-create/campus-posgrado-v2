@@ -236,7 +236,7 @@ o un `recursos` inline.
 **L1. Fundamentos de Design Thinking** — 2 recurso(s) · _(algún recurso venía inline)_
 
 - 📖 Design Thinking Bootleg — d.school · Stanford <https://dschool.stanford.edu/resources/design-thinking-bootleg>
-- 🎬 Understand IBM Design Thinking in 10 minutes — IBM <https://www.youtube.com/watch?v=psLjEBUOnVs>
+- 🎬 Design Thinking 101 — NN/g (Nielsen Norman Group) <https://www.youtube.com/watch?v=6lmvCqvmjfE>
 
 **L2. Empatía y definición: investigar antes de resolver** — 2 recurso(s)
 

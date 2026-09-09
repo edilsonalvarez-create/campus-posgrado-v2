@@ -43,7 +43,7 @@ module.exports = {
               { titulo: 'Sprint: Resuelve grandes problemas y prueba nuevas ideas en solo cinco días', autor: 'Jake Knapp, John Zeratsky, Braden Kowitz', url: 'https://www.google.com/search?tbm=bks&q=Sprint+Jake+Knapp+Zeratsky+Kowitz' },
             ],
             videos: [
-              { titulo: 'Understand IBM Design Thinking in 10 minutes', canal: 'IBM', url: 'https://www.youtube.com/watch?v=psLjEBUOnVs' },
+              { titulo: 'Design Thinking 101', canal: 'NN/g (Nielsen Norman Group)', url: 'https://www.youtube.com/watch?v=6lmvCqvmjfE' },
             ],
           },
           exercise: { mins: 15, text: 'Elige un proyecto reciente de tu organización que haya seguido un plan de fases fijas. Identifica un momento en que apareció información nueva a mitad de camino: ¿el equipo la incorporó, o la ignoró porque "ya se había cerrado esa fase"? Describe qué habría cambiado con un bucle abierto.' },
