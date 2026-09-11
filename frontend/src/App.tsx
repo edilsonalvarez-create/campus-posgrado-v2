@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from './state/store'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import Dashboard from './pages/Dashboard'
 
 // Lazy load pages
@@ -38,11 +40,15 @@ function App() {
             <>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
             </>
           ) : (
             <>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/explore" element={<Suspense fallback={<LoadingSpinner />}><ExploreCoursesPage /></Suspense>} />
               <Route path="/master-iep" element={<Suspense fallback={<LoadingSpinner />}><MasterIEPPage /></Suspense>} />
               <Route path="/native-courses" element={<Suspense fallback={<LoadingSpinner />}><NativeCoursesPage /></Suspense>} />

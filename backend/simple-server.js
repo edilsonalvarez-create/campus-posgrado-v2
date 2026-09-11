@@ -6,11 +6,13 @@ const crypto = require('crypto');
 const pool = require('./db/pool');
 const runMigrations = require('./db/migrate');
 const llm = require('./lib/llm');
+const email = require('./lib/email');
 
 const PORT = Number(process.env.PORT) || 3001;
 let dbReady = false;
 const TOKEN_TTL_MS = 3600 * 1000;
 const REFRESH_TTL_MS = 7 * 24 * 3600 * 1000;
+const RESET_TOKEN_TTL_MS = 3600 * 1000;
 
 // ---------- utilidades ----------
 const rateLimits = new Map();
@@ -677,6 +679,61 @@ route('GET', '/api/auth/me', async ({ res, user }) => {
 route('POST', '/api/auth/logout', async ({ res, req }) => {
   const h = req.headers.authorization || '';
   if (h.startsWith('Bearer ')) await pool.query('DELETE FROM sessions WHERE token = $1', [h.slice(7)]);
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- recuperación de contraseña (cualquier rol) ---
+const sha256Hex = (s) => crypto.createHash('sha256').update(s).digest('hex');
+const GENERIC_FORGOT_MESSAGE =
+  'Si ese correo está registrado, te enviamos un enlace para restablecer la contraseña.';
+
+route('POST', '/api/auth/forgot-password', async ({ res, body }) => {
+  const emailAddr = String(body.email || '').trim().toLowerCase();
+  if (!isValidEmail(emailAddr)) return sendJSON(res, 400, { message: 'Correo inválido' });
+
+  // Respuesta idéntica exista o no la cuenta: no revela qué correos están
+  // registrados en la plataforma.
+  const user = (await pool.query('SELECT id, email, name FROM users WHERE email = $1', [emailAddr])).rows[0];
+  if (user) {
+    await pool.query('DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL', [user.id]);
+    const token = crypto.randomBytes(32).toString('hex');
+    await pool.query(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+       VALUES ($1, $2, now() + ($3::int * interval '1 millisecond'))`,
+      [user.id, sha256Hex(token), RESET_TOKEN_TTL_MS],
+    );
+    const { sent } = await email.sendPasswordResetEmail({ toEmail: user.email, toName: user.name, token });
+    console.log(`[auth] solicitud de restablecimiento para ${user.email} (correo ${sent ? 'enviado' : 'NO enviado, ver log de arriba'})`);
+  }
+  sendJSON(res, 200, { ok: true, message: GENERIC_FORGOT_MESSAGE });
+});
+
+route('POST', '/api/auth/reset-password', async ({ res, body }) => {
+  const token = String(body.token || '');
+  const { password } = body;
+  if (!token) return sendJSON(res, 400, { message: 'Enlace inválido' });
+  if (!isValidPassword(password)) return sendJSON(res, 400, { message: 'La contraseña debe tener 8 caracteres o más' });
+
+  const record = (
+    await pool.query(
+      `SELECT id, user_id FROM password_reset_tokens
+        WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()`,
+      [sha256Hex(token)],
+    )
+  ).rows[0];
+  if (!record) return sendJSON(res, 400, { message: 'El enlace es inválido o ya venció. Solicita uno nuevo.' });
+
+  const pw = newPasswordHash(password);
+  await pool.query(
+    `UPDATE users SET password_hash = $2, password_salt = $3, password_algo = $4 WHERE id = $1`,
+    [record.user_id, pw.hash, pw.salt, pw.algo],
+  );
+  await pool.query('UPDATE password_reset_tokens SET used_at = now() WHERE id = $1', [record.id]);
+  // Cierra cualquier sesión activa: un restablecimiento de contraseña debe
+  // invalidar accesos previos, sobre todo si el motivo fue una cuenta comprometida.
+  await pool.query('DELETE FROM sessions WHERE user_id = $1', [record.user_id]);
+
+  console.log(`[auth] contraseña restablecida para user_id=${record.user_id}`);
   sendJSON(res, 200, { ok: true });
 });
 
