@@ -19,7 +19,8 @@ export interface AuthResponse {
     id: string
     email: string
     name: string
-    role: 'student' | 'instructor' | 'admin'
+    role: 'student' | 'instructor' | 'director_tfm' | 'admin'
+    status?: 'pending' | 'active'
   }
 }
 

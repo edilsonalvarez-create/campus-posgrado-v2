@@ -102,7 +102,7 @@ async function getAuthUser(req) {
   if (!h.startsWith('Bearer ')) return null;
   const token = h.slice(7);
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.name, u.role
+    `SELECT u.id, u.email, u.name, u.role, u.status
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token = $1 AND s.expires_at > now() AND s.kind = 'access'`,
     [token],
@@ -111,7 +111,7 @@ async function getAuthUser(req) {
 }
 
 // ---------- serializadores ----------
-const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role });
+const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role, status: u.status || 'active' });
 
 function courseSummary(row) {
   const total = Number(row.total || 0);
@@ -163,8 +163,28 @@ function sanitizeResourceContent(type, cj, role) {
   return clone;
 }
 
+// Un curso solo entrega su contenido real (texto, quiz, enlaces) a personal
+// (instructor/director_tfm/admin) o a un estudiante matriculado. Cualquier
+// otro caso —sin sesión, o estudiante sin matrícula— recibe la estructura
+// (títulos de módulos y lecciones) pero cada recurso llega vacío y marcado
+// `locked:true`, para que se pueda mostrar como vista previa sin filtrar el
+// contenido. Antes de este cambio no existía ninguna comprobación aquí: al
+// registrarse, cualquier persona podía abrir cualquier curso publicado,
+// incluido el Máster completo, sin que un administrador la matriculara.
+async function hasCourseAccess(courseId, userId, role) {
+  if (role && role !== 'student') return true;
+  if (!userId) return false;
+  const { rowCount } = await pool.query(
+    'SELECT 1 FROM enrollments WHERE course_id = $1 AND user_id = $2',
+    [courseId, userId],
+  );
+  return rowCount > 0;
+}
+
 async function loadCourseDetail(courseRow, userId, role) {
   const summary = courseSummary(courseRow);
+  const access = await hasCourseAccess(courseRow.id, userId, role);
+  summary.locked = !access;
   const mods = (
     await pool.query(
       `SELECT id, title, numeral, subtitle, meta, order_index FROM modules WHERE course_id = $1 ORDER BY order_index`,
@@ -191,15 +211,16 @@ async function loadCourseDetail(courseRow, userId, role) {
         id: r.id,
         title: r.title,
         type: r.type,
-        url: r.url || undefined,
-        source: r.source || undefined,
-        note: r.note || undefined,
-        content: r.content || undefined,
-        contentJson: sanitizeResourceContent(r.type, r.content_json, role) || undefined,
+        url: access ? (r.url || undefined) : undefined,
+        source: access ? (r.source || undefined) : undefined,
+        note: access ? (r.note || undefined) : undefined,
+        content: access ? (r.content || undefined) : undefined,
+        contentJson: access ? (sanitizeResourceContent(r.type, r.content_json, role) || undefined) : undefined,
         completed: r.completed,
         revisedAt: r.revised_at || undefined,
         revisionNote: r.revision_note || undefined,
         order: r.order_index,
+        locked: !access,
       });
     }
   }
@@ -622,9 +643,9 @@ route('POST', '/api/auth/register', async ({ res, body }) => {
   if (exists.rowCount) return sendJSON(res, 409, { message: 'El email ya está registrado' });
   const pw = newPasswordHash(password);
   const { rows } = await pool.query(
-    `INSERT INTO users (email, name, password_hash, password_salt, password_algo, role)
-     VALUES ($1, $2, $3, $4, $5, 'student')
-     RETURNING id, email, name, role`,
+    `INSERT INTO users (email, name, password_hash, password_salt, password_algo, role, status)
+     VALUES ($1, $2, $3, $4, $5, 'student', 'pending')
+     RETURNING id, email, name, role, status`,
     [email, name, pw.hash, pw.salt, pw.algo],
   );
   const user = rows[0];
@@ -636,7 +657,7 @@ route('POST', '/api/auth/register', async ({ res, body }) => {
 route('POST', '/api/auth/login', async ({ res, body }) => {
   const { email, password } = body;
   const { rows } = await pool.query(
-    'SELECT id, email, name, role, password_hash, password_salt, password_algo FROM users WHERE email = $1',
+    'SELECT id, email, name, role, status, password_hash, password_salt, password_algo FROM users WHERE email = $1',
     [email || ''],
   );
   const user = rows[0];
@@ -661,7 +682,7 @@ route('POST', '/api/auth/login', async ({ res, body }) => {
 route('POST', '/api/auth/refresh', async ({ res, body }) => {
   const token = body.refreshToken || '';
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.name, u.role
+    `SELECT u.id, u.email, u.name, u.role, u.status
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token = $1 AND s.kind = 'refresh' AND s.expires_at > now()`,
     [token],
@@ -2366,11 +2387,12 @@ const USER_ROLES = ['student', 'instructor', 'director_tfm', 'admin'];
 route('GET', '/api/admin/users', async ({ res, user, query }) => {
   if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
   const role = USER_ROLES.includes(query.role) ? query.role : null;
+  const status = ['pending', 'active'].includes(query.status) ? query.status : null;
   const { rows } = await pool.query(
-    `SELECT id, email, name, role, created_at FROM users
-      WHERE ($1::text IS NULL OR role = $1)
+    `SELECT id, email, name, role, status, created_at FROM users
+      WHERE ($1::text IS NULL OR role = $1) AND ($2::text IS NULL OR status = $2)
       ORDER BY created_at DESC`,
-    [role],
+    [role, status],
   );
   sendJSON(res, 200, rows);
 });
@@ -2463,6 +2485,36 @@ route('DELETE', '/api/admin/users/:id', async ({ res, user, params }) => {
   await pool.query('DELETE FROM users WHERE id = $1', [params.id]);
   console.log(`[admin] usuario eliminado por ${user.email}: ${target.email} (${target.role})`);
   sendJSON(res, 200, { ok: true });
+});
+
+// Aprueba una cuenta autorregistrada (status 'pending' -> 'active') y, de
+// forma opcional, la matricula en los cursos elegidos en el mismo paso.
+route('POST', '/api/admin/users/:id/approve', async ({ res, user, params, body }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'Id inválido' });
+  const target = (await pool.query('SELECT id, email, role, status FROM users WHERE id = $1', [params.id])).rows[0];
+  if (!target) return sendJSON(res, 404, { message: 'Usuario no encontrado' });
+
+  const courseIds = Array.isArray(body.courseIds)
+    ? [...new Set(body.courseIds)].filter((id) => isUuid(id))
+    : [];
+
+  await pool.query(`UPDATE users SET status = 'active' WHERE id = $1`, [params.id]);
+
+  let enrolledCourses = 0;
+  if (courseIds.length && (target.role === 'student' || target.role === 'instructor')) {
+    const enrolled = await pool.query(
+      `INSERT INTO enrollments (user_id, course_id, role)
+       SELECT $1, c.id, $2 FROM courses c WHERE c.id = ANY($3::uuid[])
+       ON CONFLICT (user_id, course_id) DO NOTHING
+       RETURNING course_id`,
+      [params.id, target.role, courseIds],
+    );
+    enrolledCourses = enrolled.rowCount;
+  }
+
+  console.log(`[admin] cuenta aprobada por ${user.email}: ${target.email}, matriculada en ${enrolledCourses} curso(s)`);
+  sendJSON(res, 200, { ok: true, enrolledCourses });
 });
 
 // --- admin: dashboard con KPIs de la plataforma y matrícula/avance por curso ---

@@ -226,6 +226,7 @@ export function AdminUsersTab() {
                   <th className="py-2 pr-4">Nombre</th>
                   <th className="py-2 pr-4">Correo</th>
                   <th className="py-2 pr-4">Rol</th>
+                  <th className="py-2 pr-4">Estado</th>
                   <th className="py-2 pr-4">Creado</th>
                   <th className="py-2 pr-4"></th>
                 </tr>
@@ -252,6 +253,17 @@ export function AdminUsersTab() {
                             </option>
                           ))}
                         </select>
+                      </td>
+                      <td className="py-2 pr-4">
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                            u.status === 'pending'
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                              : 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                          }`}
+                        >
+                          {u.status === 'pending' ? 'Pendiente' : 'Activo'}
+                        </span>
                       </td>
                       <td className="py-2 pr-4 text-gray-500 dark:text-gray-400">
                         {new Date(u.created_at).toLocaleDateString('es-CO')}

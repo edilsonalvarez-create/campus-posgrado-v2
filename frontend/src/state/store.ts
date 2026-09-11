@@ -6,6 +6,7 @@ export interface User {
   email: string
   name: string
   role: 'student' | 'instructor' | 'director_tfm' | 'admin'
+  status?: 'pending' | 'active'
 }
 
 export interface AuthState {

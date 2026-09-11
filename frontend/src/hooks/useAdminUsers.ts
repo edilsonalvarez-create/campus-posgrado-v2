@@ -2,21 +2,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../services/api'
 
 export type UserRole = 'student' | 'instructor' | 'director_tfm' | 'admin'
+export type UserStatus = 'pending' | 'active'
 
 export interface AdminUser {
   id: string
   email: string
   name: string
   role: UserRole
+  status: UserStatus
   created_at: string
   enrolledCourses?: number
 }
 
-export function useAdminUsers(role?: UserRole) {
+export function useAdminUsers(filters?: { role?: UserRole; status?: UserStatus }) {
+  const role = filters?.role
+  const status = filters?.status
   return useQuery<AdminUser[]>({
-    queryKey: ['admin-users', role || 'all'],
+    queryKey: ['admin-users', role || 'all', status || 'all'],
     queryFn: async () => {
-      const response = await api.get<AdminUser[]>('/admin/users', { params: role ? { role } : undefined })
+      const response = await api.get<AdminUser[]>('/admin/users', { params: { role, status } })
       return response.data
     },
   })
@@ -44,6 +48,22 @@ export function useUpdateUserRole() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+    },
+  })
+}
+
+export function useApproveUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, courseIds }: { id: string; courseIds?: string[] }) => {
+      const response = await api.post<{ ok: boolean; enrolledCourses: number }>(`/admin/users/${id}/approve`, {
+        courseIds,
+      })
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-overview'] })
     },
   })
 }
