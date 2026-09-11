@@ -13,7 +13,7 @@ const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard').the
 const ExploreCoursesPage = lazy(() => import('./pages/ExploreCoursesPage').then(m => ({ default: m.ExploreCoursesPage })))
 const MasterIEPPage = lazy(() => import('./pages/MasterIEPPage').then(m => ({ default: m.MasterIEPPage })))
 const NativeCoursesPage = lazy(() => import('./pages/NativeCoursesPage').then(m => ({ default: m.NativeCoursesPage })))
-const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'))
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -50,7 +50,8 @@ function App() {
               <Route path="/courses/:courseId/submissions/:resourceId?" element={<Suspense fallback={<LoadingSpinner />}><SubmissionsPage /></Suspense>} />
               <Route path="/courses/:courseId/:resourceId?" element={<Suspense fallback={<LoadingSpinner />}><CourseView /></Suspense>} />
               <Route path="/instructor" element={<Suspense fallback={<LoadingSpinner />}><InstructorDashboard /></Suspense>} />
-              <Route path="/admin/usuarios" element={<Suspense fallback={<LoadingSpinner />}><AdminUsersPage /></Suspense>} />
+              <Route path="/admin" element={<Suspense fallback={<LoadingSpinner />}><AdminDashboardPage /></Suspense>} />
+              <Route path="/admin/usuarios" element={<Navigate to="/admin" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           )}

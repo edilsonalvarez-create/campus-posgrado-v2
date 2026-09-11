@@ -2353,6 +2353,73 @@ route('PUT', '/api/admin/users/:id', async ({ res, user, params, body }) => {
   sendJSON(res, 200, rows[0]);
 });
 
+// --- admin: dashboard con KPIs de la plataforma y matrícula/avance por curso ---
+route('GET', '/api/admin/analytics/overview', async ({ res, user }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+
+  const usersByRoleRows = (await pool.query(`SELECT role, count(*)::int AS n FROM users GROUP BY role`)).rows;
+  const usersByRole = { student: 0, instructor: 0, director_tfm: 0, admin: 0 };
+  for (const r of usersByRoleRows) usersByRole[r.role] = r.n;
+  const totalUsers = Object.values(usersByRole).reduce((a, b) => a + b, 0);
+
+  const courses = (
+    await pool.query(`
+      WITH resource_counts AS (
+        SELECT m.course_id, count(*)::int AS total_resources
+        FROM resources r JOIN modules m ON m.id = r.module_id
+        GROUP BY m.course_id
+      ),
+      progress_counts AS (
+        SELECT m.course_id, p.user_id, count(*)::int AS done_count
+        FROM progress p
+        JOIN resources r ON r.id = p.resource_id
+        JOIN modules m ON m.id = r.module_id
+        WHERE p.completed
+        GROUP BY m.course_id, p.user_id
+      )
+      SELECT
+        c.id, c.slug, c.title, c.kind, c.published,
+        count(DISTINCT e.user_id)::int AS enrolled,
+        COALESCE(ROUND(AVG(
+          CASE WHEN rc.total_resources > 0
+            THEN COALESCE(pc.done_count, 0)::float / rc.total_resources * 100
+            ELSE 0
+          END
+        )::numeric, 0), 0)::int AS avg_progress
+      FROM courses c
+      LEFT JOIN enrollments e ON e.course_id = c.id AND e.role = 'student'
+      LEFT JOIN resource_counts rc ON rc.course_id = c.id
+      LEFT JOIN progress_counts pc ON pc.course_id = c.id AND pc.user_id = e.user_id
+      WHERE COALESCE(c.meta->>'isProgramContainer', '') <> 'true'
+      GROUP BY c.id
+      ORDER BY enrolled DESC, c.title ASC
+    `)
+  ).rows;
+
+  const totalEnrollments = courses.reduce((n, c) => n + c.enrolled, 0);
+  const coursesWithStudents = courses.filter((c) => c.enrolled > 0);
+  const avgCompletionRate = coursesWithStudents.length
+    ? Math.round(coursesWithStudents.reduce((n, c) => n + c.avg_progress, 0) / coursesWithStudents.length)
+    : 0;
+
+  sendJSON(res, 200, {
+    usersByRole,
+    totalUsers,
+    totalCourses: courses.length,
+    totalEnrollments,
+    avgCompletionRate,
+    courses: courses.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      title: c.title,
+      kind: c.kind,
+      published: c.published,
+      enrolled: c.enrolled,
+      avgProgress: c.avg_progress,
+    })),
+  });
+});
+
 // ---------- servidor ----------
 const server = http.createServer(async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';

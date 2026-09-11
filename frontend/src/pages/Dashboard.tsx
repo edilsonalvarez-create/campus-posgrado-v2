@@ -51,7 +51,7 @@ export default function Dashboard() {
             )}
             {user?.role === 'admin' && (
               <button
-                onClick={() => navigate('/admin/usuarios')}
+                onClick={() => navigate('/admin')}
                 className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 transition dark:bg-gray-700 dark:hover:bg-gray-600"
               >
                 Administración
