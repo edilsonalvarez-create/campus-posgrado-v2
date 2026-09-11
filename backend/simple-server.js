@@ -2362,19 +2362,50 @@ route('POST', '/api/admin/users', async ({ res, user, body }) => {
   sendJSON(res, 201, { ...created, enrolledCourses });
 });
 
+// Falso si el usuario objetivo es admin y es el único admin de la plataforma
+// (excluyéndolo a él mismo del conteo). Evita quitar el último administrador
+// por accidente, sea cambiándole el rol o eliminando su cuenta.
+async function wouldRemoveLastAdmin(targetId, targetRole) {
+  if (targetRole !== 'admin') return false;
+  const { rows } = await pool.query(`SELECT count(*)::int AS n FROM users WHERE role = 'admin' AND id <> $1`, [targetId]);
+  return rows[0].n === 0;
+}
+
 route('PUT', '/api/admin/users/:id', async ({ res, user, params, body }) => {
   if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
   if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'Id inválido' });
   if (!USER_ROLES.includes(body.role)) {
     return sendJSON(res, 400, { message: `Rol inválido. Debe ser uno de: ${USER_ROLES.join(', ')}` });
   }
+  const current = (await pool.query('SELECT role FROM users WHERE id = $1', [params.id])).rows[0];
+  if (!current) return sendJSON(res, 404, { message: 'Usuario no encontrado' });
+  if (current.role === 'admin' && body.role !== 'admin' && (await wouldRemoveLastAdmin(params.id, 'admin'))) {
+    return sendJSON(res, 400, { message: 'No se puede quitar el rol admin al único administrador de la plataforma' });
+  }
   const { rows } = await pool.query(
     `UPDATE users SET role = $2 WHERE id = $1 RETURNING id, email, name, role, created_at`,
     [params.id, body.role],
   );
-  if (!rows[0]) return sendJSON(res, 404, { message: 'Usuario no encontrado' });
   console.log(`[admin] rol actualizado por ${user.email}: ${rows[0].email} -> ${body.role}`);
   sendJSON(res, 200, rows[0]);
+});
+
+route('DELETE', '/api/admin/users/:id', async ({ res, user, params }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'Id inválido' });
+  if (params.id === user.id) {
+    return sendJSON(res, 400, { message: 'No puedes eliminar tu propia cuenta' });
+  }
+  const target = (await pool.query('SELECT id, email, role FROM users WHERE id = $1', [params.id])).rows[0];
+  if (!target) return sendJSON(res, 404, { message: 'Usuario no encontrado' });
+  if (await wouldRemoveLastAdmin(params.id, target.role)) {
+    return sendJSON(res, 400, { message: 'No se puede eliminar el único administrador de la plataforma' });
+  }
+  // ON DELETE CASCADE en matrículas, progreso, entregas, sesiones, etc.; ON DELETE
+  // SET NULL en cursos que tenía como instructor_id y TFMs que dirigía.
+  await pool.query('DELETE FROM users WHERE id = $1', [params.id]);
+  console.log(`[admin] usuario eliminado por ${user.email}: ${target.email} (${target.role})`);
+  sendJSON(res, 200, { ok: true });
 });
 
 // --- admin: dashboard con KPIs de la plataforma y matrícula/avance por curso ---

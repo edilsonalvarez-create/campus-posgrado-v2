@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useAdminUsers, useCreateUser, useUpdateUserRole, type UserRole } from '../../hooks/useAdminUsers'
+import { useAdminUsers, useCreateUser, useUpdateUserRole, useDeleteUser, type UserRole } from '../../hooks/useAdminUsers'
+import { useAuthStore } from '../../state/store'
 import { CourseMultiSelect } from './CourseMultiSelect'
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -19,9 +20,24 @@ function randomPassword() {
 }
 
 export function AdminUsersTab() {
+  const currentUser = useAuthStore((state) => state.user)
   const { data: users, isLoading } = useAdminUsers()
   const createUser = useCreateUser()
   const updateRole = useUpdateUserRole()
+  const deleteUser = useDeleteUser()
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const handleDelete = async (id: string, label: string) => {
+    if (!window.confirm(`¿Eliminar a ${label}? Esta acción no se puede deshacer: se borran sus matrículas, progreso y entregas.`)) {
+      return
+    }
+    setDeleteError(null)
+    try {
+      await deleteUser.mutateAsync(id)
+    } catch (err: any) {
+      setDeleteError(err?.response?.data?.message || 'No se pudo eliminar el usuario')
+    }
+  }
 
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
@@ -199,6 +215,7 @@ export function AdminUsersTab() {
             </select>
           </div>
         </div>
+        {deleteError && <p className="text-red-600 text-sm mb-3">{deleteError}</p>}
         {isLoading ? (
           <p className="text-gray-500">Cargando…</p>
         ) : (
@@ -210,31 +227,49 @@ export function AdminUsersTab() {
                   <th className="py-2 pr-4">Correo</th>
                   <th className="py-2 pr-4">Rol</th>
                   <th className="py-2 pr-4">Creado</th>
+                  <th className="py-2 pr-4"></th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u) => (
-                  <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700">
-                    <td className="py-2 pr-4 text-gray-900 dark:text-white">{u.name}</td>
-                    <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{u.email}</td>
-                    <td className="py-2 pr-4">
-                      <select
-                        value={u.role}
-                        onChange={(e) => updateRole.mutate({ id: u.id, role: e.target.value as UserRole })}
-                        className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded px-2 py-1"
-                      >
-                        {Object.entries(ROLE_LABEL).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-2 pr-4 text-gray-500 dark:text-gray-400">
-                      {new Date(u.created_at).toLocaleDateString('es-CO')}
-                    </td>
-                  </tr>
-                ))}
+                {filteredUsers.map((u) => {
+                  const isSelf = u.id === currentUser?.id
+                  return (
+                    <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700">
+                      <td className="py-2 pr-4 text-gray-900 dark:text-white">
+                        {u.name}
+                        {isSelf && <span className="ml-2 text-xs text-gray-400">(tú)</span>}
+                      </td>
+                      <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{u.email}</td>
+                      <td className="py-2 pr-4">
+                        <select
+                          value={u.role}
+                          onChange={(e) => updateRole.mutate({ id: u.id, role: e.target.value as UserRole })}
+                          className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded px-2 py-1"
+                        >
+                          {Object.entries(ROLE_LABEL).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-2 pr-4 text-gray-500 dark:text-gray-400">
+                        {new Date(u.created_at).toLocaleDateString('es-CO')}
+                      </td>
+                      <td className="py-2 pr-4 text-right">
+                        {!isSelf && (
+                          <button
+                            onClick={() => handleDelete(u.id, `${u.name} (${u.email})`)}
+                            disabled={deleteUser.isPending}
+                            className="text-red-600 dark:text-red-400 hover:underline text-xs font-medium disabled:opacity-50"
+                          >
+                            Eliminar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
