@@ -3,11 +3,14 @@ import { api } from '../services/api'
 
 export interface Course {
   id: string
+  slug?: string
+  kind?: string
   title: string
   description: string
   imageUrl?: string
   published: boolean
   instructorId?: string
+  enrolledRole?: string
   modules?: any[]
   progress: {
     completed: number

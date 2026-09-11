@@ -9,6 +9,7 @@ export interface AdminUser {
   name: string
   role: UserRole
   created_at: string
+  enrolledCourses?: number
 }
 
 export function useAdminUsers(role?: UserRole) {
@@ -24,7 +25,7 @@ export function useAdminUsers(role?: UserRole) {
 export function useCreateUser() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (input: { email: string; name: string; password: string; role: UserRole }) => {
+    mutationFn: async (input: { email: string; name: string; password: string; role: UserRole; courseIds?: string[] }) => {
       const response = await api.post<AdminUser>('/admin/users', input)
       return response.data
     },

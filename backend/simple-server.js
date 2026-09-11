@@ -127,6 +127,7 @@ function courseSummary(row) {
     url: row.url || undefined,
     note: row.note || undefined,
     meta: row.meta || {},
+    enrolledRole: row.enrolled_role || undefined,
     createdAt: row.created_at,
     progress: {
       completed,
@@ -226,7 +227,8 @@ async function coursesForUser(userId, whereKind) {
        (SELECT count(*) FROM progress p
           JOIN resources r ON r.id = p.resource_id
           JOIN modules m ON m.id = r.module_id
-         WHERE m.course_id = c.id AND p.user_id = $1 AND p.completed) AS completed
+         WHERE m.course_id = c.id AND p.user_id = $1 AND p.completed) AS completed,
+       (SELECT e.role FROM enrollments e WHERE e.course_id = c.id AND e.user_id = $1) AS enrolled_role
      FROM courses c
      WHERE c.published${kindClause}
      ORDER BY c.order_index, c.title`,
@@ -2327,6 +2329,14 @@ route('POST', '/api/admin/users', async ({ res, user, body }) => {
   }
   const exists = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
   if (exists.rowCount) return sendJSON(res, 409, { message: 'El email ya está registrado' });
+
+  const courseIds = Array.isArray(body.courseIds)
+    ? [...new Set(body.courseIds)].filter((id) => isUuid(id))
+    : [];
+  if (courseIds.length && role !== 'student' && role !== 'instructor') {
+    return sendJSON(res, 400, { message: 'Solo se puede matricular a alumnos o profesores en cursos' });
+  }
+
   const pw = newPasswordHash(password);
   const { rows } = await pool.query(
     `INSERT INTO users (email, name, password_hash, password_salt, password_algo, role)
@@ -2334,8 +2344,22 @@ route('POST', '/api/admin/users', async ({ res, user, body }) => {
      RETURNING id, email, name, role, created_at`,
     [email, name, pw.hash, pw.salt, pw.algo, role],
   );
-  console.log(`[admin] usuario creado por ${user.email}: ${email} (${role})`);
-  sendJSON(res, 201, rows[0]);
+  const created = rows[0];
+
+  let enrolledCourses = 0;
+  if (courseIds.length) {
+    const enrolled = await pool.query(
+      `INSERT INTO enrollments (user_id, course_id, role)
+       SELECT $1, c.id, $2 FROM courses c WHERE c.id = ANY($3::uuid[])
+       ON CONFLICT (user_id, course_id) DO NOTHING
+       RETURNING course_id`,
+      [created.id, role, courseIds],
+    );
+    enrolledCourses = enrolled.rowCount;
+  }
+
+  console.log(`[admin] usuario creado por ${user.email}: ${email} (${role}), matriculado en ${enrolledCourses} curso(s)`);
+  sendJSON(res, 201, { ...created, enrolledCourses });
 });
 
 route('PUT', '/api/admin/users/:id', async ({ res, user, params, body }) => {

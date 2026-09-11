@@ -20,8 +20,11 @@ export function InstructorDashboard() {
     selectedCourseId ? { courseId: selectedCourseId } : undefined
   );
 
-  // Only show courses taught by this instructor
-  const myCourses = allCourses.filter((c: any) => c.instructorId === user?.id);
+  // Cursos donde este profesor es el dueño (instructorId) o fue matriculado como
+  // profesor por un administrador (enrolledRole === 'instructor').
+  const myCourses = allCourses.filter(
+    (c: any) => c.instructorId === user?.id || c.enrolledRole === 'instructor',
+  );
   const pendingSubmissions = submissions.filter((s: any) => s.status === 'submitted');
 
   if (user?.role !== 'instructor') {

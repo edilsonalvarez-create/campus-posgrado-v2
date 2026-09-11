@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAdminUsers, useCreateUser, useUpdateUserRole, type UserRole } from '../../hooks/useAdminUsers'
+import { CourseMultiSelect } from './CourseMultiSelect'
 
 const ROLE_LABEL: Record<UserRole, string> = {
   student: 'Alumno',
@@ -26,23 +27,32 @@ export function AdminUsersTab() {
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<UserRole>('student')
+  const [courseIds, setCourseIds] = useState<string[]>([])
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
   const [search, setSearch] = useState('')
-  const [lastCreated, setLastCreated] = useState<{ email: string; password: string; role: UserRole } | null>(null)
+  const [lastCreated, setLastCreated] = useState<{ email: string; password: string; role: UserRole; enrolledCourses: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleGenerate = () => setPassword(randomPassword())
+  const canEnroll = role === 'student' || role === 'instructor'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     try {
-      await createUser.mutateAsync({ email, name, password, role })
-      setLastCreated({ email, password, role })
+      const created = await createUser.mutateAsync({
+        email,
+        name,
+        password,
+        role,
+        courseIds: canEnroll ? courseIds : undefined,
+      })
+      setLastCreated({ email, password, role, enrolledCourses: created.enrolledCourses ?? 0 })
       setEmail('')
       setName('')
       setPassword('')
       setRole('student')
+      setCourseIds([])
     } catch (err: any) {
       setError(err?.response?.data?.message || 'No se pudo crear el usuario')
     }
@@ -84,7 +94,11 @@ export function AdminUsersTab() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
+              onChange={(e) => {
+                const next = e.target.value as UserRole
+                setRole(next)
+                if (next !== 'student' && next !== 'instructor') setCourseIds([])
+              }}
               className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2"
             >
               {Object.entries(ROLE_LABEL).map(([value, label]) => (
@@ -116,6 +130,15 @@ export function AdminUsersTab() {
             </div>
           </div>
 
+          {canEnroll && (
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Matricular en curso{role === 'instructor' ? ' o programa a cargo' : ' o programa'} (opcional)
+              </label>
+              <CourseMultiSelect selected={courseIds} onChange={setCourseIds} />
+            </div>
+          )}
+
           {error && <p className="md:col-span-2 text-red-600 text-sm">{error}</p>}
 
           <div className="md:col-span-2">
@@ -140,6 +163,11 @@ export function AdminUsersTab() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Compártela por un canal seguro; recomienda cambiarla en el primer inicio de sesión.
             </p>
+            {lastCreated.enrolledCourses > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Matriculado en {lastCreated.enrolledCourses} curso{lastCreated.enrolledCourses === 1 ? '' : 's'}.
+              </p>
+            )}
           </div>
         )}
       </div>
