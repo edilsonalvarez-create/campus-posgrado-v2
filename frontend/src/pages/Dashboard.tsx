@@ -49,6 +49,14 @@ export default function Dashboard() {
                 Panel de Instructor
               </button>
             )}
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => navigate('/admin/usuarios')}
+                className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 transition dark:bg-gray-700 dark:hover:bg-gray-600"
+              >
+                Administración
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition dark:bg-red-700 dark:hover:bg-red-800"

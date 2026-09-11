@@ -2301,6 +2301,58 @@ route('POST', '/api/admin/reseed', async ({ res, user }) => {
   sendJSON(res, 200, { ok: true, message: 'Catálogo sincronizado (upsert no destructivo).' });
 });
 
+// --- admin: gestión de usuarios (crear profesores/alumnos reales, listar) ---
+const USER_ROLES = ['student', 'instructor', 'director_tfm', 'admin'];
+
+route('GET', '/api/admin/users', async ({ res, user, query }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  const role = USER_ROLES.includes(query.role) ? query.role : null;
+  const { rows } = await pool.query(
+    `SELECT id, email, name, role, created_at FROM users
+      WHERE ($1::text IS NULL OR role = $1)
+      ORDER BY created_at DESC`,
+    [role],
+  );
+  sendJSON(res, 200, rows);
+});
+
+route('POST', '/api/admin/users', async ({ res, user, body }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  const { email, name, password, role } = body;
+  if (!isValidEmail(email) || !name || !isValidPassword(password)) {
+    return sendJSON(res, 400, { message: 'Datos inválidos (email, nombre y contraseña de 8+ caracteres)' });
+  }
+  if (!USER_ROLES.includes(role)) {
+    return sendJSON(res, 400, { message: `Rol inválido. Debe ser uno de: ${USER_ROLES.join(', ')}` });
+  }
+  const exists = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
+  if (exists.rowCount) return sendJSON(res, 409, { message: 'El email ya está registrado' });
+  const pw = newPasswordHash(password);
+  const { rows } = await pool.query(
+    `INSERT INTO users (email, name, password_hash, password_salt, password_algo, role)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, email, name, role, created_at`,
+    [email, name, pw.hash, pw.salt, pw.algo, role],
+  );
+  console.log(`[admin] usuario creado por ${user.email}: ${email} (${role})`);
+  sendJSON(res, 201, rows[0]);
+});
+
+route('PUT', '/api/admin/users/:id', async ({ res, user, params, body }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'Id inválido' });
+  if (!USER_ROLES.includes(body.role)) {
+    return sendJSON(res, 400, { message: `Rol inválido. Debe ser uno de: ${USER_ROLES.join(', ')}` });
+  }
+  const { rows } = await pool.query(
+    `UPDATE users SET role = $2 WHERE id = $1 RETURNING id, email, name, role, created_at`,
+    [params.id, body.role],
+  );
+  if (!rows[0]) return sendJSON(res, 404, { message: 'Usuario no encontrado' });
+  console.log(`[admin] rol actualizado por ${user.email}: ${rows[0].email} -> ${body.role}`);
+  sendJSON(res, 200, rows[0]);
+});
+
 // ---------- servidor ----------
 const server = http.createServer(async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
