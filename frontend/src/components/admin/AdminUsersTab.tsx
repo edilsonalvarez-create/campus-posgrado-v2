@@ -1,5 +1,13 @@
-import { useState } from 'react'
-import { useAdminUsers, useCreateUser, useUpdateUserRole, useDeleteUser, type UserRole } from '../../hooks/useAdminUsers'
+import { Fragment, useState } from 'react'
+import {
+  useAdminUsers,
+  useCreateUser,
+  useUpdateUserRole,
+  useDeleteUser,
+  useApproveUser,
+  type UserRole,
+  type AdminUser,
+} from '../../hooks/useAdminUsers'
 import { useAuthStore } from '../../state/store'
 import { CourseMultiSelect } from './CourseMultiSelect'
 
@@ -8,6 +16,51 @@ const ROLE_LABEL: Record<UserRole, string> = {
   instructor: 'Profesor',
   director_tfm: 'Director de TFM',
   admin: 'Administrador',
+}
+
+function EnrollPanel({ target, onDone }: { target: AdminUser; onDone: () => void }) {
+  const enrollUser = useApproveUser()
+  const [courseIds, setCourseIds] = useState<string[]>([])
+  const [result, setResult] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleEnroll = async () => {
+    setError(null)
+    try {
+      const r = await enrollUser.mutateAsync({ id: target.id, courseIds })
+      setResult(`Matriculado en ${r.enrolledCourses} curso${r.enrolledCourses === 1 ? '' : 's'} más.`)
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'No se pudo matricular')
+    }
+  }
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Matricular a {target.name} en cursos adicionales
+        </p>
+        <button onClick={onDone} className="text-xs text-gray-500 hover:underline">
+          Cerrar
+        </button>
+      </div>
+      {result ? (
+        <p className="text-sm text-green-700 dark:text-green-400">{result}</p>
+      ) : (
+        <>
+          <CourseMultiSelect selected={courseIds} onChange={setCourseIds} />
+          {error && <p className="text-red-600 text-xs mt-2">{error}</p>}
+          <button
+            onClick={handleEnroll}
+            disabled={enrollUser.isPending || courseIds.length === 0}
+            className="mt-3 bg-primary-600 hover:bg-primary-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50"
+          >
+            {enrollUser.isPending ? 'Matriculando…' : `Matricular en ${courseIds.length || ''} curso${courseIds.length === 1 ? '' : 's'}`}
+          </button>
+        </>
+      )}
+    </div>
+  )
 }
 
 function randomPassword() {
@@ -26,6 +79,7 @@ export function AdminUsersTab() {
   const updateRole = useUpdateUserRole()
   const deleteUser = useDeleteUser()
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [enrollingId, setEnrollingId] = useState<string | null>(null)
 
   const handleDelete = async (id: string, label: string) => {
     if (!window.confirm(`¿Eliminar a ${label}? Esta acción no se puede deshacer: se borran sus matrículas, progreso y entregas.`)) {
@@ -234,8 +288,10 @@ export function AdminUsersTab() {
               <tbody>
                 {filteredUsers.map((u) => {
                   const isSelf = u.id === currentUser?.id
+                  const canEnrollRow = u.role === 'student' || u.role === 'instructor'
                   return (
-                    <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700">
+                    <Fragment key={u.id}>
+                    <tr className="border-b border-gray-100 dark:border-gray-700">
                       <td className="py-2 pr-4 text-gray-900 dark:text-white">
                         {u.name}
                         {isSelf && <span className="ml-2 text-xs text-gray-400">(tú)</span>}
@@ -268,7 +324,15 @@ export function AdminUsersTab() {
                       <td className="py-2 pr-4 text-gray-500 dark:text-gray-400">
                         {new Date(u.created_at).toLocaleDateString('es-CO')}
                       </td>
-                      <td className="py-2 pr-4 text-right">
+                      <td className="py-2 pr-4 text-right whitespace-nowrap">
+                        {canEnrollRow && (
+                          <button
+                            onClick={() => setEnrollingId(enrollingId === u.id ? null : u.id)}
+                            className="text-primary-600 dark:text-primary-400 hover:underline text-xs font-medium mr-3"
+                          >
+                            Matricular
+                          </button>
+                        )}
                         {!isSelf && (
                           <button
                             onClick={() => handleDelete(u.id, `${u.name} (${u.email})`)}
@@ -280,6 +344,14 @@ export function AdminUsersTab() {
                         )}
                       </td>
                     </tr>
+                    {enrollingId === u.id && (
+                      <tr>
+                        <td colSpan={6} className="px-4 pb-3">
+                          <EnrollPanel target={u} onDone={() => setEnrollingId(null)} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   )
                 })}
               </tbody>
