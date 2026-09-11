@@ -7,6 +7,7 @@ import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import Dashboard from './pages/Dashboard'
+import PendingApprovalPage from './pages/PendingApprovalPage'
 
 // Lazy load pages
 const CourseView = lazy(() => import('./pages/CourseView'))
@@ -44,6 +45,11 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
             </>
+          ) : user.status === 'pending' ? (
+            // Cuenta sin aprobar: cualquier ruta cae en la misma pantalla de
+            // espera. No hay forma de navegar al resto del campus escribiendo
+            // otra URL — solo existe esta página mientras status sea 'pending'.
+            <Route path="*" element={<PendingApprovalPage />} />
           ) : (
             <>
               <Route path="/" element={<Dashboard />} />
