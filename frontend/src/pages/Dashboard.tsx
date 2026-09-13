@@ -21,7 +21,12 @@ export default function Dashboard() {
   }
 
   const enrolledIds = new Set(Object.keys(progress?.courses || {}))
-  const myCourses = (courses || []).filter(c => enrolledIds.has(c.id))
+  // Las asignaturas del Máster IEP no se listan aquí como tarjetas sueltas:
+  // ya tienen su propia entrada ("Máster en IA...") que lleva a /master-iep,
+  // con el orden y el gate de prerrequisito reales.
+  const myCourses = (courses || []).filter(
+    (c: any) => enrolledIds.has(c.id) && c.meta?.programSlug !== 'master-iep',
+  )
   const activeCourses = myCourses.filter(c => c.progress.percentage < 100)
   const completedCourses = myCourses.filter(c => c.progress.percentage === 100)
 
