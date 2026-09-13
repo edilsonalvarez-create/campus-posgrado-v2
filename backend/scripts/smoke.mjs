@@ -24,7 +24,24 @@ async function main() {
   });
   const reg = await j(r);
   ok(r.status === 201 && reg.user.role === 'student', 'registro de estudiante');
+  ok(reg.user.status === 'pending', 'cuenta autorregistrada queda pending (requiere aprobación de admin)');
   const H = { authorization: `Bearer ${reg.accessToken}`, 'content-type': 'application/json' };
+
+  // Un estudiante pending/no matriculado no ve contenido, aunque esté autenticado
+  // (cierre de la fuga: el acceso lo da la matrícula, no solo la sesión).
+  const lockedCourse = await j(await fetch(`${BASE}/courses/master-i`, { headers: H }));
+  ok(lockedCourse.locked === true, 'sin matrícula: curso bloqueado (sin contenido) aunque el usuario esté pending');
+  const lockedLesson = lockedCourse.modules.flatMap((m) => m.resources).find((x) => x.type === 'lesson');
+  ok(!lockedLesson?.contentJson, 'sin matrícula: contentJson de la lección ausente');
+
+  // Auto-matrícula (endpoint self-service; independiente del estado pending) para
+  // poder verificar el contenido real de la asignatura en las comprobaciones siguientes.
+  r = await fetch(`${BASE}/enrollments`, {
+    method: 'POST',
+    headers: H,
+    body: JSON.stringify({ courseId: 'master-i' }),
+  });
+  ok(r.status === 201, 'matrícula en master-i (self-service)');
 
   r = await fetch(`${BASE}/auth/login`, {
     method: 'POST',
