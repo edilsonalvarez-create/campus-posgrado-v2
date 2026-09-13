@@ -5,6 +5,10 @@ solo con texto. La producción (grabación de pantalla + animación) es trabajo
 externo; aquí están los guiones listos para grabar. Cada uno: 90–120 s, una
 pizarra o slides animadas + voz.
 
+**Plan de producción (herramientas, presupuesto, brief para freelancer,
+especificación de entrega y seguimiento):** `PLAN_PRODUCCION_MICROVIDEO.md`
+en esta misma carpeta.
+
 **Cómo publicarlo cuando esté grabado:** subir el vídeo (o su enlace
 `youtube-nocookie`) y añadirlo a la lección correspondiente en
 `master-*-lecciones.js` dentro de `recursos.videos` como
