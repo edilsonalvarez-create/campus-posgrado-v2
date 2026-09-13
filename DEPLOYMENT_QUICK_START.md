@@ -86,6 +86,12 @@ LLM_MODEL=claude-sonnet-5
 LLM_MODEL_HEAVY=claude-opus-5
 ANTHROPIC_API_KEY=<secreto — pégalo solo en el panel de Railway>
 
+# Correo — bienvenida y restablecimiento (opcional; sin key no se envía nada)
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=<secreto — pégalo solo en el panel de Railway>
+RESEND_FROM_EMAIL=Campus Posgrado <onboarding@resend.dev>
+FRONTEND_URL=https://campus-posgrado-v2.vercel.app
+
 # Referencia de catálogo por asignatura (opcional; si el IEP facilita las claves)
 # OFFICIAL_CODE_V=... OFFICIAL_CODE_VIII=... OFFICIAL_CODE_TFM=...
 ```

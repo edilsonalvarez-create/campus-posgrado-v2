@@ -645,8 +645,10 @@ const route = (method, path, handler) => {
   routes.push({ method, pattern, handler });
 };
 
-route('GET', '/api/health', async ({ res }) => sendJSON(res, 200, { status: 'ok' }));
-route('GET', '/health', async ({ res }) => sendJSON(res, 200, { status: 'ok' }));
+route('GET', '/api/health', async ({ res }) =>
+  sendJSON(res, 200, { status: 'ok', email: email.status() }),
+);
+route('GET', '/health', async ({ res }) => sendJSON(res, 200, { status: 'ok', email: email.status() }));
 
 // --- auth ---
 route('POST', '/api/auth/register', async ({ res, body }) => {
@@ -666,6 +668,7 @@ route('POST', '/api/auth/register', async ({ res, body }) => {
   const user = rows[0];
   const accessToken = await newSession(user.id, 'access', TOKEN_TTL_MS);
   const refreshToken = await newSession(user.id, 'refresh', REFRESH_TTL_MS);
+  email.sendInBackground(() => email.sendWelcome({ to: user.email, name: user.name }), 'welcome');
   sendJSON(res, 201, { accessToken, refreshToken, user: publicUser(user) });
 });
 

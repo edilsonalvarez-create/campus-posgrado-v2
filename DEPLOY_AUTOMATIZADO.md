@@ -70,7 +70,9 @@ Railway detectará automáticamente `Dockerfile`
    `DEPLOYMENT_QUICK_START.md`): `PORT=3001`, `AUTO_SEED=sync`,
    `SEED_DEMO_DATA=false`; para el tutor IA `LLM_PROVIDER=anthropic`,
    `LLM_MODEL=claude-sonnet-5`, `LLM_MODEL_HEAVY=claude-opus-5`,
-   `ANTHROPIC_API_KEY=<secreto>`.
+   `ANTHROPIC_API_KEY=<secreto>`. Para correo: `EMAIL_PROVIDER=resend`,
+   `RESEND_API_KEY=<secreto>`, `RESEND_FROM_EMAIL=Campus Posgrado <onboarding@resend.dev>`,
+   `FRONTEND_URL=https://campus-posgrado-v2.vercel.app`.
 
 **Tu Backend estará en:**
 ```
