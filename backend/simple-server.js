@@ -113,6 +113,21 @@ async function getAuthUser(req) {
 // ---------- serializadores ----------
 const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role, status: u.status || 'active' });
 
+// Una cuenta autorregistrada queda 'pending' hasta que un admin la aprueba
+// (POST /api/admin/users/:id/approve). Los endpoints de auto-matrícula deben
+// rechazarla explícitamente: sin esto, un usuario pending podía matricularse
+// él mismo en cualquier curso y desbloquear su contenido (hasCourseAccess se
+// basa en la matrícula, no en el estado de la cuenta) sin pasar nunca por la
+// aprobación. No afecta a la matrícula que hace el propio admin al crear o
+// aprobar una cuenta, que sigue funcionando igual.
+function requireActiveAccount(user, res) {
+  if (user.status && user.status !== 'active') {
+    sendJSON(res, 403, { message: 'Tu cuenta está pendiente de aprobación. Un administrador debe aprobarla antes de matricularte.' });
+    return false;
+  }
+  return true;
+}
+
 function courseSummary(row) {
   const total = Number(row.total || 0);
   const completed = Number(row.completed || 0);
@@ -1492,6 +1507,7 @@ route('GET', '/api/tfm', async ({ res, user, query }) => {
 
 route('POST', '/api/tfm/enroll', async ({ res, user }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!requireActiveAccount(user, res)) return;
   await pool.query(
     `INSERT INTO tfm_enrollments (user_id, status) VALUES ($1, 'in_progress')
      ON CONFLICT (user_id) DO UPDATE SET status = 'in_progress', updated_at = now()`,
@@ -1502,6 +1518,7 @@ route('POST', '/api/tfm/enroll', async ({ res, user }) => {
 
 route('POST', '/api/tfm/milestones/:slug', async ({ res, user, params, body }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!requireActiveAccount(user, res)) return;
   const ms = (await pool.query('SELECT * FROM tfm_milestones WHERE slug = $1', [params.slug])).rows[0];
   if (!ms) return sendJSON(res, 404, { message: 'Hito no encontrado' });
   const enr = (
@@ -2073,6 +2090,7 @@ route('GET', '/api/enrollments', async ({ res, user }) => {
 
 route('POST', '/api/enrollments', async ({ res, user, body }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!requireActiveAccount(user, res)) return;
   const course = await findCourseRow(body.courseId || '');
   if (!course) return sendJSON(res, 404, { message: 'Course not found' });
   await pool.query(

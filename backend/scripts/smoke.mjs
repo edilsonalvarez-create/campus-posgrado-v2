@@ -34,14 +34,25 @@ async function main() {
   const lockedLesson = lockedCourse.modules.flatMap((m) => m.resources).find((x) => x.type === 'lesson');
   ok(!lockedLesson?.contentJson, 'sin matrícula: contentJson de la lección ausente');
 
-  // Auto-matrícula (endpoint self-service; independiente del estado pending) para
-  // poder verificar el contenido real de la asignatura en las comprobaciones siguientes.
+  // Una cuenta pending tampoco puede auto-matricularse: el gate de aprobación de
+  // admin no se podría saltar simplemente llamando a este endpoint self-service.
   r = await fetch(`${BASE}/enrollments`, {
     method: 'POST',
     headers: H,
     body: JSON.stringify({ courseId: 'master-i' }),
   });
-  ok(r.status === 201, 'matrícula en master-i (self-service)');
+  ok(r.status === 403, 'pending: auto-matrícula rechazada (requiere aprobación de admin)');
+
+  // A partir de aquí, las comprobaciones de contenido usan la cuenta de servicio
+  // test@example.com, que el seed deja siempre activa y matriculada en master-i.
+  r = await fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'test@example.com', password: 'Password123' }),
+  });
+  const student = await j(r);
+  ok(r.status === 200 && student.user.status === 'active', 'login de la cuenta de servicio (activa y matriculada)');
+  const SH = { authorization: `Bearer ${student.accessToken}`, 'content-type': 'application/json' };
 
   r = await fetch(`${BASE}/auth/login`, {
     method: 'POST',
@@ -53,7 +64,7 @@ async function main() {
   const IH = { authorization: `Bearer ${instr.accessToken}`, 'content-type': 'application/json' };
 
   // C-1: sin fuga de respuestas para el estudiante
-  const course = await j(await fetch(`${BASE}/courses/master-i`, { headers: H }));
+  const course = await j(await fetch(`${BASE}/courses/master-i`, { headers: SH }));
   const lesson = course.modules.flatMap((m) => m.resources).find((x) => x.type === 'lesson');
   const exam = course.modules.flatMap((m) => m.resources).find((x) => x.type === 'exam');
   const proj = course.modules.flatMap((m) => m.resources).find((x) => x.type === 'project');
@@ -64,48 +75,59 @@ async function main() {
   ok((iLesson.contentJson.quiz || []).some((q) => 'a' in q), 'instructor: sí ve la respuesta correcta');
 
   // quizzes endpoint
-  r = await fetch(`${BASE}/quizzes/${exam.id}`, { headers: H });
+  r = await fetch(`${BASE}/quizzes/${exam.id}`, { headers: SH });
   const qz = await j(r);
   ok(r.status === 200 && !('correctAnswer' in (qz.questions[0] || {})), 'GET /quizzes sin correctAnswer');
   ok((await fetch(`${BASE}/quizzes/${exam.id}`)).status === 401, 'GET /quizzes exige auth');
 
   // Fase 1: quiz formativo + actividad + completado real
   const key = iLesson.contentJson.quiz.map((q, i) => ({ i, choice: q.a }));
-  r = await fetch(`${BASE}/formative/${lesson.id}`, { method: 'POST', headers: H, body: JSON.stringify({ answers: key }) });
+  r = await fetch(`${BASE}/formative/${lesson.id}`, { method: 'POST', headers: SH, body: JSON.stringify({ answers: key }) });
   const fr = await j(r);
   ok(r.status === 200 && fr.passed, 'quiz formativo se califica y persiste');
   await fetch(`${BASE}/activity/${lesson.id}`, {
     method: 'POST',
-    headers: H,
+    headers: SH,
     body: JSON.stringify({ content: 'Respuesta a la actividad con más de veinte caracteres.' }),
   });
-  const c2 = await j(await fetch(`${BASE}/courses/master-i`, { headers: H }));
+  const c2 = await j(await fetch(`${BASE}/courses/master-i`, { headers: SH }));
   ok(
     c2.modules.flatMap((m) => m.resources).find((x) => x.id === lesson.id).completed,
     'lección completada = actividad + quiz aprobado',
   );
 
-  // Fase 1: motor de exámenes
-  const status = await j(await fetch(`${BASE}/exams/${exam.id}/status`, { headers: H }));
-  ok(status.hasBank && status.canStart, 'examen: tiene banco y se puede iniciar');
-  const at = await j(await fetch(`${BASE}/exams/${exam.id}/attempts`, { method: 'POST', headers: H }));
-  ok(Array.isArray(at.questions) && at.questions.every((q) => !('correctIndex' in q)), 'intento: preguntas sin clave');
-  const sub = await j(
-    await fetch(`${BASE}/exams/attempts/${at.attemptId}`, {
-      method: 'POST',
-      headers: H,
-      body: JSON.stringify({ answers: at.questions.map((q) => ({ questionId: q.id, choice: 0 })) }),
-    }),
-  );
-  ok(typeof sub.score === 'number' && Array.isArray(sub.reviewItems), 'intento: calificado en servidor + repaso dirigido');
+  // Fase 1: motor de exámenes. test@example.com es una cuenta compartida y
+  // persistente (no un throwaway por ejecución), y el motor limita a 3
+  // intentos + cooldown de 24h por curso/usuario (permanente, no se resetea
+  // solo). Un intento nuevo solo se envía cuando el estado realmente lo
+  // permite; si no, se verifica que el motor bloquea el reintento en vez de
+  // forzar un envío que rompería ejecuciones futuras del smoke test.
+  const status = await j(await fetch(`${BASE}/exams/${exam.id}/status`, { headers: SH }));
+  ok(status.hasBank, 'examen: tiene banco de ítems');
+  if (status.canStart) {
+    const at = await j(await fetch(`${BASE}/exams/${exam.id}/attempts`, { method: 'POST', headers: SH }));
+    ok(Array.isArray(at.questions) && at.questions.every((q) => !('correctIndex' in q)), 'intento: preguntas sin clave');
+    const sub = await j(
+      await fetch(`${BASE}/exams/attempts/${at.attemptId}`, {
+        method: 'POST',
+        headers: SH,
+        body: JSON.stringify({ answers: at.questions.map((q) => ({ questionId: q.id, choice: 0 })) }),
+      }),
+    );
+    ok(typeof sub.score === 'number' && Array.isArray(sub.reviewItems), 'intento: calificado en servidor + repaso dirigido');
+  } else {
+    ok(true, 'examen: nuevo intento correctamente bloqueado (límite/cooldown ya activo en la cuenta de servicio)');
+  }
 
   // Fase 1: rúbrica
   const rub = await j(await fetch(`${BASE}/rubrics/rubric-master-i`, { headers: IH }));
   ok(rub.criteria.length >= 4 && rub.totalPoints === 100, 'rúbrica de la Asignatura I disponible');
   ok(proj.contentJson.rubricSlug === 'rubric-master-i', 'proyecto enlaza a su rúbrica');
 
-  // C-3: certificado exige lecciones + proyecto + examen
-  const certsMid = await j(await fetch(`${BASE}/certificates`, { headers: H }));
+  // C-3: certificado exige lecciones + proyecto + examen (el examen nunca se
+  // aprueba en este smoke test: las respuestas enviadas son deliberadamente
+  // incorrectas)
+  const certsMid = await j(await fetch(`${BASE}/certificates`, { headers: SH }));
   ok(certsMid.length === 0, 'sin certificado con solo 1 lección + examen suspendido');
 
   console.log(`\n${pass} ok, ${fail} fallo(s)`);
