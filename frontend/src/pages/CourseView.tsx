@@ -30,6 +30,7 @@ interface Resource {
   contentJson?: any
   completed?: boolean
   revisedAt?: string
+  locked?: boolean
 }
 interface Module {
   id: string
@@ -211,6 +212,18 @@ function PeerReviewSection({ submissionId }: { submissionId: string }) {
 
 function ResourceBody({ resource, courseId, courseSlug }: { resource: Resource; courseId: string; courseSlug?: string }) {
   const cj = resource.contentJson || {}
+
+  if (resource.locked) {
+    return (
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-5 text-amber-900 dark:text-amber-200">
+        <p className="font-semibold mb-1">🔒 Necesitas matrícula para ver este contenido</p>
+        <p className="text-sm">
+          Todavía no estás matriculado en este curso. Pídele a un administrador que te matricule desde el
+          panel de administración.
+        </p>
+      </div>
+    )
+  }
 
   if (resource.type === 'exam') {
     // Máster: motor de intentos con banco de ítems. Aulas legadas: quiz simple.
@@ -614,7 +627,7 @@ export default function CourseView() {
                     selected.type === 'lesson' &&
                     ((Array.isArray(cjs.quiz) && cjs.quiz.length > 0) || !!cjs.exercise?.text)
                   const canManual =
-                    selected.type !== 'exam' && selected.type !== 'project' && !lessonHasFormative
+                    selected.type !== 'exam' && selected.type !== 'project' && !lessonHasFormative && !selected.locked
                   if (lessonHasFormative) {
                     return (
                       <span className="text-xs text-gray-400">

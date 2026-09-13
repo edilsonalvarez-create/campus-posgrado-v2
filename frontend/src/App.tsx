@@ -4,7 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from './state/store'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import Dashboard from './pages/Dashboard'
+import PendingApprovalPage from './pages/PendingApprovalPage'
 
 // Lazy load pages
 const CourseView = lazy(() => import('./pages/CourseView'))
@@ -13,6 +16,7 @@ const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard').the
 const ExploreCoursesPage = lazy(() => import('./pages/ExploreCoursesPage').then(m => ({ default: m.ExploreCoursesPage })))
 const MasterIEPPage = lazy(() => import('./pages/MasterIEPPage').then(m => ({ default: m.MasterIEPPage })))
 const NativeCoursesPage = lazy(() => import('./pages/NativeCoursesPage').then(m => ({ default: m.NativeCoursesPage })))
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -37,11 +41,20 @@ function App() {
             <>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
             </>
+          ) : user.status === 'pending' ? (
+            // Cuenta sin aprobar: cualquier ruta cae en la misma pantalla de
+            // espera. No hay forma de navegar al resto del campus escribiendo
+            // otra URL — solo existe esta página mientras status sea 'pending'.
+            <Route path="*" element={<PendingApprovalPage />} />
           ) : (
             <>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/explore" element={<Suspense fallback={<LoadingSpinner />}><ExploreCoursesPage /></Suspense>} />
               <Route path="/master-iep" element={<Suspense fallback={<LoadingSpinner />}><MasterIEPPage /></Suspense>} />
               <Route path="/native-courses" element={<Suspense fallback={<LoadingSpinner />}><NativeCoursesPage /></Suspense>} />
@@ -49,6 +62,8 @@ function App() {
               <Route path="/courses/:courseId/submissions/:resourceId?" element={<Suspense fallback={<LoadingSpinner />}><SubmissionsPage /></Suspense>} />
               <Route path="/courses/:courseId/:resourceId?" element={<Suspense fallback={<LoadingSpinner />}><CourseView /></Suspense>} />
               <Route path="/instructor" element={<Suspense fallback={<LoadingSpinner />}><InstructorDashboard /></Suspense>} />
+              <Route path="/admin" element={<Suspense fallback={<LoadingSpinner />}><AdminDashboardPage /></Suspense>} />
+              <Route path="/admin/usuarios" element={<Navigate to="/admin" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           )}

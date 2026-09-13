@@ -52,10 +52,10 @@ function loadItemBanks() {
 const ITEM_BANKS = loadItemBanks();
 const REVISIONS = tryRequire('revisions.json') || {};
 
-// Tracks hands-on (Fase 2): sustituyen el entregable de las asignaturas técnicas
-// por una práctica computacional real. handson/master-{iii,vi,ix,x}.js
+// Tracks hands-on: sustituyen el entregable conceptual por una práctica
+// computacional real. handson/master-{iii,vi,vii,ix,x,xi}.js
 const HANDSON = {};
-for (const n of ['iii', 'vi', 'ix', 'x']) {
+for (const n of ['iii', 'vi', 'vii', 'ix', 'x', 'xi']) {
   const h = tryRequire(`handson/master-${n}.js`);
   if (h) HANDSON[h.scopeSlug] = h;
 }
@@ -448,7 +448,7 @@ async function main() {
       }
       const proyecto = asig.slug === 'master-tfm' ? tm : PROYECTOS_PRACTICOS[asig.slug];
       if (proyecto) {
-        const hs = HANDSON[asig.slug]; // track hands-on (III/VI/IX/X)
+        const hs = HANDSON[asig.slug]; // track hands-on (III/VI/VII/IX/X/XI)
         modules.push({
           title: asig.slug === 'master-tfm' ? 'Entrega del TFM' : hs ? 'Práctica computacional' : 'Proyecto práctico',
           subtitle: hs
@@ -750,10 +750,29 @@ async function main() {
       }
     }
 
+    // ---- cuenta de servicio: matrícula mínima siempre activa (no depende de
+    // SEED_DEMO_DATA) ----
+    // test@example.com es la cuenta que usan scripts/smoke.mjs y la
+    // verificación manual en producción; necesita estar matriculada en
+    // master-i en cualquier entorno (incluida la BD limpia de CI, donde
+    // SEED_DEMO_DATA=false) para poder ejercer los endpoints que ahora
+    // exigen matrícula real (hasCourseAccess). Está separado a propósito del
+    // bloque de "datos de demostración" de abajo: esto es infraestructura de
+    // pruebas, no contenido de demo para un humano.
+    if (testId && bySlug['master-i']) {
+      await client.query(
+        `INSERT INTO enrollments (user_id, course_id, role) VALUES ($1, $2, 'student')
+         ON CONFLICT (user_id, course_id) DO NOTHING`,
+        [testId, bySlug['master-i']],
+      );
+    }
+
     // ---- datos de demostración (solo con SEED_DEMO_DATA=true) ----
-    // Matrícula automática + progreso inicial del usuario de prueba. En producción
-    // los estudiantes reales se matriculan por su cuenta (POST /api/enrollments);
-    // no se auto-matricula ninguna cuenta demo ni se toca el progreso de nadie.
+    // Matrícula amplia + progreso inicial del usuario de prueba, solo para
+    // tener algo que enseñar en un entorno de demo/desarrollo. Desde que el
+    // registro público exige aprobación de admin (POST /api/admin/users/:id/approve)
+    // y POST /api/enrollments rechaza cuentas 'pending', la matrícula real de
+    // producción la hace siempre un admin, nunca este bloque.
     if (SEED_DEMO_DATA && testId) {
       const enrollSlugs = [
         ...MASTER_ASIGNATURAS.map((a) => a.slug),

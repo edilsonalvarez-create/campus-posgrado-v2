@@ -89,7 +89,7 @@ module.exports = {
           ],
           recursos: {
             libros: [{ titulo: 'ISO/IEC 27000:2018 — Vocabulario', autor: 'ISO/IEC (descarga gratuita)', url: 'https://www.iso.org/standard/73906.html' }],
-            videos: [{ titulo: 'NIST Cybersecurity Framework (CSF) 2.0 Explained', canal: 'NIST', url: 'https://www.youtube.com/watch?v=X4a0EF9-vzo' }],
+            videos: [{ titulo: 'The NIST Cybersecurity Framework (CSF) 2.0', canal: 'NIST', url: 'https://www.youtube.com/watch?v=pPPiaGU12Og' }],
           },
           exercise: { mins: 15, text: 'Elige tres sistemas reales de tu organización (por ejemplo QA Horus, NominaBoard, Sumimedicalpro) y para cada uno identifica un activo de información concreto que maneje, una amenaza real y una vulnerabilidad conocida o sospechada. No completes la columna de riesgo todavía: eso llega en la Fase 1.' },
           quiz: [
@@ -1255,7 +1255,7 @@ module.exports = {
             'Una clave de API expuesta en un chat es un incidente reportable, no un descuido menor; sin logs no hay evidencia ni investigación posible.',
             'Tener copias de respaldo no es lo mismo que saber que restauran: RTO y RPO solo significan algo si alguien probó de verdad una restauración completa.',
           ],
-          recursos: { videos: [{ titulo: 'OWASP Top 10 Explained', canal: 'IBM Technology', url: 'https://www.youtube.com/watch?v=ZuHi7IuwddU' }] },
+          recursos: { videos: [{ titulo: 'OWASP Top 10 Explained con ejemplos (2023)', canal: 'Database Dive', url: 'https://www.youtube.com/watch?v=HU_jQdTTPeM' }] },
           exercise: { mins: 20, text: 'Pide a un desarrollador de tu organización que te explique, sin jerga, cómo se guardan las contraseñas y cómo funciona el respaldo del sistema. Anota la respuesta textual y evalúa: ¿mencionó hash específico para contraseñas?, ¿mencionó una restauración realmente probada, o solo que "el respaldo corre todas las noches"?' },
           quiz: [
             { q: '¿Cuál es la diferencia entre autenticación y autorización?', opts: ['Son sinónimos exactos', 'Autenticación verifica quién eres; autorización verifica qué puedes hacer una vez identificado', 'Autorización siempre ocurre antes que autenticación', 'Autenticación solo aplica a administradores'], a: 1, why: ['No son sinónimos.', 'Correcto.', 'El orden correcto es al revés.', 'Aplica a cualquier usuario.'] },

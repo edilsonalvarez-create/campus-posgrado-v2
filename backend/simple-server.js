@@ -6,11 +6,13 @@ const crypto = require('crypto');
 const pool = require('./db/pool');
 const runMigrations = require('./db/migrate');
 const llm = require('./lib/llm');
+const email = require('./lib/email');
 
 const PORT = Number(process.env.PORT) || 3001;
 let dbReady = false;
 const TOKEN_TTL_MS = 3600 * 1000;
 const REFRESH_TTL_MS = 7 * 24 * 3600 * 1000;
+const RESET_TOKEN_TTL_MS = 3600 * 1000;
 
 // ---------- utilidades ----------
 const rateLimits = new Map();
@@ -100,7 +102,7 @@ async function getAuthUser(req) {
   if (!h.startsWith('Bearer ')) return null;
   const token = h.slice(7);
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.name, u.role
+    `SELECT u.id, u.email, u.name, u.role, u.status
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token = $1 AND s.expires_at > now() AND s.kind = 'access'`,
     [token],
@@ -109,7 +111,22 @@ async function getAuthUser(req) {
 }
 
 // ---------- serializadores ----------
-const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role });
+const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role, status: u.status || 'active' });
+
+// Una cuenta autorregistrada queda 'pending' hasta que un admin la aprueba
+// (POST /api/admin/users/:id/approve). Los endpoints de auto-matrícula deben
+// rechazarla explícitamente: sin esto, un usuario pending podía matricularse
+// él mismo en cualquier curso y desbloquear su contenido (hasCourseAccess se
+// basa en la matrícula, no en el estado de la cuenta) sin pasar nunca por la
+// aprobación. No afecta a la matrícula que hace el propio admin al crear o
+// aprobar una cuenta, que sigue funcionando igual.
+function requireActiveAccount(user, res) {
+  if (user.status && user.status !== 'active') {
+    sendJSON(res, 403, { message: 'Tu cuenta está pendiente de aprobación. Un administrador debe aprobarla antes de matricularte.' });
+    return false;
+  }
+  return true;
+}
 
 function courseSummary(row) {
   const total = Number(row.total || 0);
@@ -127,6 +144,7 @@ function courseSummary(row) {
     url: row.url || undefined,
     note: row.note || undefined,
     meta: row.meta || {},
+    enrolledRole: row.enrolled_role || undefined,
     createdAt: row.created_at,
     progress: {
       completed,
@@ -160,8 +178,28 @@ function sanitizeResourceContent(type, cj, role) {
   return clone;
 }
 
+// Un curso solo entrega su contenido real (texto, quiz, enlaces) a personal
+// (instructor/director_tfm/admin) o a un estudiante matriculado. Cualquier
+// otro caso —sin sesión, o estudiante sin matrícula— recibe la estructura
+// (títulos de módulos y lecciones) pero cada recurso llega vacío y marcado
+// `locked:true`, para que se pueda mostrar como vista previa sin filtrar el
+// contenido. Antes de este cambio no existía ninguna comprobación aquí: al
+// registrarse, cualquier persona podía abrir cualquier curso publicado,
+// incluido el Máster completo, sin que un administrador la matriculara.
+async function hasCourseAccess(courseId, userId, role) {
+  if (role && role !== 'student') return true;
+  if (!userId) return false;
+  const { rowCount } = await pool.query(
+    'SELECT 1 FROM enrollments WHERE course_id = $1 AND user_id = $2',
+    [courseId, userId],
+  );
+  return rowCount > 0;
+}
+
 async function loadCourseDetail(courseRow, userId, role) {
   const summary = courseSummary(courseRow);
+  const access = await hasCourseAccess(courseRow.id, userId, role);
+  summary.locked = !access;
   const mods = (
     await pool.query(
       `SELECT id, title, numeral, subtitle, meta, order_index FROM modules WHERE course_id = $1 ORDER BY order_index`,
@@ -188,15 +226,16 @@ async function loadCourseDetail(courseRow, userId, role) {
         id: r.id,
         title: r.title,
         type: r.type,
-        url: r.url || undefined,
-        source: r.source || undefined,
-        note: r.note || undefined,
-        content: r.content || undefined,
-        contentJson: sanitizeResourceContent(r.type, r.content_json, role) || undefined,
+        url: access ? (r.url || undefined) : undefined,
+        source: access ? (r.source || undefined) : undefined,
+        note: access ? (r.note || undefined) : undefined,
+        content: access ? (r.content || undefined) : undefined,
+        contentJson: access ? (sanitizeResourceContent(r.type, r.content_json, role) || undefined) : undefined,
         completed: r.completed,
         revisedAt: r.revised_at || undefined,
         revisionNote: r.revision_note || undefined,
         order: r.order_index,
+        locked: !access,
       });
     }
   }
@@ -226,7 +265,8 @@ async function coursesForUser(userId, whereKind) {
        (SELECT count(*) FROM progress p
           JOIN resources r ON r.id = p.resource_id
           JOIN modules m ON m.id = r.module_id
-         WHERE m.course_id = c.id AND p.user_id = $1 AND p.completed) AS completed
+         WHERE m.course_id = c.id AND p.user_id = $1 AND p.completed) AS completed,
+       (SELECT e.role FROM enrollments e WHERE e.course_id = c.id AND e.user_id = $1) AS enrolled_role
      FROM courses c
      WHERE c.published${kindClause}
      ORDER BY c.order_index, c.title`,
@@ -618,9 +658,9 @@ route('POST', '/api/auth/register', async ({ res, body }) => {
   if (exists.rowCount) return sendJSON(res, 409, { message: 'El email ya está registrado' });
   const pw = newPasswordHash(password);
   const { rows } = await pool.query(
-    `INSERT INTO users (email, name, password_hash, password_salt, password_algo, role)
-     VALUES ($1, $2, $3, $4, $5, 'student')
-     RETURNING id, email, name, role`,
+    `INSERT INTO users (email, name, password_hash, password_salt, password_algo, role, status)
+     VALUES ($1, $2, $3, $4, $5, 'student', 'pending')
+     RETURNING id, email, name, role, status`,
     [email, name, pw.hash, pw.salt, pw.algo],
   );
   const user = rows[0];
@@ -632,7 +672,7 @@ route('POST', '/api/auth/register', async ({ res, body }) => {
 route('POST', '/api/auth/login', async ({ res, body }) => {
   const { email, password } = body;
   const { rows } = await pool.query(
-    'SELECT id, email, name, role, password_hash, password_salt, password_algo FROM users WHERE email = $1',
+    'SELECT id, email, name, role, status, password_hash, password_salt, password_algo FROM users WHERE email = $1',
     [email || ''],
   );
   const user = rows[0];
@@ -657,7 +697,7 @@ route('POST', '/api/auth/login', async ({ res, body }) => {
 route('POST', '/api/auth/refresh', async ({ res, body }) => {
   const token = body.refreshToken || '';
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.name, u.role
+    `SELECT u.id, u.email, u.name, u.role, u.status
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token = $1 AND s.kind = 'refresh' AND s.expires_at > now()`,
     [token],
@@ -675,6 +715,61 @@ route('GET', '/api/auth/me', async ({ res, user }) => {
 route('POST', '/api/auth/logout', async ({ res, req }) => {
   const h = req.headers.authorization || '';
   if (h.startsWith('Bearer ')) await pool.query('DELETE FROM sessions WHERE token = $1', [h.slice(7)]);
+  sendJSON(res, 200, { ok: true });
+});
+
+// --- recuperación de contraseña (cualquier rol) ---
+const sha256Hex = (s) => crypto.createHash('sha256').update(s).digest('hex');
+const GENERIC_FORGOT_MESSAGE =
+  'Si ese correo está registrado, te enviamos un enlace para restablecer la contraseña.';
+
+route('POST', '/api/auth/forgot-password', async ({ res, body }) => {
+  const emailAddr = String(body.email || '').trim().toLowerCase();
+  if (!isValidEmail(emailAddr)) return sendJSON(res, 400, { message: 'Correo inválido' });
+
+  // Respuesta idéntica exista o no la cuenta: no revela qué correos están
+  // registrados en la plataforma.
+  const user = (await pool.query('SELECT id, email, name FROM users WHERE email = $1', [emailAddr])).rows[0];
+  if (user) {
+    await pool.query('DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL', [user.id]);
+    const token = crypto.randomBytes(32).toString('hex');
+    await pool.query(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+       VALUES ($1, $2, now() + ($3::int * interval '1 millisecond'))`,
+      [user.id, sha256Hex(token), RESET_TOKEN_TTL_MS],
+    );
+    const { sent } = await email.sendPasswordResetEmail({ toEmail: user.email, toName: user.name, token });
+    console.log(`[auth] solicitud de restablecimiento para ${user.email} (correo ${sent ? 'enviado' : 'NO enviado, ver log de arriba'})`);
+  }
+  sendJSON(res, 200, { ok: true, message: GENERIC_FORGOT_MESSAGE });
+});
+
+route('POST', '/api/auth/reset-password', async ({ res, body }) => {
+  const token = String(body.token || '');
+  const { password } = body;
+  if (!token) return sendJSON(res, 400, { message: 'Enlace inválido' });
+  if (!isValidPassword(password)) return sendJSON(res, 400, { message: 'La contraseña debe tener 8 caracteres o más' });
+
+  const record = (
+    await pool.query(
+      `SELECT id, user_id FROM password_reset_tokens
+        WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()`,
+      [sha256Hex(token)],
+    )
+  ).rows[0];
+  if (!record) return sendJSON(res, 400, { message: 'El enlace es inválido o ya venció. Solicita uno nuevo.' });
+
+  const pw = newPasswordHash(password);
+  await pool.query(
+    `UPDATE users SET password_hash = $2, password_salt = $3, password_algo = $4 WHERE id = $1`,
+    [record.user_id, pw.hash, pw.salt, pw.algo],
+  );
+  await pool.query('UPDATE password_reset_tokens SET used_at = now() WHERE id = $1', [record.id]);
+  // Cierra cualquier sesión activa: un restablecimiento de contraseña debe
+  // invalidar accesos previos, sobre todo si el motivo fue una cuenta comprometida.
+  await pool.query('DELETE FROM sessions WHERE user_id = $1', [record.user_id]);
+
+  console.log(`[auth] contraseña restablecida para user_id=${record.user_id}`);
   sendJSON(res, 200, { ok: true });
 });
 
@@ -1412,6 +1507,7 @@ route('GET', '/api/tfm', async ({ res, user, query }) => {
 
 route('POST', '/api/tfm/enroll', async ({ res, user }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!requireActiveAccount(user, res)) return;
   await pool.query(
     `INSERT INTO tfm_enrollments (user_id, status) VALUES ($1, 'in_progress')
      ON CONFLICT (user_id) DO UPDATE SET status = 'in_progress', updated_at = now()`,
@@ -1422,6 +1518,7 @@ route('POST', '/api/tfm/enroll', async ({ res, user }) => {
 
 route('POST', '/api/tfm/milestones/:slug', async ({ res, user, params, body }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!requireActiveAccount(user, res)) return;
   const ms = (await pool.query('SELECT * FROM tfm_milestones WHERE slug = $1', [params.slug])).rows[0];
   if (!ms) return sendJSON(res, 404, { message: 'Hito no encontrado' });
   const enr = (
@@ -1993,6 +2090,7 @@ route('GET', '/api/enrollments', async ({ res, user }) => {
 
 route('POST', '/api/enrollments', async ({ res, user, body }) => {
   if (!user) return sendJSON(res, 401, { message: 'Unauthorized' });
+  if (!requireActiveAccount(user, res)) return;
   const course = await findCourseRow(body.courseId || '');
   if (!course) return sendJSON(res, 404, { message: 'Course not found' });
   await pool.query(
@@ -2299,6 +2397,209 @@ route('POST', '/api/admin/reseed', async ({ res, user }) => {
   console.log(`[admin] sync de catálogo disparado por ${user.email}`);
   await require('./db/seed')();
   sendJSON(res, 200, { ok: true, message: 'Catálogo sincronizado (upsert no destructivo).' });
+});
+
+// --- admin: gestión de usuarios (crear profesores/alumnos reales, listar) ---
+const USER_ROLES = ['student', 'instructor', 'director_tfm', 'admin'];
+
+route('GET', '/api/admin/users', async ({ res, user, query }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  const role = USER_ROLES.includes(query.role) ? query.role : null;
+  const status = ['pending', 'active'].includes(query.status) ? query.status : null;
+  const { rows } = await pool.query(
+    `SELECT id, email, name, role, status, created_at FROM users
+      WHERE ($1::text IS NULL OR role = $1) AND ($2::text IS NULL OR status = $2)
+      ORDER BY created_at DESC`,
+    [role, status],
+  );
+  sendJSON(res, 200, rows);
+});
+
+route('POST', '/api/admin/users', async ({ res, user, body }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  const { email, name, password, role } = body;
+  if (!isValidEmail(email) || !name || !isValidPassword(password)) {
+    return sendJSON(res, 400, { message: 'Datos inválidos (email, nombre y contraseña de 8+ caracteres)' });
+  }
+  if (!USER_ROLES.includes(role)) {
+    return sendJSON(res, 400, { message: `Rol inválido. Debe ser uno de: ${USER_ROLES.join(', ')}` });
+  }
+  const exists = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
+  if (exists.rowCount) return sendJSON(res, 409, { message: 'El email ya está registrado' });
+
+  const courseIds = Array.isArray(body.courseIds)
+    ? [...new Set(body.courseIds)].filter((id) => isUuid(id))
+    : [];
+  if (courseIds.length && role !== 'student' && role !== 'instructor') {
+    return sendJSON(res, 400, { message: 'Solo se puede matricular a alumnos o profesores en cursos' });
+  }
+
+  const pw = newPasswordHash(password);
+  const { rows } = await pool.query(
+    `INSERT INTO users (email, name, password_hash, password_salt, password_algo, role)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, email, name, role, created_at`,
+    [email, name, pw.hash, pw.salt, pw.algo, role],
+  );
+  const created = rows[0];
+
+  let enrolledCourses = 0;
+  if (courseIds.length) {
+    const enrolled = await pool.query(
+      `INSERT INTO enrollments (user_id, course_id, role)
+       SELECT $1, c.id, $2 FROM courses c WHERE c.id = ANY($3::uuid[])
+       ON CONFLICT (user_id, course_id) DO NOTHING
+       RETURNING course_id`,
+      [created.id, role, courseIds],
+    );
+    enrolledCourses = enrolled.rowCount;
+  }
+
+  console.log(`[admin] usuario creado por ${user.email}: ${email} (${role}), matriculado en ${enrolledCourses} curso(s)`);
+  sendJSON(res, 201, { ...created, enrolledCourses });
+});
+
+// Falso si el usuario objetivo es admin y es el único admin de la plataforma
+// (excluyéndolo a él mismo del conteo). Evita quitar el último administrador
+// por accidente, sea cambiándole el rol o eliminando su cuenta.
+async function wouldRemoveLastAdmin(targetId, targetRole) {
+  if (targetRole !== 'admin') return false;
+  const { rows } = await pool.query(`SELECT count(*)::int AS n FROM users WHERE role = 'admin' AND id <> $1`, [targetId]);
+  return rows[0].n === 0;
+}
+
+route('PUT', '/api/admin/users/:id', async ({ res, user, params, body }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'Id inválido' });
+  if (!USER_ROLES.includes(body.role)) {
+    return sendJSON(res, 400, { message: `Rol inválido. Debe ser uno de: ${USER_ROLES.join(', ')}` });
+  }
+  const current = (await pool.query('SELECT role FROM users WHERE id = $1', [params.id])).rows[0];
+  if (!current) return sendJSON(res, 404, { message: 'Usuario no encontrado' });
+  if (current.role === 'admin' && body.role !== 'admin' && (await wouldRemoveLastAdmin(params.id, 'admin'))) {
+    return sendJSON(res, 400, { message: 'No se puede quitar el rol admin al único administrador de la plataforma' });
+  }
+  const { rows } = await pool.query(
+    `UPDATE users SET role = $2 WHERE id = $1 RETURNING id, email, name, role, created_at`,
+    [params.id, body.role],
+  );
+  console.log(`[admin] rol actualizado por ${user.email}: ${rows[0].email} -> ${body.role}`);
+  sendJSON(res, 200, rows[0]);
+});
+
+route('DELETE', '/api/admin/users/:id', async ({ res, user, params }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'Id inválido' });
+  if (params.id === user.id) {
+    return sendJSON(res, 400, { message: 'No puedes eliminar tu propia cuenta' });
+  }
+  const target = (await pool.query('SELECT id, email, role FROM users WHERE id = $1', [params.id])).rows[0];
+  if (!target) return sendJSON(res, 404, { message: 'Usuario no encontrado' });
+  if (await wouldRemoveLastAdmin(params.id, target.role)) {
+    return sendJSON(res, 400, { message: 'No se puede eliminar el único administrador de la plataforma' });
+  }
+  // ON DELETE CASCADE en matrículas, progreso, entregas, sesiones, etc.; ON DELETE
+  // SET NULL en cursos que tenía como instructor_id y TFMs que dirigía.
+  await pool.query('DELETE FROM users WHERE id = $1', [params.id]);
+  console.log(`[admin] usuario eliminado por ${user.email}: ${target.email} (${target.role})`);
+  sendJSON(res, 200, { ok: true });
+});
+
+// Aprueba una cuenta autorregistrada (status 'pending' -> 'active') y, de
+// forma opcional, la matricula en los cursos elegidos en el mismo paso.
+route('POST', '/api/admin/users/:id/approve', async ({ res, user, params, body }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+  if (!isUuid(params.id)) return sendJSON(res, 400, { message: 'Id inválido' });
+  const target = (await pool.query('SELECT id, email, role, status FROM users WHERE id = $1', [params.id])).rows[0];
+  if (!target) return sendJSON(res, 404, { message: 'Usuario no encontrado' });
+
+  const courseIds = Array.isArray(body.courseIds)
+    ? [...new Set(body.courseIds)].filter((id) => isUuid(id))
+    : [];
+
+  await pool.query(`UPDATE users SET status = 'active' WHERE id = $1`, [params.id]);
+
+  let enrolledCourses = 0;
+  if (courseIds.length && (target.role === 'student' || target.role === 'instructor')) {
+    const enrolled = await pool.query(
+      `INSERT INTO enrollments (user_id, course_id, role)
+       SELECT $1, c.id, $2 FROM courses c WHERE c.id = ANY($3::uuid[])
+       ON CONFLICT (user_id, course_id) DO NOTHING
+       RETURNING course_id`,
+      [params.id, target.role, courseIds],
+    );
+    enrolledCourses = enrolled.rowCount;
+  }
+
+  console.log(`[admin] cuenta aprobada por ${user.email}: ${target.email}, matriculada en ${enrolledCourses} curso(s)`);
+  sendJSON(res, 200, { ok: true, enrolledCourses });
+});
+
+// --- admin: dashboard con KPIs de la plataforma y matrícula/avance por curso ---
+route('GET', '/api/admin/analytics/overview', async ({ res, user }) => {
+  if (!user || user.role !== 'admin') return sendJSON(res, 403, { message: 'Forbidden' });
+
+  const usersByRoleRows = (await pool.query(`SELECT role, count(*)::int AS n FROM users GROUP BY role`)).rows;
+  const usersByRole = { student: 0, instructor: 0, director_tfm: 0, admin: 0 };
+  for (const r of usersByRoleRows) usersByRole[r.role] = r.n;
+  const totalUsers = Object.values(usersByRole).reduce((a, b) => a + b, 0);
+
+  const courses = (
+    await pool.query(`
+      WITH resource_counts AS (
+        SELECT m.course_id, count(*)::int AS total_resources
+        FROM resources r JOIN modules m ON m.id = r.module_id
+        GROUP BY m.course_id
+      ),
+      progress_counts AS (
+        SELECT m.course_id, p.user_id, count(*)::int AS done_count
+        FROM progress p
+        JOIN resources r ON r.id = p.resource_id
+        JOIN modules m ON m.id = r.module_id
+        WHERE p.completed
+        GROUP BY m.course_id, p.user_id
+      )
+      SELECT
+        c.id, c.slug, c.title, c.kind, c.published,
+        count(DISTINCT e.user_id)::int AS enrolled,
+        COALESCE(ROUND(AVG(
+          CASE WHEN rc.total_resources > 0
+            THEN COALESCE(pc.done_count, 0)::float / rc.total_resources * 100
+            ELSE 0
+          END
+        )::numeric, 0), 0)::int AS avg_progress
+      FROM courses c
+      LEFT JOIN enrollments e ON e.course_id = c.id AND e.role = 'student'
+      LEFT JOIN resource_counts rc ON rc.course_id = c.id
+      LEFT JOIN progress_counts pc ON pc.course_id = c.id AND pc.user_id = e.user_id
+      WHERE COALESCE(c.meta->>'isProgramContainer', '') <> 'true'
+      GROUP BY c.id
+      ORDER BY enrolled DESC, c.title ASC
+    `)
+  ).rows;
+
+  const totalEnrollments = courses.reduce((n, c) => n + c.enrolled, 0);
+  const coursesWithStudents = courses.filter((c) => c.enrolled > 0);
+  const avgCompletionRate = coursesWithStudents.length
+    ? Math.round(coursesWithStudents.reduce((n, c) => n + c.avg_progress, 0) / coursesWithStudents.length)
+    : 0;
+
+  sendJSON(res, 200, {
+    usersByRole,
+    totalUsers,
+    totalCourses: courses.length,
+    totalEnrollments,
+    avgCompletionRate,
+    courses: courses.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      title: c.title,
+      kind: c.kind,
+      published: c.published,
+      enrolled: c.enrolled,
+      avgProgress: c.avg_progress,
+    })),
+  });
 });
 
 // ---------- servidor ----------

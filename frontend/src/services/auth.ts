@@ -19,7 +19,8 @@ export interface AuthResponse {
     id: string
     email: string
     name: string
-    role: 'student' | 'instructor' | 'admin'
+    role: 'student' | 'instructor' | 'director_tfm' | 'admin'
+    status?: 'pending' | 'active'
   }
 }
 
@@ -46,5 +47,15 @@ export const authService = {
 
   logout() {
     useAuthStore.getState().logout()
+  },
+
+  async forgotPassword(email: string): Promise<{ ok: boolean; message: string }> {
+    const response = await api.post<{ ok: boolean; message: string }>('/auth/forgot-password', { email })
+    return response.data
+  },
+
+  async resetPassword(token: string, password: string): Promise<{ ok: boolean }> {
+    const response = await api.post<{ ok: boolean }>('/auth/reset-password', { token, password })
+    return response.data
   },
 }

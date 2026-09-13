@@ -6,6 +6,12 @@
 // asignatura los aborda específicamente desde el dominio de la
 // ciberseguridad, no como repaso general.
 
+//
+// Recursos: cada lección recibe >=2 recursos. Las que no traen bloque `recursos:`
+// inline se completan en el seed desde `template.json` (weaveLessonResources).
+// El resultado completo y revisable está en seed-data/RECURSOS_POR_LECCION.md
+// (regenerar con: node scripts/dump-lesson-resources.mjs).
+
 const lecciones = [
   {
     contenidoOficial: 'Introducción a IA y aprendizaje automático',

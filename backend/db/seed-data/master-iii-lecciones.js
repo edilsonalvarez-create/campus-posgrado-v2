@@ -2,6 +2,12 @@
 // FASE 5, lote 1 del plan de reconstrucción del Máster.
 // Misma estructura que master-i-lecciones.js (ver ese archivo para el modelo).
 
+//
+// Recursos: cada lección recibe >=2 recursos. Las que no traen bloque `recursos:`
+// inline se completan en el seed desde `template.json` (weaveLessonResources).
+// El resultado completo y revisable está en seed-data/RECURSOS_POR_LECCION.md
+// (regenerar con: node scripts/dump-lesson-resources.mjs).
+
 const lecciones = [
   {
     contenidoOficial: 'Arquitecturas y Soluciones de Big Data: Análisis, Procesamiento y Escalabilidad en la Era Digital',

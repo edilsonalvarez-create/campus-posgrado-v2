@@ -21,7 +21,12 @@ export default function Dashboard() {
   }
 
   const enrolledIds = new Set(Object.keys(progress?.courses || {}))
-  const myCourses = (courses || []).filter(c => enrolledIds.has(c.id))
+  // Las asignaturas del Máster IEP no se listan aquí como tarjetas sueltas:
+  // ya tienen su propia entrada ("Máster en IA...") que lleva a /master-iep,
+  // con el orden y el gate de prerrequisito reales.
+  const myCourses = (courses || []).filter(
+    (c: any) => enrolledIds.has(c.id) && c.meta?.programSlug !== 'master-iep',
+  )
   const activeCourses = myCourses.filter(c => c.progress.percentage < 100)
   const completedCourses = myCourses.filter(c => c.progress.percentage === 100)
 
@@ -47,6 +52,14 @@ export default function Dashboard() {
                 className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
               >
                 Panel de Instructor
+              </button>
+            )}
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 transition dark:bg-gray-700 dark:hover:bg-gray-600"
+              >
+                Administración
               </button>
             )}
             <button
