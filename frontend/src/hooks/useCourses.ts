@@ -12,6 +12,7 @@ export interface Course {
   instructorId?: string
   enrolledRole?: string
   modules?: any[]
+  meta?: { programSlug?: string; [key: string]: any }
   progress: {
     completed: number
     total: number

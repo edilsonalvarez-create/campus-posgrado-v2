@@ -12,6 +12,12 @@ export function ExploreCoursesPage() {
 
   const displayCourses = allCourses
     .filter((course: any) => {
+      // Las asignaturas del Máster IEP (I–XI + TFM) no se muestran aquí: ya
+      // se navegan desde su propia página del programa (/master-iep), con
+      // el orden y el gate de prerrequisito reales. Listarlas también en
+      // "Explorar Cursos" las duplicaba fuera de ese contexto.
+      if (course.meta?.programSlug === 'master-iep') return false;
+
       const matchesSearch =
         course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.description.toLowerCase().includes(searchTerm.toLowerCase());
