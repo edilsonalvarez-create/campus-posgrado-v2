@@ -23,6 +23,9 @@ const lecciones = [
       title: 'Arquitectura Lambda: lotes y flujo en paralelo',
       mermaid: 'graph LR\n  D["Datos entrantes"] --> B["Capa batch\\nprocesa todo el histórico\\nperiódicamente"]\n  D --> S["Capa de streaming\\nprocesa eventos en tiempo real"]\n  B --> V["Vista combinada\\npara consultas"]\n  S --> V',
     },
+    recursos: {
+      videos: [{ titulo: 'Arquitectura Lambda en 2 minutos', canal: 'Máster IEP', url: 'https://www.youtube.com/watch?v=ss6YRONFe_E' }],
+    },
     quiz: [
       { q: '¿Qué problema resuelve un sistema de archivos distribuido?', opts: ['Acelera la conexión a internet', 'Permite guardar archivos más grandes que un disco y sobrevivir al fallo de una máquina', 'Elimina la necesidad de copias de seguridad', 'Solo sirve para almacenar imágenes'], a: 1, why: ['No tiene relación directa con la velocidad de internet.', 'Correcto: esos son los dos problemas centrales que resuelve.', 'La replicación es una forma de respaldo, no la elimina.', 'Almacena cualquier tipo de dato, no solo imágenes.'] },
       { q: '¿Qué ventaja aporta Spark frente al MapReduce original?', opts: ['Es gratuito y MapReduce no', 'Mantiene datos intermedios en memoria, acelerando cálculos iterativos', 'Solo funciona con datos estructurados', 'Elimina la necesidad de un clúster'], a: 1, why: ['Ambos pueden ser de código abierto y gratuitos.', 'Correcto: esa es la mejora clave de Spark sobre MapReduce.', 'Puede trabajar con datos de distintos tipos, no solo estructurados.', 'Sigue requiriendo un clúster de máquinas para funcionar.'] },
@@ -167,7 +170,10 @@ const lecciones = [
       mermaid: 'graph LR\n  P["Perceptrón\\n(una neurona, una capa)"] --> M["Red multicapa\\n(varias capas ocultas)"]\n  M --> D["Red profunda\\n(muchas capas, aprende\\nrepresentaciones jerárquicas)"]',
     },
     recursos: {
-      videos: [{ titulo: 'But what is a Neural Network? | Deep learning', canal: '3Blue1Brown', url: 'https://www.youtube.com/watch?v=aircAruvnKk' }],
+      videos: [
+        { titulo: 'But what is a Neural Network? | Deep learning', canal: '3Blue1Brown', url: 'https://www.youtube.com/watch?v=aircAruvnKk' },
+        { titulo: 'Retropropagación en 2 minutos', canal: 'Máster IEP', url: 'https://www.youtube.com/watch?v=trICr9jLemo' },
+      ],
     },
     quiz: [
       { q: '¿Qué puede aprender un solo perceptrón?', opts: ['Cualquier función, sin importar su complejidad', 'Solo patrones linealmente separables, como una línea recta que distingue dos categorías', 'Nada, necesita siempre múltiples capas', 'Solo funciona con datos de texto'], a: 1, why: ['Esa capacidad universal requiere múltiples capas, no un solo perceptrón.', 'Correcto: esa es precisamente la limitación de un perceptrón individual.', 'Un perceptrón individual sí puede aprender patrones simples por sí solo.', 'Puede procesar cualquier tipo de dato numérico, no solo texto.'] },

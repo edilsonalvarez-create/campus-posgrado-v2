@@ -44,3 +44,10 @@ coverage/
 # Temporary
 tmp/
 temp/
+
+# Micro-vídeos (renders y venv locales)
+microvideos/.venv/
+microvideos/media/
+microvideos/audio/
+microvideos/out/
+microvideos/preview-frames/

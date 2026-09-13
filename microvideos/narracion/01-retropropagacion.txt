@@ -1,0 +1,11 @@
+Una red neuronal aprende de una forma sorprendentemente simple: se equivoca, y luego corrige.
+
+Empieza por la pieza más pequeña: un perceptrón. Recibe varias entradas, las multiplica por un peso —qué tan importante es cada una—, suma, y una función de activación decide la salida. Un solo perceptrón solo puede separar datos con una línea recta.
+
+La solución es apilarlos. Tres capas: entrada, oculta y salida. Sin una función no lineal entre capas, apilar no serviría de nada: sería matemáticamente igual a una sola capa.
+
+En el paso hacia adelante, los datos cruzan la red y sale una predicción. Se compara con la respuesta correcta. La diferencia es el error.
+
+Ahora, el truco: ese error no se queda al final. Viaja hacia atrás, capa por capa. Cada peso pregunta: ¿cuánto contribuí yo a este error? Y se ajusta un poquito en la dirección que lo reduce. Eso es retropropagación.
+
+Repetido millones de veces, sobre millones de ejemplos, es el mecanismo detrás de casi todo el aprendizaje profundo: desde clasificar una pieza defectuosa hasta los modelos de lenguaje.

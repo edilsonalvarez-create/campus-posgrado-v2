@@ -1,0 +1,9 @@
+Hay más de una forma de generar una imagen. Las GAN lo hacen de un solo golpe. Los modelos de difusión toman otro camino: el de ensuciar y luego limpiar.
+
+Parte de una imagen real. En cada paso se añade un poco de ruido. Después de decenas de pasos, ya no queda la imagen: solo ruido.
+
+El modelo aprende exactamente ese proceso. Y luego lo invierte. Parte de ruido aleatorio y, paso a paso, lo limpia. Cada iteración recupera un poco más de forma. Al final, una imagen coherente. Si hay un prompt, esa limpieza va guiada hacia lo que pediste.
+
+A diferencia de una GAN, que genera el resultado en un único paso, la difusión construye la imagen en decenas o cientos de refinamientos.
+
+Por eso suele verse más estable de entrenar y de mayor calidad. El precio se paga en inferencia: más pasos, más espera. Si necesitas tiempo real, una GAN ya entrenada puede ser la opción. Si puedes generar una vez y reutilizar, la difusión suele ganar.

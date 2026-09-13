@@ -1,0 +1,7 @@
+.venv/
+media/
+audio/
+out/
+preview-frames/
+__pycache__/
+*.pyc

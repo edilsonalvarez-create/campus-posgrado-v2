@@ -1,0 +1,11 @@
+Cuando una organización necesita a la vez el histórico completo y reaccionar a lo que acaba de pasar, aparece la arquitectura Lambda.
+
+Los datos entran por un solo sitio. A partir de ahí, se dividen en dos caminos.
+
+El primero es la capa batch. Procesa todo el histórico, con calma, de forma periódica. El resultado es exacto, pero no es inmediato: llega con el siguiente ciclo —esta noche, este fin de semana.
+
+El segundo es la capa de streaming. Procesa cada evento en el momento. El resultado es casi instantáneo, y a menudo aproximado. Sirve para decidir ahora, no para el informe mensual.
+
+Las dos respuestas se combinan en una capa de servicio. Quien consulta ve una vista unificada: lo exacto del batch más lo reciente del flujo.
+
+Es potente. También es cara de mantener: dos tuberías, dos lógicas, dos fallos posibles. Antes de construirla, pregunta: ¿la decisión de verdad no puede esperar al siguiente lote?

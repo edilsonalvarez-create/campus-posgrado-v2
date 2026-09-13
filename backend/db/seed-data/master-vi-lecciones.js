@@ -26,6 +26,9 @@ const lecciones = [
       title: 'El problema de aprendizaje formalizado',
       mermaid: 'graph LR\n  D["Datos de entrenamiento\\n(entrada, salida)"] --> F["Función de pérdida\\nmide qué tan mal predice el modelo"]\n  F --> O["Optimización\\najusta parámetros para minimizar la pérdida"]\n  O --> M["Modelo entrenado"]',
     },
+    recursos: {
+      videos: [{ titulo: 'Retropropagación en 2 minutos', canal: 'Máster IEP', url: 'https://www.youtube.com/watch?v=trICr9jLemo' }],
+    },
     quiz: [
       { q: '¿Qué es el "espacio de hipótesis" en aprendizaje automático?', opts: ['El conjunto de datos de entrenamiento disponibles', 'El conjunto de funciones posibles entre las que el algoritmo busca la que mejor explica los datos', 'El presupuesto disponible para el proyecto', 'El equipo de personas que trabaja en el modelo'], a: 1, why: ['El espacio de hipótesis es sobre funciones posibles, no sobre los datos mismos.', 'Correcto: esa es la definición formal exacta.', 'No tiene relación con el presupuesto del proyecto.', 'No se refiere al equipo humano, sino al conjunto de modelos posibles.'] },
       { q: '¿Por qué es importante elegir la función de pérdida correcta para un problema?', opts: ['Porque afecta el color del gráfico de resultados', 'Porque una función de pérdida mal alineada puede hacer que el modelo optimice la métrica equivocada sin que nadie lo note', 'Porque determina el precio de la infraestructura de nube', 'No tiene ningún impacto real en el resultado'], a: 1, why: ['No tiene relación con visualización de resultados.', 'Correcto: esa es la razón exacta que da la lección.', 'No determina directamente el costo de infraestructura.', 'Sí tiene un impacto real y significativo en el resultado del modelo.'] },

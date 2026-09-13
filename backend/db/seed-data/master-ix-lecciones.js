@@ -114,6 +114,9 @@ const lecciones = [
       title: 'Tres arquitecturas, distinto compromiso',
       mermaid: 'graph TD\n  GAN["GAN\\ninferencia rápida,\\nentrenamiento inestable"]\n  VAE["VAE\\nespacio latente navegable"]\n  DIF["Difusión\\nalta calidad,\\ninferencia lenta"]\n  GAN --- C["Elegir según:\\nestabilidad vs. velocidad de inferencia"]\n  VAE --- C\n  DIF --- C',
     },
+    recursos: {
+      videos: [{ titulo: 'Modelos de difusión en 2 minutos', canal: 'Máster IEP', url: 'https://www.youtube.com/watch?v=ZTE5Q0W0tyE' }],
+    },
     quiz: [
       { q: '¿Qué limitación de un autoencoder convencional resuelve el autoencoder variacional (VAE)?', opts: ['Que no puede comprimir ningún tipo de dato', 'Que su espacio latente no tiene estructura suave o navegable, impidiendo generar resultados coherentes desde puntos arbitrarios', 'Que tarda demasiado tiempo en entrenarse siempre', 'Que solo funciona con datos de audio'], a: 1, why: ['Sí puede comprimir datos; esa no es la limitación relevante aquí.', 'Correcto: esa es la limitación exacta que resuelve la regularización del VAE.', 'El tiempo de entrenamiento no es la limitación central discutida.', 'Puede funcionar con distintos tipos de dato, no solo audio.'] },
       { q: '¿En qué se diferencia estructuralmente un modelo de difusión de una GAN al generar un resultado?', opts: ['No hay ninguna diferencia real entre ambos', 'La difusión construye el resultado mediante docenas o cientos de pasos iterativos de refinamiento; la GAN lo genera en un solo paso hacia adelante', 'Las GAN nunca pueden generar imágenes', 'Los modelos de difusión no requieren ningún tipo de entrenamiento previo'], a: 1, why: ['Hay una diferencia estructural real en cómo generan el resultado final.', 'Correcto: esa es la diferencia exacta descrita en la lección.', 'Las GAN sí pueden generar imágenes, es una de sus aplicaciones más comunes.', 'Sí requieren entrenamiento previo extenso, como cualquier modelo generativo.'] },
