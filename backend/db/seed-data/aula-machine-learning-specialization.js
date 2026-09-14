@@ -36,7 +36,7 @@ module.exports = {
           ],
           recursos: {
             videos: [
-              { titulo: 'Machine Learning Specialization by Andrew Ng (playlist oficial)', canal: 'DeepLearning.AI', url: 'https://www.youtube.com/playlist?list=PLkDaE6sCZn6FNC6YRfRQc_FbeQrF8BwGI' },
+              { titulo: '#1 Machine Learning Specialization [Course 1, Week 1, Lesson 1]', canal: 'DeepLearning.AI', url: 'https://www.youtube.com/watch?v=vStJoetOxJg' },
             ],
           },
           exercise: { mins: 15, text: 'Clasifica cinco problemas de tu contexto según los dos ejes: ¿son supervisados o no supervisados? Para los supervisados, ¿son de regresión o de clasificación? Justifica cada respuesta con el tipo exacto de salida que se busca predecir.' },

@@ -49,7 +49,7 @@ o un `recursos` inline.
 **L2. IA como tecnología disruptiva: qué la distingue de las demás** — 2 recurso(s) · _(algún recurso venía inline)_
 
 - 🎬 AI, Machine Learning, Deep Learning and Generative AI Explained — IBM Technology <https://www.youtube.com/watch?v=qYNweeDHiyU>
-- 🎬 Explicadores técnicos: IoT, gemelos digitales, blockchain — IBM Technology <https://www.youtube.com/@IBMTechnology>
+- 🎬 What is a Digital Twin? — IBM Technology <https://www.youtube.com/watch?v=2hnoGo27uf8>
 
 **L3. Internet de las Cosas: sensores, restricciones y datos en el borde** — 2 recurso(s) · _(algún recurso venía inline)_
 
@@ -73,10 +73,10 @@ o un `recursos` inline.
 
 ## Asignatura III (`master-iii`)
 
-**L1. Arquitecturas de Big Data: cómo se organiza el procesamiento distribuido** — 2 recurso(s)
+**L1. Arquitecturas de Big Data: cómo se organiza el procesamiento distribuido** — 2 recurso(s) · _(algún recurso venía inline)_
 
 - 📖 Designing Data-Intensive Applications — Martin Kleppmann <https://dataintensive.net/>
-- 📖 Fundamentals of Data Engineering — Reis & Housley <https://www.oreilly.com/library/view/fundamentals-of-data-engineering/9781098108298/>
+- 🎬 Arquitectura Lambda en 2 minutos — Máster IEP <https://www.youtube.com/watch?v=ss6YRONFe_E>
 
 **L2. Entornos de trabajo para Deep Learning: del portátil al clúster de GPU** — 2 recurso(s)
 
@@ -96,12 +96,13 @@ o un `recursos` inline.
 **L5. Árboles de decisión: aprender reglas legibles a partir de datos** — 2 recurso(s) · _(algún recurso venía inline)_
 
 - 🎬 Decision and Classification Trees, Clearly Explained!!! — StatQuest <https://www.youtube.com/watch?v=_L39rN6gz7Y>
-- 🎬 Regresión, árboles y bosques explicados — StatQuest · Josh Starmer <https://www.youtube.com/@statquest>
+- 🎬 StatQuest: Random Forests Part 1 - Building, Using and Evaluating — StatQuest · Josh Starmer <https://www.youtube.com/watch?v=J4Wdy0Wc_xQ>
 
-**L6. Redes Neuronales Artificiales: del perceptrón a la red profunda** — 2 recurso(s) · _(algún recurso venía inline)_
+**L6. Redes Neuronales Artificiales: del perceptrón a la red profunda** — 3 recurso(s) · _(algún recurso venía inline)_
 
 - 📖 Polars — pola.rs <https://pola.rs/>
 - 🎬 But what is a Neural Network? | Deep learning — 3Blue1Brown <https://www.youtube.com/watch?v=aircAruvnKk>
+- 🎬 Retropropagación en 2 minutos — Máster IEP <https://www.youtube.com/watch?v=trICr9jLemo>
 
 ## Asignatura IV (`master-iv`)
 
@@ -169,10 +170,10 @@ o un `recursos` inline.
 
 ## Asignatura VI (`master-vi`)
 
-**L1. Introducción a Machine Learning: el problema de aprendizaje formalizado** — 2 recurso(s)
+**L1. Introducción a Machine Learning: el problema de aprendizaje formalizado** — 2 recurso(s) · _(algún recurso venía inline)_
 
 - 📖 Machine Learning Specialization — Andrew Ng · DeepLearning.AI & Stanford <https://www.deeplearning.ai/courses/machine-learning-specialization/>
-- 📖 Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow (3ª ed.) — Aurélien Géron <https://github.com/ageron/handson-ml3>
+- 🎬 Retropropagación en 2 minutos — Máster IEP <https://www.youtube.com/watch?v=trICr9jLemo>
 
 **L2. Aprendizaje Supervisado en profundidad: clasificación más allá de la teoría** — 2 recurso(s) · _(algún recurso venía inline)_
 
@@ -273,17 +274,17 @@ o un `recursos` inline.
 **L2. El paradigma de aprendizaje detrás de la IA Generativa: autosupervisión** — 2 recurso(s)
 
 - 📖 Build a Large Language Model (From Scratch) — Sebastian Raschka <https://github.com/rasbt/LLMs-from-scratch>
-- 🎬 Deep dive: cómo se entrena un modelo de lenguaje — Andrej Karpathy <https://www.youtube.com/@AndrejKarpathy>
+- 🎬 State of GPT (Microsoft Build) — Andrej Karpathy <https://www.youtube.com/watch?v=bZQun8Y4L2A>
 
 **L3. Redes Generativas Antagónicas (GAN): dos redes que compiten para mejorar** — 2 recurso(s) · _(algún recurso venía inline)_
 
 - 🎬 Generative Adversarial Networks (GANs) - Explained — IBM Technology <https://www.youtube.com/watch?v=TdJtXV6un5w>
-- 🎬 Deep dive: cómo se entrena un modelo de lenguaje — Andrej Karpathy <https://www.youtube.com/@AndrejKarpathy>
+- 🎬 State of GPT (Microsoft Build) — Andrej Karpathy <https://www.youtube.com/watch?v=bZQun8Y4L2A>
 
-**L4. VAE y modelos de difusión: dos alternativas a las GAN** — 2 recurso(s)
+**L4. VAE y modelos de difusión: dos alternativas a las GAN** — 2 recurso(s) · _(algún recurso venía inline)_
 
 - 📖 LlamaIndex — documentación — LlamaIndex <https://docs.llamaindex.ai/>
-- 📖 LangChain — documentación — LangChain <https://python.langchain.com/docs/introduction/>
+- 🎬 Modelos de difusión en 2 minutos — Máster IEP <https://www.youtube.com/watch?v=ZTE5Q0W0tyE>
 
 **L5. IA Generativa multimedia aplicada a procesos industriales** — 2 recurso(s)
 

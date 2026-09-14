@@ -97,10 +97,10 @@
         },
         {
           "t": "video",
-          "n": "Explicadores técnicos: IoT, gemelos digitales, blockchain",
+          "n": "What is a Digital Twin?",
           "s": "IBM Technology",
-          "u": "https://www.youtube.com/@IBMTechnology",
-          "m": "Canal · piezas de 5–10 min, muy claras"
+          "u": "https://www.youtube.com/watch?v=2hnoGo27uf8",
+          "m": "≈6 min"
         },
         {
           "t": "docs",
@@ -177,10 +177,10 @@
         },
         {
           "t": "video",
-          "n": "Regresión, árboles y bosques explicados",
+          "n": "StatQuest: Random Forests Part 1 - Building, Using and Evaluating",
           "s": "StatQuest · Josh Starmer",
-          "u": "https://www.youtube.com/@statquest",
-          "m": "Canal · piezas de 10–20 min"
+          "u": "https://www.youtube.com/watch?v=J4Wdy0Wc_xQ",
+          "m": "≈10 min"
         },
         {
           "t": "tool",
@@ -338,10 +338,10 @@
         },
         {
           "t": "video",
-          "n": "Charlas sobre gobernanza y política de IA",
+          "n": "AI Ethics, Policy, and Governance at Stanford - Day One",
           "s": "Stanford HAI",
-          "u": "https://www.youtube.com/@StanfordHAI",
-          "m": "Canal · sesiones de 30–60 min"
+          "u": "https://www.youtube.com/watch?v=k0jF-UMC1b4",
+          "m": "Conferencia completa"
         }
       ]
     },
@@ -560,10 +560,10 @@
         },
         {
           "t": "video",
-          "n": "Deep dive: cómo se entrena un modelo de lenguaje",
+          "n": "State of GPT (Microsoft Build)",
           "s": "Andrej Karpathy",
-          "u": "https://www.youtube.com/@AndrejKarpathy",
-          "m": "Canal · sesiones largas, densas y gratuitas"
+          "u": "https://www.youtube.com/watch?v=bZQun8Y4L2A",
+          "m": "≈40 min"
         },
         {
           "t": "docs",
@@ -740,10 +740,10 @@
         },
         {
           "t": "video",
-          "n": "Sesiones sobre seguridad de aplicaciones con LLM",
-          "s": "OWASP",
-          "u": "https://www.youtube.com/@OWASPGLOBAL",
-          "m": "Canal · charlas de conferencia"
+          "n": "OWASP Top 10 for Large Language Models: Project Update",
+          "s": "OWASP Foundation",
+          "u": "https://www.youtube.com/watch?v=1xUTxLhV07g",
+          "m": "≈20 min"
         }
       ]
     },
