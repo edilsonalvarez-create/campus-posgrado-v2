@@ -5,6 +5,8 @@
 // más frecuente y una frase para memorizar; cierra con un caso completo que une
 // todos los términos, preguntas de comprensión y la lista de fuentes.
 
+import { useState } from 'react'
+
 type Termino = {
   n: number
   termino: string
@@ -123,27 +125,7 @@ export function LecturaGuiada({ data }: { data: LecturaGuiadaData }) {
             <p className="font-semibold text-gray-900 dark:text-white mb-2">Preguntas de comprensión</p>
             <div className="space-y-3">
               {data.preguntas.map((p, i) => (
-                <div key={i} className="rounded border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-800 p-3">
-                  <p className="text-gray-800 dark:text-gray-200">
-                    {i + 1}. {p.q}
-                  </p>
-                  <ul className="mt-1 mb-2 list-[lower-latin] pl-6 text-sm text-gray-600 dark:text-gray-400">
-                    {p.opts.map((o, j) => (
-                      <li key={j}>{o}</li>
-                    ))}
-                  </ul>
-                  <details>
-                    <summary className="cursor-pointer select-none text-sm font-medium text-amber-800 dark:text-amber-300">
-                      Ver respuesta
-                    </summary>
-                    <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                      <span className="font-medium">
-                        {String.fromCharCode(97 + p.a)}) {p.opts[p.a]}.
-                      </span>{' '}
-                      {p.why}
-                    </p>
-                  </details>
-                </div>
+                <PreguntaComprension key={i} n={i + 1} pregunta={p} />
               ))}
             </div>
           </div>
@@ -171,5 +153,80 @@ export function LecturaGuiada({ data }: { data: LecturaGuiadaData }) {
         </div>
       </div>
     </details>
+  )
+}
+
+// Pregunta de comprensión individual: opciones seleccionables + botón
+// "Comprobar respuesta". Verificación puramente local (no persiste ni cuenta
+// para completar la lección, a diferencia del quiz formativo de LessonFormative).
+function PreguntaComprension({ n, pregunta }: { n: number; pregunta: PreguntaLG }) {
+  const [chosen, setChosen] = useState<number | null>(null)
+  const [checked, setChecked] = useState(false)
+
+  return (
+    <div className="rounded border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-800 p-3">
+      <p className="text-gray-800 dark:text-gray-200 mb-2">
+        {n}. {pregunta.q}
+      </p>
+      <div className="space-y-1.5">
+        {pregunta.opts.map((o, j) => {
+          const isChosen = chosen === j
+          const isCorrect = checked && pregunta.a === j
+          const isWrongChoice = checked && isChosen && pregunta.a !== j
+          return (
+            <button
+              key={j}
+              type="button"
+              onClick={() => !checked && setChosen(j)}
+              disabled={checked}
+              className={`w-full text-left px-2.5 py-1.5 rounded border text-sm flex items-start gap-2 ${
+                isCorrect
+                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                  : isWrongChoice
+                    ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/20'
+                    : isChosen
+                      ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-amber-300'
+              }`}
+            >
+              {checked && <span>{isCorrect ? '✓' : isWrongChoice ? '✗' : ''}</span>}
+              <span>
+                {String.fromCharCode(97 + j)}) {o}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {!checked ? (
+        <button
+          type="button"
+          onClick={() => setChecked(true)}
+          disabled={chosen === null}
+          className="mt-3 px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium disabled:bg-gray-400"
+        >
+          Comprobar respuesta
+        </button>
+      ) : (
+        <div className="mt-3">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            <span className={`font-semibold ${chosen === pregunta.a ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+              {chosen === pregunta.a ? 'Correcto. ' : 'Revisar. '}
+            </span>
+            {pregunta.why}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setChecked(false)
+              setChosen(null)
+            }}
+            className="mt-1 text-xs text-amber-700 dark:text-amber-400 hover:underline"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
